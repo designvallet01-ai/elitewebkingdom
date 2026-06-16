@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal | Elite Web Kingdom Control Panel</title>
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="admin.css">
+
+  <!-- Supabase JS Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="admin-body">
+
+  <!-- LOGIN CONTAINER -->
+  <div class="admin-login-container" id="login-container">
+    <div class="admin-login-card glass-card">
+      <div class="admin-login-header">
+        <img src="../logo.jpeg" alt="Elite Web Kingdom Logo" class="admin-login-logo">
+        <h2 class="admin-login-title">Admin Control Portal</h2>
+        <p class="admin-login-subtitle">Sign in to manage your digital kingdom</p>
+      </div>
+
+      <form id="login-form" style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="form-group">
+          <label for="email">Admin Email Address</label>
+          <input type="email" id="email" class="form-control" placeholder="admin@elitewebkingdom.com" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+        </div>
+        <div class="form-status error" id="login-error" style="display: none; padding: 10px; font-size: 0.85rem;"></div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+          Access Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD CONTAINER (Hidden by default) -->
+  <div class="admin-dashboard" id="dashboard-container" style="display: none;">
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="logo-container">
+        <img src="../logo.jpeg" alt="Elite Web Kingdom Logo" class="logo-img">
+        <span class="logo-text">ELITE ADMIN</span>
+        <span class="badge" id="auth-mode-badge" style="margin-left: 15px; display: none;"></span>
+      </div>
+
+      <div class="admin-profile">
+        <div class="admin-user-info" style="text-align: right;">
+          <h4>Gowri Narayana</h4>
+          <p>System Architect</p>
+        </div>
+        <div class="admin-avatar">GN</div>
+        <button id="logout-btn" class="action-icon-btn" title="Log Out" style="margin-left: 12px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN DASHBOARD PANEL -->
+    <div class="admin-main">
+      <!-- SIDEBAR -->
+      <aside class="admin-sidebar">
+        <a href="#overview" class="sidebar-link active" onclick="switchTab('overview')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+          Dashboard Overview
+        </a>
+        <a href="#leads" class="sidebar-link" onclick="switchTab('leads')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Incoming Proposals (<span id="sidebar-leads-count">0</span>)
+        </a>
+        <a href="#taken" class="sidebar-link" onclick="switchTab('taken')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          Taken Projects (<span id="sidebar-taken-count">0</span>)
+        </a>
+        <a href="#settings" class="sidebar-link" onclick="switchTab('settings')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          System Settings
+        </a>
+        <a href="../index.html" class="sidebar-link" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Go To Main Site
+        </a>
+      </aside>
+
+      <!-- CONTENT PANELS -->
+      <main class="admin-content">
+        
+        <!-- PANEL: OVERVIEW -->
+        <div id="tab-overview" class="tab-panel">
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Overview Dashboard</h2>
+            <span class="badge" style="background: rgba(0, 242, 254, 0.05);">LIVE SYSTEM MONITOR</span>
+          </div>
+          
+          <!-- Quick Stats Grid -->
+          <div class="admin-stats-grid" style="margin-top: 32px;">
+            <div class="admin-stat-card glass-card">
+              <div class="stat-card-details">
+                <span class="stat-card-lbl">Total Visitors</span>
+                <span class="stat-card-val">0</span>
+                <span class="stat-card-change up" style="background: rgba(255,255,255,0.05); color: #fff;">Stable</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div class="stat-card-details">
+                <span class="stat-card-lbl">Active Projects</span>
+                <span class="stat-card-val" id="active-projects-val">0</span>
+                <span class="stat-card-change up" style="background: rgba(255,255,255,0.05); color: #fff;">Stable</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div class="stat-card-details">
+                <span class="stat-card-lbl">Incoming Leads</span>
+                <span class="stat-card-val" id="leads-count-card">0</span>
+                <span class="stat-card-change up" id="leads-count-trend">▲ 0 New</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div class="stat-card-details">
+                <span class="stat-card-lbl">Monthly Pipeline</span>
+                <span class="stat-card-val" id="pipeline-value">₹0</span>
+                <span class="stat-card-change up" style="background: rgba(255,255,255,0.05); color: #fff;">Stable</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Grid -->
+          <div class="admin-dashboard-grid" style="margin-top: 32px;">
+            <!-- Column 1: Leads list snippet -->
+            <div class="admin-card glass-card">
+              <div class="admin-card-title">
+                <span>Recent Client Proposals</span>
+                <a href="#leads" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="switchTab('leads')">View All</a>
+              </div>
+              <div class="admin-table-container">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Project</th>
+                      <th>Budget</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-leads-tbody">
+                    <!-- Dynamic Insertion -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Column 2: Graph representation -->
+            <div class="admin-card glass-card">
+              <h3 class="admin-card-title">Growth Traffic (Weekly)</h3>
+              <div class="bar-chart-container">
+                <div class="bar-column">
+                  <span class="bar-value">0</span>
+                  <div class="bar-pill" style="height: 0%;"></div>
+                  <span class="bar-label">Mon</span>
+                </div>
+                <div class="bar-column">
+                  <span class="bar-value">0</span>
+                  <div class="bar-pill" style="height: 0%;"></div>
+                  <span class="bar-label">Tue</span>
+                </div>
+                <div class="bar-column">
+                  <span class="bar-value">0</span>
+                  <div class="bar-pill" style="height: 0%;"></div>
+                  <span class="bar-label">Wed</span>
+                </div>
+                <div class="bar-column">
+                  <span class="bar-value">0</span>
+                  <div class="bar-pill" style="height: 0%;"></div>
+                  <span class="bar-label">Thu</span>
+                </div>
+                <div class="bar-column">
+                  <span class="bar-value">0</span>
+                  <div class="bar-pill" style="height: 0%;"></div>
+                  <span class="bar-label">Fri</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: LEADS -->
+        <div id="tab-leads" class="tab-panel" style="display: none;">
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Incoming Project Proposals</h2>
+            <button class="btn btn-secondary" style="padding: 10px 20px; font-size: 0.8rem;" onclick="clearAllLeads()">
+              Reset To Mock Leads
+            </button>
+          </div>
+
+          <div class="admin-card glass-card" style="margin-top: 32px; width: 100%;">
+            <div class="admin-table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Client / Contact</th>
+                    <th>Project Category</th>
+                    <th>Budget / Timeline</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="leads-tbody">
+                  <!-- Dynamic Insertion -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: TAKEN PROJECTS -->
+        <div id="tab-taken" class="tab-panel" style="display: none;">
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Taken & Active Projects</h2>
+            <div class="search-box-container" style="flex: 1; max-width: 400px; margin-left: auto;">
+              <input type="text" id="taken-search-input" class="form-control" placeholder="Search taken projects by ID, Name, Email, or Type..." oninput="filterTakenProjects()" style="background: #08091a; border: 1px solid var(--glass-border); padding: 8px 16px; border-radius: var(--radius-sm); color: #fff; width: 100%;">
+            </div>
+          </div>
+
+          <div class="admin-card glass-card" style="margin-top: 32px; width: 100%;">
+            <div class="admin-table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Client / Contact</th>
+                    <th>Project Category</th>
+                    <th>Budget / Timeline</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="taken-tbody">
+                  <!-- Dynamic Insertion -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: SETTINGS -->
+        <div id="tab-settings" class="tab-panel" style="display: none;">
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Portal Configuration</h2>
+          </div>
+
+          <div class="admin-card glass-card" style="margin-top: 32px; max-width: 680px;">
+            <h3 class="admin-card-title">System Settings</h3>
+            <div class="settings-list">
+              <div class="settings-item">
+                <div class="settings-info">
+                  <h4>Maintenance Mode</h4>
+                  <p>Redirect landing page traffic to a fallback countdown banner.</p>
+                </div>
+                <label class="switch-toggle">
+                  <input type="checkbox" id="maint-mode-switch">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-item">
+                <div class="settings-info">
+                  <h4>Email Notifications</h4>
+                  <p>Trigger an email notify event on every WhatsApp payload generation.</p>
+                </div>
+                <label class="switch-toggle">
+                  <input type="checkbox" checked id="email-notify-switch">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-item">
+                <div class="settings-info">
+                  <h4>Database Auto-Backup</h4>
+                  <p>Commit backup logs to secure secondary cloud server daily.</p>
+                </div>
+                <label class="switch-toggle">
+                  <input type="checkbox" checked id="backup-switch">
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+            </div>
+            
+            <button class="btn btn-primary" style="margin-top: 32px;" onclick="saveSettings()">
+              Save Settings
+            </button>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>
