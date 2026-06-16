@@ -1470,9 +1470,26 @@ footer {
   .hero-title {
     font-size: 2.5rem;
   }
+
+  .logo-text {
+    font-size: 1.25rem;
+  }
 }
 
 @media (max-width: 480px) {
+  .logo-text {
+    font-size: 1.05rem;
+  }
+  
+  .logo-img {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .logo-container {
+    gap: 8px;
+  }
+
   .footer-grid {
     grid-template-columns: 1fr;
   }
