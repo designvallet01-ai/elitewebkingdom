@@ -381,19 +381,23 @@ header.scrolled {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: 1fr;
   gap: 48px;
   align-items: center;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .hero-content {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  align-items: center;
 }
 
 .hero-tag {
-  align-self: flex-start;
+  align-self: center;
 }
 
 .hero-title {
@@ -414,20 +418,24 @@ header.scrolled {
 .hero-desc {
   font-size: 1.2rem;
   color: var(--text-secondary);
-  max-width: 540px;
+  max-width: 650px;
+  margin: 0 auto;
 }
 
 .hero-btns {
   display: flex;
   gap: 16px;
   margin-top: 12px;
+  justify-content: center;
 }
 
 .hero-stats {
   display: flex;
   gap: 40px;
   margin-top: 32px;
+  justify-content: center;
 }
+
 
 .stat-item {
   display: flex;
