@@ -1,0 +1,8 @@
+# Robots.txt for Elite Web Kingdom
+User-agent: *
+Allow: /
+
+# Disallow admin folder from indexing
+Disallow: /admin/
+
+Sitemap: https://www.elitewebkingdom.in/sitemap.xml
