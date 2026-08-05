@@ -3,18 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Elite Web Kingdom is a premier IT company providing high-end web development, e-commerce, and custom software services. Connect with Gowri Narayana Guduru, Founder & Lead Developer.">
-  <meta name="keywords" content="Elite Web Kingdom, Web Development, IT Company, Custom Software, Gowri Narayana Guduru, Web Developer, Founder, E-commerce development">
+  <meta name="description" content="Elite Web Kingdom - Premier IT Agency & Custom Software Engineering. Founded by Gowri Narayana Guduru. Building Enterprise Digital Platforms, Mobile Apps, & Scalable Systems.">
+  <meta name="keywords" content="Elite Web Kingdom, Web Development, IT Company, Custom Software, Gowri Narayana Guduru, System Architect, Founder, E-commerce, Kotlin, Swift, React, Node.js">
   <meta name="author" content="Gowri Narayana Guduru">
-  <title>Elite Web Kingdom | Premium IT Solutions & Web Development</title>
+  <title>Elite Web Kingdom | Enterprise IT Solutions & Custom Engineering</title>
   
-  <!-- CSS Stylesheet -->
+  <!-- CSS Stylesheet & Icon -->
   <link rel="stylesheet" href="style.css">
   <link rel="icon" type="image/jpeg" href="logo.jpeg">
-  
-
 </head>
 <body>
+
+  <!-- AMBIENT BACKGROUND & SPOTLIGHT -->
+  <div class="ambient-background">
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-orb orb-3"></div>
+    <div class="grid-overlay"></div>
+  </div>
+  <div class="cursor-spotlight" id="spotlight"></div>
 
   <!-- HEADER / NAVIGATION -->
   <header id="header">
@@ -27,21 +34,27 @@
       <nav>
         <ul class="nav-menu" id="nav-menu">
           <li><a href="#home" class="nav-link active">Home</a></li>
+          <li><a href="#estimator" class="nav-link">Cost Calculator</a></li>
           <li><a href="#services" class="nav-link">Services</a></li>
           <li><a href="#about" class="nav-link">Founder</a></li>
           <li><a href="#portfolio" class="nav-link">Portfolio</a></li>
           <li><a href="#process" class="nav-link">Process</a></li>
           <li><a href="#track" class="nav-link">Track Status</a></li>
           <li><a href="#contact" class="nav-link">Contact</a></li>
-          <li class="mobile-only-cta"><a href="#contact" class="btn btn-secondary" style="padding: 10px 20px; font-size: 0.85rem; margin-top: 15px;">Get in Touch</a></li>
+          <li class="mobile-only-cta">
+            <a href="#contact" class="btn btn-primary" style="width: 100%; text-align: center;">Get Consultation</a>
+          </li>
         </ul>
       </nav>
 
       <div class="nav-cta">
-        <a href="#contact" class="btn btn-secondary" style="padding: 10px 20px; font-size: 0.85rem;">Get in Touch</a>
+        <a href="#contact" class="btn btn-secondary">
+          <span>Get Consultation</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
       </div>
 
-      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Menu">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Navigation Menu">
         <span></span>
         <span></span>
         <span></span>
@@ -53,55 +66,137 @@
   <section class="hero" id="home">
     <div class="container hero-grid">
       <div class="hero-content reveal">
-        <div class="hero-tag">
-          <span class="badge">BUILDING DIGITAL DOMINIONS</span>
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>ENTERPRISE SOFTWARE ENGINEERING • LIMITED SLOTS</span>
         </div>
-        <h1 class="hero-title">We Engineer High-End <span>Digital Kingdoms</span></h1>
-        <p class="hero-desc">Transforming ambitious ideas into secure, scalable, and premium web solutions. Experience state-of-the-art craftsmanship built to grow your business.</p>
+        <h1 class="hero-title">We Architect Enterprise <span class="gradient-text">Digital Platforms</span></h1>
+        <p class="hero-desc">Building resilient, scalable, and beautifully engineered web & mobile software. Engineered from first principles for industry leaders, growth startups, and high-volume commerce.</p>
         
         <div class="hero-btns">
           <a href="#contact" class="btn btn-primary">
-            Get Started
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            Schedule Project Scope
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </a>
           <a href="https://wa.me/919985369590" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.528 2.01 14.069.99 11.519.99c-5.44 0-9.866 4.372-9.87 9.802 0 1.698.459 3.356 1.321 4.8l-.299.988-.888 3.243 3.33-.874.944-.287zm12.56-8.528c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.568-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/></svg>
-            WhatsApp
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.568-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 6.045L0 24l6.291-1.65a11.86 11.86 0 005.75 1.491h.005c6.554 0 11.89-5.335 11.893-11.893 0-3.174-1.238-6.158-3.487-8.407z"/>
+            </svg>
+            WhatsApp Direct
           </a>
         </div>
 
-
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-num">99.9%</span>
+            <span class="stat-lbl">Uptime SLA</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">15+</span>
+            <span class="stat-lbl">Enterprise Apps</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">5+ Yrs</span>
+            <span class="stat-lbl">Core Architecture</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-num">24/7</span>
+            <span class="stat-lbl">System Monitoring</span>
+          </div>
+        </div>
       </div>
 
+      <!-- Hero Interactive Card Widget -->
+      <div class="hero-preview-card glass-card reveal">
+        <div class="preview-header">
+          <div class="window-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="preview-tabs">
+            <button class="tab-btn active" data-tab="web">Web Architecture</button>
+            <button class="tab-btn" data-tab="mobile">Native Mobile</button>
+            <button class="tab-btn" data-tab="cloud">Cloud Backend</button>
+          </div>
+        </div>
 
-      <!-- Tech Integrations Bar -->
-      <div class="tech-bar reveal">
-        <h3 class="tech-bar-title">Supported Tech & Integrations</h3>
-        <div class="tech-logos-flex">
-          <div class="tech-logo-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-            <span>React.js</span>
+        <div class="preview-content" id="preview-tab-content">
+          <div class="code-line"><span class="code-keyword">const</span> enterpriseCluster = <span class="code-keyword">new</span> SystemArchitecture({</div>
+          <div class="code-line" style="padding-left: 20px;">framework: <span class="code-str">'React / Next.js Micro-Frontends'</span>,</div>
+          <div class="code-line" style="padding-left: 20px;">latency: <span class="code-num">0.8</span>, <span class="code-str">// seconds</span></div>
+          <div class="code-line" style="padding-left: 20px;">security: <span class="code-str">'A+ Zero-Trust Encryption'</span>,</div>
+          <div class="code-line" style="padding-left: 20px;">status: <span class="code-str">'ENTERPRISE PRODUCTION READY'</span></div>
+          <div class="code-line">});</div>
+          <div class="code-line" style="margin-top: 15px; color: var(--emerald-accent);">// ⚡ Status: 100% Core Nodes Operational</div>
+        </div>
+
+        <div class="tech-ticker-wrapper">
+          <p class="tech-ticker-title">Core Technology Stack & Integrations</p>
+          <div class="tech-ticker">
+            <span class="tech-chip">⚡ React.js</span>
+            <span class="tech-chip">🟢 Node.js</span>
+            <span class="tech-chip">📱 Kotlin</span>
+            <span class="tech-chip">🍎 Swift</span>
+            <span class="tech-chip">⚡ Supabase</span>
+            <span class="tech-chip">💳 Stripe</span>
+            <span class="tech-chip">☁️ AWS Cloud</span>
           </div>
-          <div class="tech-logo-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-            <span>Node.js</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSTANT COST ESTIMATOR WIDGET SECTION -->
+  <section class="section" id="estimator">
+    <div class="container">
+      <div class="section-title-wrapper reveal">
+        <span class="section-subtitle">Interactive Calculator</span>
+        <h2 class="section-title">Instant Project Estimator</h2>
+      </div>
+
+      <div class="estimator-container glass-card reveal">
+        <div class="estimator-grid">
+          <div class="estimator-group">
+            <label for="est-service">Select Service Category</label>
+            <select id="est-service" class="form-control">
+              <option value="Web Development" data-price="25000" data-time="2-3 Weeks">Full Stack Web Architecture</option>
+              <option value="Android App Development" data-price="35000" data-time="3-4 Weeks">Native Android Development</option>
+              <option value="Web & App Development" data-price="60000" data-time="4-6 Weeks">Web & Mobile App Hybrids</option>
+              <option value="iOS App Development" data-price="45000" data-time="3-5 Weeks">Native iOS Development</option>
+            </select>
           </div>
-          <div class="tech-logo-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
-            <span>WordPress Core</span>
+
+          <div class="estimator-group">
+            <label for="est-scale">Architecture Scope</label>
+            <select id="est-scale" class="form-control">
+              <option value="Startup MVP" data-mult="1.0">Startup MVP Scale</option>
+              <option value="Professional Growth" data-mult="1.5">Growth Business Platform</option>
+              <option value="Enterprise Solution" data-mult="2.2">Enterprise Cloud Infrastructure</option>
+            </select>
           </div>
-          <div class="tech-logo-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-            <span>Stripe Payments</span>
+
+          <div class="estimator-group">
+            <label for="est-timeline">Delivery Timeline</label>
+            <select id="est-timeline" class="form-control">
+              <option value="Standard Pace" data-mult="1.0">Standard Delivery</option>
+              <option value="Priority Rush" data-mult="1.25">Priority Fast-Track (+25%)</option>
+            </select>
           </div>
-          <div class="tech-logo-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-            <span>AWS Cloud Systems</span>
+        </div>
+
+        <div class="estimator-card-result">
+          <div>
+            <span class="meta-label">ESTIMATED INVESTMENT RANGE</span>
+            <div class="result-val" id="est-result-price">₹25,000 - ₹35,000</div>
           </div>
-          <div class="tech-logo-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-            <span>WooCommerce Hub</span>
+          <div>
+            <span class="meta-label">ESTIMATED TIMELINE</span>
+            <div class="result-val" id="est-result-time" style="font-size: 1.3rem; color: var(--cyan-primary);">2-3 Weeks</div>
           </div>
+          <button type="button" class="btn btn-primary" id="est-apply-btn">
+            Apply Estimate To Proposal
+          </button>
         </div>
       </div>
     </div>
@@ -111,116 +206,116 @@
   <section class="section" id="services">
     <div class="container">
       <div class="section-title-wrapper reveal">
-        <span class="section-subtitle">What We Excel At</span>
-        <h2 class="section-title">State-Of-The-Art Services</h2>
+        <span class="section-subtitle">Core Capabilities</span>
+        <h2 class="section-title">Enterprise Software Services</h2>
       </div>
 
       <div class="services-grid">
         <!-- Service 1 -->
         <div class="service-card glass-card reveal">
           <div class="service-icon-wrapper">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
           </div>
-          <h3 class="service-title">Web Development</h3>
-          <p class="service-desc">We build clean, robust, and lightning-fast custom websites tailored for startups and enterprises using modern architecture.</p>
+          <h3 class="service-title">Web Architecture</h3>
+          <p class="service-desc">Performant, responsive, and secure custom web platforms engineered for modern enterprises using React, Next.js, and Node.js.</p>
           <ul class="service-features-list">
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Single & Multi-Page Apps</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>React & Next.js Micro-frontends</span>
             </li>
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>React & NextJS Architecture</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Sub-second Load Speeds & SEO Supremacy</span>
             </li>
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Speed & Core Web Vitals Audit</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Zero-Downtime Deployment Setup</span>
             </li>
           </ul>
           <a href="#contact" class="service-link">
-            Request Quote 
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            Request Proposal 
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </a>
         </div>
 
         <!-- Service 2 -->
         <div class="service-card glass-card reveal">
           <div class="service-icon-wrapper">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
           </div>
           <h3 class="service-title">Android App Development</h3>
-          <p class="service-desc">High-performance native Android applications built with modern Kotlin frameworks, secure APIs, and responsive UI layouts.</p>
+          <p class="service-desc">Native Android software constructed with Kotlin and Jetpack Compose, connecting to secure REST/GraphQL APIs and Play Store standards.</p>
           <ul class="service-features-list">
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Native Kotlin & Java Code</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Native Kotlin & Jetpack Architecture</span>
             </li>
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Material Design Integration</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Material Design 3 Fluid Gesture Interactivity</span>
             </li>
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Play Store Deployment</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Play Store Production Audit & Launch</span>
             </li>
           </ul>
           <a href="#contact" class="service-link">
-            Request Quote 
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            Request Proposal 
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </a>
         </div>
 
         <!-- Service 3 -->
         <div class="service-card glass-card reveal">
           <div class="service-icon-wrapper">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
           </div>
-          <h3 class="service-title">Web & App Development</h3>
-          <p class="service-desc">Dual cross-platform solutions utilizing hybrid frameworks to deploy unified codebases across web, iOS, and Android systems.</p>
+          <h3 class="service-title">Cross-Platform Hybrids</h3>
+          <p class="service-desc">Unified multi-platform systems leveraging Flutter and React Native to deploy high-efficiency codebases across iOS, Android, and Web.</p>
           <ul class="service-features-list">
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>React Native & Flutter Solutions</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Flutter & React Native Code Sharing</span>
             </li>
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Shared Backend Synchronization</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Real-time Supabase / Firebase Cloud Sync</span>
             </li>
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Reduced Time-To-Market Setup</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Optimized Time-To-Market & Maintenance</span>
             </li>
           </ul>
           <a href="#contact" class="service-link">
-            Request Quote 
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            Request Proposal 
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </a>
         </div>
 
         <!-- Service 4 -->
         <div class="service-card glass-card reveal">
           <div class="service-icon-wrapper">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><circle cx="12" cy="10" r="3"></circle></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><circle cx="12" cy="10" r="3"></circle></svg>
           </div>
-          <h3 class="service-title">iOS App Development</h3>
-          <p class="service-desc">Premium native iOS applications leveraging Swift and SwiftUI to deliver highly fluid, secure, and elite Apple ecosystem experiences.</p>
+          <h3 class="service-title">iOS App Engineering</h3>
+          <p class="service-desc">Luxurious native iOS software built with Swift & SwiftUI to deliver high-performance, secure, and fluid Apple ecosystem applications.</p>
           <ul class="service-features-list">
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
               <span>Native Swift & SwiftUI Frameworks</span>
             </li>
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Apple Interface Guidelines</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Apple Human Interface Compliance</span>
             </li>
             <li class="service-feature-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>App Store Review Compliance</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>App Store Approval Guarantee</span>
             </li>
           </ul>
           <a href="#contact" class="service-link">
-            Request Quote 
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            Request Proposal 
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
           </a>
         </div>
       </div>
@@ -228,10 +323,10 @@
   </section>
 
   <!-- FOUNDER / BIO SECTION -->
-  <section class="section" id="about" style="background: var(--bg-secondary);">
+  <section class="section" id="about">
     <div class="container">
       <div class="section-title-wrapper reveal">
-        <span class="section-subtitle">The Visionary</span>
+        <span class="section-subtitle">System Leadership</span>
         <h2 class="section-title">Founder & Lead Developer</h2>
       </div>
 
@@ -239,7 +334,7 @@
         <div class="about-img-container reveal">
           <div class="about-img-frame">
             <img src="developer.jpeg" alt="Gowri Narayana Guduru Profile" class="about-img">
-            <div class="about-img-caption">
+            <div class="about-img-overlay">
               <h3 class="about-caption-title">Gowri Narayana Guduru</h3>
               <p class="about-caption-subtitle">Founder & System Architect</p>
             </div>
@@ -247,46 +342,46 @@
         </div>
 
         <div class="about-content reveal">
-          <span class="badge" style="align-self: flex-start;">ESTABLISHED ELITE WEB KINGDOM</span>
-          <h3 style="font-size: 2rem; font-weight: 800;">Turning Complex Concepts into Digital Realities</h3>
+          <span class="hero-badge" style="align-self: flex-start;">FOUNDER OF ELITE WEB KINGDOM</span>
+          <h3 style="font-size: 2.2rem; font-weight: 800;">Engineering High-Impact Systems From Scratch</h3>
           <p class="about-desc">
-            As the lead developer and founder of <strong>Elite Web Kingdom</strong>, Gowri Narayana Guduru is dedicated to delivering next-generation digital architecture. We combine elegant user experience designs with performance-optimized engineering to build websites and tools that dominate search rankings and generate high conversion rates.
+            As founder and principal engineer at <strong>Elite Web Kingdom</strong>, Gowri Narayana Guduru bridges enterprise architecture with clean modern product design. Every project is crafted for long-term scalability, military-grade security, and outstanding user conversion.
           </p>
 
           <div class="about-bullets">
             <div class="about-bullet-item">
               <div class="bullet-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
               </div>
               <div class="bullet-text">
-                <h4>System Architecture & Security First</h4>
-                <p>Engineered to handle high traffic spikes, secure customer transaction gates, and protect user data integrity.</p>
+                <h4>Security & Traffic Scalability</h4>
+                <p>Engineered to withstand heavy traffic spikes, secure payment transactions, and zero data breaches.</p>
               </div>
             </div>
 
             <div class="about-bullet-item">
               <div class="bullet-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
               </div>
               <div class="bullet-text">
-                <h4>Client-Centered Iterative Process</h4>
-                <p>Direct accessibility to the lead developer through regular video updates, dashboard reviews, and live previews.</p>
+                <h4>Direct Founder Accessibility</h4>
+                <p>Collaborate directly with the lead architect. Weekly milestone reviews, live staging, and agile sprints.</p>
               </div>
             </div>
           </div>
 
           <div class="skills-wrapper">
-            <h4 class="skills-title">Core Development Stack:</h4>
+            <h4 class="skills-title">Core Architecture Stack:</h4>
             <div class="skills-grid">
               <span class="skill-tag">HTML5 / CSS3</span>
               <span class="skill-tag">JavaScript ES6+</span>
-              <span class="skill-tag">React.js</span>
-              <span class="skill-tag">WordPress Core</span>
-              <span class="skill-tag">Node.js</span>
+              <span class="skill-tag">React.js / Next.js</span>
+              <span class="skill-tag">Node.js / Express</span>
+              <span class="skill-tag">Supabase & PostgreSQL</span>
               <span class="skill-tag">PHP / MySQL</span>
-              <span class="skill-tag">SEO & Semantics</span>
-              <span class="skill-tag">API Integration</span>
-              <span class="skill-tag">Git / Deployment</span>
+              <span class="skill-tag">WordPress Core</span>
+              <span class="skill-tag">REST & GraphQL APIs</span>
+              <span class="skill-tag">Git / Cloud Deployment</span>
             </div>
           </div>
         </div>
@@ -294,211 +389,189 @@
     </div>
   </section>
 
-  <!-- PORTFOLIO SECTION -->
+  <!-- PORTFOLIO SECTION WITH FILTER -->
   <section class="section" id="portfolio">
     <div class="container">
       <div class="section-title-wrapper reveal">
-        <span class="section-subtitle">Our Past Work</span>
-        <h2 class="section-title">Built For The Modern Web</h2>
+        <span class="section-subtitle">Verified Case Studies</span>
+        <h2 class="section-title">Built For Market Dominance</h2>
+      </div>
+
+      <!-- Portfolio Filter Buttons -->
+      <div class="portfolio-filters reveal">
+        <button class="filter-btn active" data-filter="all">All Projects</button>
+        <button class="filter-btn" data-filter="web">Full Stack Web</button>
+        <button class="filter-btn" data-filter="mobile">Mobile Apps</button>
+        <button class="filter-btn" data-filter="saas">SaaS & Portals</button>
+        <button class="filter-btn" data-filter="ecommerce">E-Commerce</button>
       </div>
 
       <div class="portfolio-grid">
-        <!-- Project 1: Student Management System (SMS) -->
-        <div class="portfolio-card glass-card reveal">
-          <div class="portfolio-card-info">
-            <span class="portfolio-cat">EDUCATION / DATABASE SYSTEM</span>
-            <h3 class="portfolio-title">Student Management System (SMS)</h3>
-            <p class="portfolio-description">A comprehensive platform to manage student records, track academic progress, coordinate course scheduling, and issue report cards dynamically.</p>
-            <div class="project-tech-tags">
-              <span class="project-tech-tag">HTML5 / CSS3</span>
-              <span class="project-tech-tag">JavaScript</span>
-              <span class="project-tech-tag">PHP</span>
-              <span class="project-tech-tag">MySQL Database</span>
-              <span class="project-tech-tag">ChartJS</span>
+        <!-- Project 1 -->
+        <div class="portfolio-card glass-card reveal" data-category="saas">
+          <span class="portfolio-cat">EDUCATION / DATABASE SYSTEM</span>
+          <h3 class="portfolio-title">Student Management System (SMS)</h3>
+          <p class="portfolio-description">Enterprise educational management platform for student records, academic tracking, grade reporting, and automatic schedule coordination.</p>
+          <div class="project-tech-tags">
+            <span class="project-tech-tag">HTML5 / CSS3</span>
+            <span class="project-tech-tag">JavaScript</span>
+            <span class="project-tech-tag">PHP / MySQL</span>
+            <span class="project-tech-tag">Chart.js</span>
+          </div>
+          <div class="project-metrics">
+            <div class="project-metric-item">
+              <span class="project-metric-val">0.8s</span>
+              <span class="project-metric-lbl">Load Speed</span>
             </div>
-            <div class="project-metrics">
-              <div class="project-metric-item">
-                <span class="project-metric-val">0.8s</span>
-                <span class="project-metric-lbl">Page Load</span>
-              </div>
-              <div class="project-metric-item">
-                <span class="project-metric-val">A+ SSL</span>
-                <span class="project-metric-lbl">Security</span>
-              </div>
-            </div>
-            <div class="portfolio-actions" style="margin-top: 20px;">
-              <a href="#contact" class="portfolio-link">
-                View Project Details 
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              </a>
+            <div class="project-metric-item">
+              <span class="project-metric-val">A+ SSL</span>
+              <span class="project-metric-lbl">Security Rating</span>
             </div>
           </div>
+          <a href="#contact" class="portfolio-link">
+            Request Similar Solution 
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
         </div>
 
-        <!-- Project 2: Online E-Design Selling Store -->
-        <div class="portfolio-card glass-card reveal">
-          <div class="portfolio-card-info">
-            <span class="portfolio-cat">MARKETPLACE / DIGITAL RETAIL</span>
-            <h3 class="portfolio-title">Online E-Design Selling Store</h3>
-            <p class="portfolio-description">A sophisticated design marketplace for creators and design buyers to publish, browse, and securely buy template blueprint assets.</p>
-            <div class="project-tech-tags">
-              <span class="project-tech-tag">WordPress Core</span>
-              <span class="project-tech-tag">WooCommerce</span>
-              <span class="project-tech-tag">Stripe Gateway</span>
-              <span class="project-tech-tag">Elementor Pro</span>
+        <!-- Project 2 -->
+        <div class="portfolio-card glass-card reveal" data-category="ecommerce">
+          <span class="portfolio-cat">MARKETPLACE / DIGITAL RETAIL</span>
+          <h3 class="portfolio-title">Online E-Design Selling Store</h3>
+          <p class="portfolio-description">Design marketplace allowing creators to list, preview, and sell template blueprint assets with instant automated checkout flows.</p>
+          <div class="project-tech-tags">
+            <span class="project-tech-tag">WordPress Core</span>
+            <span class="project-tech-tag">WooCommerce</span>
+            <span class="project-tech-tag">Stripe Gateway</span>
+          </div>
+          <div class="project-metrics">
+            <div class="project-metric-item">
+              <span class="project-metric-val">+35%</span>
+              <span class="project-metric-lbl">Sales Conversion</span>
             </div>
-            <div class="project-metrics">
-              <div class="project-metric-item">
-                <span class="project-metric-val">+35%</span>
-                <span class="project-metric-lbl">Sales Conversion</span>
-              </div>
-              <div class="project-metric-item">
-                <span class="project-metric-val">2.5K+</span>
-                <span class="project-metric-lbl">Daily Users</span>
-              </div>
-            </div>
-            <div class="portfolio-actions" style="margin-top: 20px;">
-              <a href="#contact" class="portfolio-link">
-                View Project Details 
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              </a>
+            <div class="project-metric-item">
+              <span class="project-metric-val">2.5K+</span>
+              <span class="project-metric-lbl">Daily Active Users</span>
             </div>
           </div>
+          <a href="#contact" class="portfolio-link">
+            Request Similar Solution 
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
         </div>
 
-        <!-- Project 3: Personal Assistance -->
-        <div class="portfolio-card glass-card reveal">
-          <div class="portfolio-card-info">
-            <span class="portfolio-cat">AI AGENT / WEB PORTAL</span>
-            <h3 class="portfolio-title">Personal Assistance Dashboard</h3>
-            <p class="portfolio-description">An interactive dashboard integration combining visual calendars, automated email reminders, note syncs, and intelligent smart alerts.</p>
-            <div class="project-tech-tags">
-              <span class="project-tech-tag">React.js</span>
-              <span class="project-tech-tag">Node / Express</span>
-              <span class="project-tech-tag">SpeechAPI</span>
-              <span class="project-tech-tag">WebSockets</span>
+        <!-- Project 3 -->
+        <div class="portfolio-card glass-card reveal" data-category="saas">
+          <span class="portfolio-cat">AI AGENT / WEB PORTAL</span>
+          <h3 class="portfolio-title">Personal Assistance Dashboard</h3>
+          <p class="portfolio-description">Interactive dashboard combining smart calendars, automated notification alerts, real-time note syncs, and intelligent voice logs.</p>
+          <div class="project-tech-tags">
+            <span class="project-tech-tag">React.js</span>
+            <span class="project-tech-tag">Node / Express</span>
+            <span class="project-tech-tag">WebSockets</span>
+          </div>
+          <div class="project-metrics">
+            <div class="project-metric-item">
+              <span class="project-metric-val">Instant</span>
+              <span class="project-metric-lbl">Realtime Sync</span>
             </div>
-            <div class="project-metrics">
-              <div class="project-metric-item">
-                <span class="project-metric-val">Instant</span>
-                <span class="project-metric-lbl">Sync Delay</span>
-              </div>
-              <div class="project-metric-item">
-                <span class="project-metric-val">4.9 / 5</span>
-                <span class="project-metric-lbl">User Review</span>
-              </div>
-            </div>
-            <div class="portfolio-actions" style="margin-top: 20px;">
-              <a href="#contact" class="portfolio-link">
-                View Project Details 
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              </a>
+            <div class="project-metric-item">
+              <span class="project-metric-val">4.9 / 5</span>
+              <span class="project-metric-lbl">Client Review</span>
             </div>
           </div>
+          <a href="#contact" class="portfolio-link">
+            Request Similar Solution 
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
         </div>
 
-        <!-- Project 4: E-commerce -->
-        <div class="portfolio-card glass-card reveal">
-          <div class="portfolio-card-info">
-            <span class="portfolio-cat">E-COMMERCE / WEB STORE</span>
-            <h3 class="portfolio-title">Kingdom E-Commerce Hub</h3>
-            <p class="portfolio-description">A premium mobile-responsive storefront equipped with secure Stripe/PayPal configurations, dynamic inventory filters, and micro-interaction checks.</p>
-            <div class="project-tech-tags">
-              <span class="project-tech-tag">NodeJS Core</span>
-              <span class="project-tech-tag">MongoDB</span>
-              <span class="project-tech-tag">Stripe Webhooks</span>
-              <span class="project-tech-tag">PayPal SDK</span>
-              <span class="project-tech-tag">TailwindCSS</span>
+        <!-- Project 4 -->
+        <div class="portfolio-card glass-card reveal" data-category="ecommerce">
+          <span class="portfolio-cat">E-COMMERCE / WEB STORE</span>
+          <h3 class="portfolio-title">Kingdom E-Commerce Hub</h3>
+          <p class="portfolio-description">Mobile-first storefront equipped with Stripe & PayPal checkout gates, dynamic inventory filters, and high speed caching.</p>
+          <div class="project-tech-tags">
+            <span class="project-tech-tag">NodeJS Core</span>
+            <span class="project-tech-tag">MongoDB</span>
+            <span class="project-tech-tag">Stripe SDK</span>
+          </div>
+          <div class="project-metrics">
+            <div class="project-metric-item">
+              <span class="project-metric-val">1.2s</span>
+              <span class="project-metric-lbl">Load Time</span>
             </div>
-            <div class="project-metrics">
-              <div class="project-metric-item">
-                <span class="project-metric-val">1.2s</span>
-                <span class="project-metric-lbl">Load Time</span>
-              </div>
-              <div class="project-metric-item">
-                <span class="project-metric-val">-60%</span>
-                <span class="project-metric-lbl">Server CPU Load</span>
-              </div>
-            </div>
-            <div class="portfolio-actions" style="margin-top: 20px;">
-              <a href="#contact" class="portfolio-link">
-                View Project Details 
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              </a>
+            <div class="project-metric-item">
+              <span class="project-metric-val">-60%</span>
+              <span class="project-metric-lbl">Server CPU Load</span>
             </div>
           </div>
+          <a href="#contact" class="portfolio-link">
+            Request Similar Solution 
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
         </div>
 
-        <!-- Project 5: Weaving Designs -->
-        <div class="portfolio-card glass-card reveal">
-          <div class="portfolio-card-info">
-            <span class="portfolio-cat">E-COMMERCE / TEXTILE PATTERNS</span>
-            <h3 class="portfolio-title">Weaving Designs</h3>
-            <p class="portfolio-description">A premium web platform for custom textile drafting, jacquard pattern orders, and weaving blueprints commerce.</p>
-            <div class="project-tech-tags">
-              <span class="project-tech-tag">React.js</span>
-              <span class="project-tech-tag">TailwindCSS</span>
-              <span class="project-tech-tag">Supabase</span>
-              <span class="project-tech-tag">Razorpay Gateway</span>
-              <span class="project-tech-tag">CAD Integrations</span>
+        <!-- Project 5 -->
+        <div class="portfolio-card glass-card reveal" data-category="web">
+          <span class="portfolio-cat">E-COMMERCE / TEXTILE PATTERNS</span>
+          <h3 class="portfolio-title">Weaving Designs</h3>
+          <p class="portfolio-description">Premium web portal for custom textile drafting, jacquard pattern orders, and weaving blueprints commerce.</p>
+          <div class="project-tech-tags">
+            <span class="project-tech-tag">React.js</span>
+            <span class="project-tech-tag">Supabase</span>
+            <span class="project-tech-tag">Razorpay</span>
+          </div>
+          <div class="project-metrics">
+            <div class="project-metric-item">
+              <span class="project-metric-val">100%</span>
+              <span class="project-metric-lbl">Secure Payment</span>
             </div>
-            <div class="project-metrics">
-              <div class="project-metric-item">
-                <span class="project-metric-val">100% Secure</span>
-                <span class="project-metric-lbl">Payments</span>
-              </div>
-              <div class="project-metric-item">
-                <span class="project-metric-val">10K+ Designs</span>
-                <span class="project-metric-lbl">Blueprint Catalog</span>
-              </div>
-            </div>
-            <div class="portfolio-actions" style="margin-top: 20px;">
-              <a href="http://www.weavingdesigns.in" target="_blank" rel="noopener noreferrer" class="portfolio-link">
-                Visit Live Site 
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-              </a>
+            <div class="project-metric-item">
+              <span class="project-metric-val">10K+</span>
+              <span class="project-metric-lbl">Blueprints</span>
             </div>
           </div>
+          <a href="http://www.weavingdesigns.in" target="_blank" rel="noopener noreferrer" class="portfolio-link">
+            Visit Live Site ⚡
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
         </div>
       </div>
     </div>
   </section>
 
   <!-- PROCESS SECTION -->
-  <section class="section" id="process" style="background: var(--bg-secondary);">
+  <section class="section" id="process">
     <div class="container">
       <div class="section-title-wrapper reveal">
-        <span class="section-subtitle">Our Blueprint</span>
-        <h2 class="section-title">How We Build Your Kingdom</h2>
+        <span class="section-subtitle">Execution Methodology</span>
+        <h2 class="section-title">How We Engineering Success</h2>
       </div>
 
       <div class="process-grid">
-        <!-- Step 1 -->
         <div class="process-card glass-card reveal">
           <div class="process-step">01</div>
           <h3 class="process-title">Discover</h3>
-          <p class="process-desc">Understanding requirements, competitive analysis, mapping visual layouts, and creating technical architectures.</p>
+          <p class="process-desc">Comprehensive discovery, user stories, wireframe mapping, and technical architecture planning.</p>
         </div>
 
-        <!-- Step 2 -->
         <div class="process-card glass-card reveal">
           <div class="process-step">02</div>
           <h3 class="process-title">Design</h3>
-          <p class="process-desc">Drafting modern UI mockups with custom colors, interactive components, and responsive grid configurations.</p>
+          <p class="process-desc">Drafting state-of-the-art UI mockups with custom dark themes, smooth micro-interactions, and responsive grids.</p>
         </div>
 
-        <!-- Step 3 -->
         <div class="process-card glass-card reveal">
           <div class="process-step">03</div>
           <h3 class="process-title">Develop</h3>
-          <p class="process-desc">Writing highly performant, semantic code structures. Ensuring speed score optimization and database security.</p>
+          <p class="process-desc">Writing performant, clean ES6+ & React/Node code structures with A+ database security.</p>
         </div>
 
-        <!-- Step 4 -->
         <div class="process-card glass-card reveal">
           <div class="process-step">04</div>
           <h3 class="process-title">Launch</h3>
-          <p class="process-desc">Running complete Quality Assurance tests, configuring DNS, setting up SSL, and launching live to fast cloud servers.</p>
+          <p class="process-desc">Comprehensive QA auditing, speed optimization, DNS configuration, and live cloud deployment.</p>
         </div>
       </div>
     </div>
@@ -509,36 +582,41 @@
     <div class="container">
       <div class="section-title-wrapper reveal">
         <span class="section-subtitle">Real-Time Progress</span>
-        <h2 class="section-title">Track Your Digital Kingdom</h2>
+        <h2 class="section-title">Track Your Digital Project</h2>
       </div>
 
       <div class="tracker-container glass-card reveal">
-        <div class="tracker-search-box">
-          <p class="tracker-intro-text">Enter the unique Project ID provided by your developer to view live milestones, design completions, and pipeline statuses.</p>
-          <div class="tracker-input-group">
-            <input type="text" id="tracker-id-input" class="form-control" placeholder="Enter Unique Project ID (e.g. EWK8F27A)" required>
-            <button type="button" class="btn btn-primary" id="track-btn">
-              Check Status
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            </button>
-          </div>
-          <div id="tracker-search-error" class="form-status error" style="display: none; margin-top: 15px; padding: 12px;"></div>
+        <p class="tracker-intro-text">Enter your unique Project ID to inspect real-time milestones, developer notes, and deployment stages.</p>
+        
+        <div class="tracker-input-group">
+          <input type="text" id="tracker-id-input" class="form-control" placeholder="Enter Project ID (e.g. EWK8F27A)" required>
+          <button type="button" class="btn btn-primary" id="track-btn">
+            Check Status
+          </button>
         </div>
 
-        <!-- TRACKER RESULTS (Hidden by default) -->
-        <div class="tracker-results" id="tracker-results" style="display: none; margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 30px;">
+        <div class="demo-chips-wrapper">
+          <span>Click to try sample demo IDs:</span>
+          <span class="demo-chip" data-id="EWK8F27A">EWK8F27A</span>
+          <span class="demo-chip" data-id="DEMO101">DEMO101</span>
+        </div>
+
+        <div id="tracker-search-error" class="form-status error" style="margin-top: 20px;"></div>
+
+        <!-- TRACKER RESULTS -->
+        <div class="tracker-results" id="tracker-results" style="display: none; margin-top: 36px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.08);">
           <div class="tracker-results-header">
-            <div class="tracker-meta-item">
+            <div>
               <span class="meta-label">CLIENT / COMPANY</span>
-              <h4 id="track-client-name">-</h4>
+              <h4 id="track-client-name" style="margin-top: 4px;">-</h4>
             </div>
-            <div class="tracker-meta-item">
+            <div>
               <span class="meta-label">PROJECT TYPE</span>
-              <h4 id="track-project-type">-</h4>
+              <h4 id="track-project-type" style="margin-top: 4px;">-</h4>
             </div>
-            <div class="tracker-meta-item">
-              <span class="meta-label">CURRENT STATUS</span>
-              <span class="status-badge" id="track-current-status">-</span>
+            <div>
+              <span class="meta-label">CURRENT MILESTONE</span>
+              <div style="margin-top: 4px;"><span class="status-badge" id="track-current-status">-</span></div>
             </div>
           </div>
 
@@ -548,55 +626,40 @@
               <div class="stepper-line-progress" id="stepper-progress-bar" style="width: 0%;"></div>
             </div>
             
-            <!-- Step 1 -->
             <div class="stepper-step" id="step-new">
               <div class="step-icon">1</div>
-              <div class="step-content">
-                <h5 class="step-title">Proposal Received</h5>
-                <p class="step-desc">Your request has been filed in our database.</p>
-              </div>
+              <div class="step-title">Proposal</div>
+              <div class="step-desc">Received</div>
             </div>
 
-            <!-- Step 2 -->
             <div class="stepper-step" id="step-under-review">
               <div class="step-icon">2</div>
-              <div class="step-content">
-                <h5 class="step-title">Under Review</h5>
-                <p class="step-desc">Gowri is evaluating the scope and timelines.</p>
-              </div>
+              <div class="step-title">Review</div>
+              <div class="step-desc">Evaluating</div>
             </div>
 
-            <!-- Step 3 -->
             <div class="stepper-step" id="step-accepted">
               <div class="step-icon">3</div>
-              <div class="step-content">
-                <h5 class="step-title">Project Accepted</h5>
-                <p class="step-desc">Architecture and layout assets approved.</p>
-              </div>
+              <div class="step-title">Accepted</div>
+              <div class="step-desc">Approved</div>
             </div>
 
-            <!-- Step 4 -->
             <div class="stepper-step" id="step-in-progress">
               <div class="step-icon">4</div>
-              <div class="step-content">
-                <h5 class="step-title">Development</h5>
-                <p class="step-desc">System development and database connection active.</p>
-              </div>
+              <div class="step-title">Develop</div>
+              <div class="step-desc">In Progress</div>
             </div>
 
-            <!-- Step 5 -->
             <div class="stepper-step" id="step-completed">
               <div class="step-icon">5</div>
-              <div class="step-content">
-                <h5 class="step-title">Completed & Live</h5>
-                <p class="step-desc">Your digital kingdom is live on production servers.</p>
-              </div>
+              <div class="step-title">Live</div>
+              <div class="step-desc">Completed</div>
             </div>
           </div>
 
-          <div class="tracker-details-card glass-card" style="margin-top: 30px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03);">
-            <h4 style="margin-bottom: 10px; color: var(--accent-cyan);">Developer Update Message:</h4>
-            <p id="track-status-memo" style="line-height: 1.6; color: var(--text-secondary);">-</p>
+          <div style="background: rgba(0,242,254,0.04); border: 1px solid rgba(0,242,254,0.15); padding: 20px; border-radius: var(--radius-md); margin-top: 24px;">
+            <h4 style="font-size: 0.9rem; color: var(--cyan-primary); font-family: var(--font-mono); margin-bottom: 6px;">Developer Note:</h4>
+            <p id="track-status-memo" style="color: var(--text-muted); font-size: 0.92rem;">-</p>
           </div>
         </div>
       </div>
@@ -607,34 +670,34 @@
   <section class="section" id="contact">
     <div class="container">
       <div class="section-title-wrapper reveal">
-        <span class="section-subtitle">Get In Touch</span>
-        <h2 class="section-title">Start Your Project Today</h2>
+        <span class="section-subtitle">Direct Consultation</span>
+        <h2 class="section-title">Schedule Your Scope Today</h2>
       </div>
 
       <div class="contact-grid">
-        <!-- Left: Quick Info -->
+        <!-- Quick Info -->
         <div class="contact-info-card glass-card reveal">
           <div class="contact-intro">
-            <h3>Let's Collaborate</h3>
-            <p>Ready to build something amazing? Reach out directly using our official channels or submit the form for custom inquiries.</p>
+            <h3>Let's Engineer Together</h3>
+            <p>Ready to elevate your business software? Connect directly with Founder & Lead Developer Gowri Narayana Guduru.</p>
           </div>
 
           <div class="contact-methods">
-            <!-- Email -->
             <div class="contact-method-item">
               <div class="contact-method-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
               </div>
               <div class="contact-method-text">
-                <h4>Email Us</h4>
+                <h4>Direct Email</h4>
                 <a href="mailto:gowrinarayanaguduru@gmail.com">gowrinarayanaguduru@gmail.com</a>
               </div>
             </div>
 
-            <!-- WhatsApp -->
             <div class="contact-method-item">
-              <div class="contact-method-icon" style="color: #25d366; background: rgba(37, 211, 102, 0.05);">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.528 2.01 14.069.99 11.519.99c-5.44 0-9.866 4.372-9.87 9.802 0 1.698.459 3.356 1.321 4.8l-.299.988-.888 3.243 3.33-.874.944-.287zm12.56-8.528c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.568-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/></svg>
+              <div class="contact-method-icon" style="background: rgba(37, 211, 102, 0.15); color: #25d366; border-color: rgba(37, 211, 102, 0.3);">
+                <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.568-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 6.045L0 24l6.291-1.65a11.86 11.86 0 005.75 1.491h.005c6.554 0 11.89-5.335 11.893-11.893 0-3.174-1.238-6.158-3.487-8.407z"/>
+                </svg>
               </div>
               <div class="contact-method-text">
                 <h4>WhatsApp Direct</h4>
@@ -643,55 +706,51 @@
             </div>
           </div>
 
-          <div class="contact-socials-wrapper">
-            <p>Official Handles</p>
-            <div class="contact-socials">
-              <a href="#" class="social-btn" aria-label="GitHub"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a>
-              <a href="#" class="social-btn" aria-label="LinkedIn"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>
-              <a href="#" class="social-btn" aria-label="Twitter"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg></a>
-            </div>
+          <div class="contact-socials">
+            <a href="#" class="social-btn" aria-label="GitHub"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a>
+            <a href="#" class="social-btn" aria-label="LinkedIn"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>
           </div>
         </div>
 
-        <!-- Right: Form -->
+        <!-- Form -->
         <div class="contact-form-card glass-card reveal">
           <form class="contact-form" id="contact-form">
             <div class="form-row">
               <div class="form-group">
-                <label for="name">Your Name</label>
-                <input type="text" id="name" class="form-control" placeholder="John Doe" required>
+                <label for="name">Your Full Name *</label>
+                <input type="text" id="name" class="form-control" placeholder="e.g. John Doe" required>
               </div>
               <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" id="email" class="form-control" placeholder="john@example.com" required>
+                <label for="email">Business Email *</label>
+                <input type="email" id="email" class="form-control" placeholder="john@enterprise.com" required>
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label for="phone">Phone Number</label>
+                <label for="phone">Phone Number *</label>
                 <input type="tel" id="phone" class="form-control" placeholder="+91 99853 69590" required>
               </div>
               <div class="form-group">
-                <label for="company">Company Name (Optional)</label>
+                <label for="company">Company / Organization</label>
                 <input type="text" id="company" class="form-control" placeholder="e.g. Acme Corp">
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label for="category">Project Type</label>
-                <select id="category" class="form-control" style="background: #08091a;" required>
-                  <option value="" disabled selected>Select service type</option>
-                  <option value="Web Development">Web Development</option>
-                  <option value="Android App Development">Android App Development</option>
-                  <option value="Web & App Development">Web & App Development</option>
-                  <option value="iOS App Development">iOS App Development</option>
+                <label for="category">Project Category *</label>
+                <select id="category" class="form-control" required>
+                  <option value="" disabled selected>Select service category</option>
+                  <option value="Web Development">Full Stack Web Architecture</option>
+                  <option value="Android App Development">Native Android App</option>
+                  <option value="Web & App Development">Cross-Platform Hybrids</option>
+                  <option value="iOS App Development">Native iOS App</option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="budget">Estimated Budget</label>
-                <select id="budget" class="form-control" style="background: #08091a;" required>
+                <label for="budget">Investment Budget *</label>
+                <select id="budget" class="form-control" required>
                   <option value="" disabled selected>Select budget range</option>
                   <option value="₹10,000 - ₹25,000">₹10,000 - ₹25,000</option>
                   <option value="₹25,000 - ₹50,000">₹25,000 - ₹50,000</option>
@@ -701,27 +760,26 @@
                 </select>
               </div>
               <div class="form-group">
-                <label for="timeline">Project Timeline</label>
-                <select id="timeline" class="form-control" style="background: #08091a;" required>
+                <label for="timeline">Timeline Expectation *</label>
+                <select id="timeline" class="form-control" required>
                   <option value="" disabled selected>Select timeline</option>
                   <option value="Immediate (< 1 month)">Immediate (< 1 month)</option>
                   <option value="1 to 3 Months">1 to 3 Months</option>
                   <option value="3 to 6 Months">3 to 6 Months</option>
-                  <option value="6+ Months">6+ Months</option>
                 </select>
               </div>
             </div>
 
             <div class="form-group">
-              <label for="message">Project Brief / Details</label>
-              <textarea id="message" class="form-control" placeholder="Describe the scope, objectives, or features you require in detail..." required></textarea>
+              <label for="message">Project Scope & Deliverables *</label>
+              <textarea id="message" class="form-control" placeholder="Describe the objectives, features, scale, or requirements..." required></textarea>
             </div>
 
             <div class="form-status" id="form-status"></div>
 
             <button type="submit" class="btn btn-primary" id="submit-btn">
-              Send Proposal Request
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              Submit Proposal Request
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             </button>
           </form>
         </div>
@@ -732,20 +790,20 @@
   <!-- FOOTER -->
   <footer>
     <div class="container footer-grid">
-      <div class="footer-brand">
+      <div>
         <a href="#home" class="logo-container">
           <img src="logo.jpeg" alt="Elite Web Kingdom Logo" class="logo-img">
           <span class="logo-text">ELITE WEB KINGDOM</span>
         </a>
-        <p class="footer-desc">Crafting premium, performant, and search-optimized web applications that empower brands and grow revenue globally.</p>
+        <p class="footer-desc">Architecting next-generation enterprise platforms tailored for performance, security, and global digital dominance.</p>
       </div>
 
       <div>
-        <h4 class="footer-title">Quick Links</h4>
+        <h4 class="footer-title">Navigation</h4>
         <ul class="footer-links">
           <li><a href="#home" class="footer-link">Home</a></li>
+          <li><a href="#estimator" class="footer-link">Cost Calculator</a></li>
           <li><a href="#services" class="footer-link">Services</a></li>
-          <li><a href="#track" class="footer-link">Track Status</a></li>
           <li><a href="#portfolio" class="footer-link">Portfolio</a></li>
         </ul>
       </div>
@@ -753,38 +811,49 @@
       <div>
         <h4 class="footer-title">Connect</h4>
         <ul class="footer-links">
-          <li><a href="https://wa.me/919985369590" target="_blank" rel="noopener noreferrer" class="footer-link">WhatsApp Chat</a></li>
+          <li><a href="https://wa.me/919985369590" target="_blank" rel="noopener noreferrer" class="footer-link">WhatsApp Direct</a></li>
           <li><a href="mailto:gowrinarayanaguduru@gmail.com" class="footer-link">Direct Email</a></li>
-          <li><a href="#contact" class="footer-link">Support Desk</a></li>
-          <li><a href="admin/index.html" class="footer-link">Admin Dashboard</a></li>
+          <li><a href="#track" class="footer-link">Project Status Tracker</a></li>
+          <li><a href="admin/index.html" class="footer-link">Admin Portal</a></li>
         </ul>
       </div>
 
-      <div class="footer-newsletter">
+      <div>
         <h4 class="footer-title">Stay Updated</h4>
-        <p>Subscribe to our newsletter for insights on web performance, tech stacks, and digital growth.</p>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Subscribe for technical architecture insights, security audits, and engineering reports.</p>
         <form class="newsletter-form" id="newsletter-form">
           <input type="email" placeholder="Your email address" class="newsletter-input" required>
           <button type="submit" class="newsletter-btn" aria-label="Subscribe">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
           </button>
         </form>
       </div>
     </div>
 
     <div class="container footer-bottom">
-      <p>&copy; 2026 Elite Web Kingdom. All Rights Reserved. Crafted with passion by Gowri Narayana Guduru.</p>
-      <div class="footer-socials">
+      <p>&copy; 2026 Elite Web Kingdom. Principal Architect: Gowri Narayana Guduru.</p>
+      <div class="contact-socials">
         <a href="#" class="social-btn" aria-label="GitHub"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a>
         <a href="#" class="social-btn" aria-label="LinkedIn"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></a>
       </div>
     </div>
   </footer>
 
+  <!-- FLOATING ACTION BUTTONS (WHATSAPP ICON ENHANCED) -->
+  <div class="floating-actions">
+    <a href="https://wa.me/919985369590" target="_blank" rel="noopener noreferrer" class="floating-btn floating-whatsapp" aria-label="WhatsApp Quick Chat">
+      <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.568-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 6.045L0 24l6.291-1.65a11.86 11.86 0 005.75 1.491h.005c6.554 0 11.89-5.335 11.893-11.893 0-3.174-1.238-6.158-3.487-8.407z"/>
+      </svg>
+    </a>
+    <button class="floating-btn floating-top" id="back-to-top" aria-label="Back to Top">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+    </button>
+  </div>
+
   <!-- Supabase JS Client SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- JavaScript Behavior Code -->
+  <!-- JavaScript Logic -->
   <script src="script.js"></script>
 </body>
 </html>
