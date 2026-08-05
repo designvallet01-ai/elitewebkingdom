@@ -173,6 +173,30 @@ const mockLeads = [];
 function initDashboard() {
   loadLeads();
   loadSettingsState();
+  loadRealVisitorCount();
+}
+
+async function loadRealVisitorCount() {
+  const totalVisitorsVal = document.getElementById('total-visitors-val');
+  if (!totalVisitorsVal) return;
+
+  let realCount = parseInt(localStorage.getItem('ewk_real_visitors') || '0');
+
+  if (supabaseClient) {
+    try {
+      const { count, error } = await supabaseClient
+        .from('pageviews')
+        .select('*', { count: 'exact', head: true });
+
+      if (!error && count !== null && count > 0) {
+        realCount = count;
+      }
+    } catch (err) {
+      console.warn('Pageviews fetch log:', err);
+    }
+  }
+
+  totalVisitorsVal.textContent = realCount > 0 ? realCount.toLocaleString('en-IN') : '1';
 }
 
 async function loadLeads() {

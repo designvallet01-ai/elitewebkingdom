@@ -12,6 +12,29 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Failed to initialize Supabase client:', err);
   }
 
+  // --- REAL VISITORS TRACKER ---
+  async function trackRealVisitor() {
+    let count = parseInt(localStorage.getItem('ewk_real_visitors') || '0');
+    if (!sessionStorage.getItem('ewk_session_logged')) {
+      sessionStorage.setItem('ewk_session_logged', 'true');
+      count += 1;
+      localStorage.setItem('ewk_real_visitors', count.toString());
+
+      if (supabase) {
+        try {
+          await supabase.from('pageviews').insert([{
+            url: window.location.pathname || '/',
+            user_agent: navigator.userAgent.substring(0, 100),
+            created_at: new Date().toISOString()
+          }]);
+        } catch (err) {
+          console.log('Supabase pageview insertion log:', err);
+        }
+      }
+    }
+  }
+  trackRealVisitor();
+
   // --- CURSOR SPOTLIGHT EFFECT & CARD MOUSE TRACKING ---
   const spotlight = document.getElementById('spotlight');
   document.addEventListener('mousemove', (e) => {
