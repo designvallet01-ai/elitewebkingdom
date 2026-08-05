@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found | Elite Web Kingdom</title>
+  <meta name="description" content="404 Page Not Found - Elite Web Kingdom. The requested digital dominion does not exist or has been relocated.">
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#020617">
+  
+  <!-- CSS Stylesheet & Icon -->
+  <link rel="stylesheet" href="style.css?v=2.1">
+  <link rel="icon" type="image/jpeg" href="logo.jpeg">
+
+  <style>
+    .error-hero {
+      min-height: 85vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 60px 24px;
+    }
+
+    .error-card {
+      max-width: 680px;
+      padding: 60px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .error-code {
+      font-family: var(--font-heading);
+      font-size: 7.5rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      background: var(--grad-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 40px rgba(0, 242, 254, 0.3);
+    }
+
+    .error-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text-bright);
+    }
+
+    .error-desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      max-width: 500px;
+    }
+
+    .error-btns {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- AMBIENT BACKGROUND & SPOTLIGHT -->
+  <div class="ambient-background">
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-orb orb-3"></div>
+    <div class="grid-overlay"></div>
+  </div>
+  <div class="cursor-spotlight" id="spotlight"></div>
+
+  <!-- HEADER -->
+  <header id="header" class="scrolled">
+    <div class="container navbar">
+      <a href="index.html" class="logo-container">
+        <img src="logo.jpeg" alt="Elite Web Kingdom Logo" class="logo-img">
+        <span class="logo-text">ELITE WEB KINGDOM</span>
+      </a>
+      <a href="index.html" class="btn btn-secondary" style="padding: 10px 20px; font-size: 0.85rem;">
+        Return To Home
+      </a>
+    </div>
+  </header>
+
+  <!-- 404 ERROR HERO SECTION -->
+  <main class="error-hero">
+    <div class="container">
+      <div class="error-card glass-card reveal active">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>404 DIGITAL REALM UNCHARTED</span>
+        </div>
+        
+        <div class="error-code">404</div>
+        <h1 class="error-title">Page Lost in the Digital Realm</h1>
+        <p class="error-desc">The page or domain route you are attempting to access has been relocated, renamed, or does not exist on our enterprise servers.</p>
+        
+        <div class="error-btns">
+          <a href="index.html" class="btn btn-primary">
+            Return To Kingdom Home
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+          <a href="index.html#contact" class="btn btn-secondary">
+            Contact Support Desk
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer style="padding-top: 30px; padding-bottom: 30px;">
+    <div class="container footer-bottom" style="border-top: none; justify-content: center; text-align: center;">
+      <p>&copy; 2026 Elite Web Kingdom. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript Logic -->
+  <script src="script.js?v=2.1"></script>
+</body>
+</html>
