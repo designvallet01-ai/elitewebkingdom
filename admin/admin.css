@@ -360,12 +360,18 @@ button, input, select, textarea {
 /* SIDEBAR */
 .admin-sidebar {
   width: 260px;
-  background: rgba(11, 15, 25, 0.8);
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: sticky;
+  top: 70px;
+  height: calc(100vh - 70px);
+  overflow-y: auto;
 }
 
 .sidebar-link {
@@ -511,3 +517,10 @@ button, input, select, textarea {
     padding: 20px;
   }
 }
+
+.kpi-btn:hover {
+  transform: translateY(-4px);
+  border-color: var(--cyan-primary) !important;
+  box-shadow: 0 10px 25px rgba(0, 242, 254, 0.2);
+}
+

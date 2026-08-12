@@ -165,6 +165,8 @@ window.switchTab = function(tabId) {
       panel.style.display = 'none';
     }
   });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 // --- DASHBOARD INITIALIZATION & DATA LOADING ---
@@ -174,6 +176,11 @@ function initDashboard() {
   loadLeads();
   loadSettingsState();
   loadRealVisitorCount();
+  loadTeamMembersDropdown();
+  renderAdminTeamMembers();
+  renderAdminAssignedTasks();
+  renderTeamAnalytics();
+  renderAdminProjects();
 }
 
 async function loadRealVisitorCount() {
@@ -569,3 +576,539 @@ function loadSettingsState() {
     document.getElementById('backup-switch').checked = settings.dbBackup;
   }
 }
+
+function loadTeamMembersDropdown() {
+  const select = document.getElementById('assignee-select');
+  if (!select) return;
+
+  const users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+  let html = `<option value="">-- Choose Team Member --</option>`;
+  users.forEach(u => {
+    const idVal = u.teamId || u.email;
+    html += `<option value="${idVal}">${idVal} - ${u.name} (${u.role})</option>`;
+  });
+  select.innerHTML = html;
+}
+
+function renderAdminTeamMembers() {
+  const container = document.getElementById('admin-members-list');
+  const users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+
+  const sidebarCount = document.getElementById('sidebar-members-count');
+  if (sidebarCount) sidebarCount.textContent = users.length;
+
+  if (!container) return;
+
+  if (users.length === 0) {
+    container.innerHTML = `<div style="grid-column: 1 / -1; font-size: 0.88rem; color: var(--text-muted); padding: 16px; text-align: center;">No team member accounts registered yet. Click "+ Add New Team Member" above to create one.</div>`;
+    return;
+  }
+
+  container.innerHTML = users.map(u => {
+    const idVal = u.teamId || u.email;
+    return `
+      <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem;">
+        <!-- Header & Action Row -->
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--grad-primary); color: #020617; font-weight: 800; font-size: 0.8rem; display: flex; align-items: center; justify-content: center;">${u.avatar || u.name.substring(0,2).toUpperCase()}</div>
+            <div>
+              <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">${u.name}</div>
+              <div style="font-size: 0.76rem; color: var(--cyan-primary); font-weight: 600;">${u.role}</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 0.74rem; color: var(--cyan-primary); border-color: rgba(0,242,254,0.3);" onclick="openEditMemberModal('${idVal}')">
+              Edit
+            </button>
+            <button class="btn btn-secondary" style="padding: 3px 10px; font-size: 0.74rem; color: #f43f5e; border-color: rgba(244,63,94,0.3);" onclick="deleteTeamMember('${idVal}')">
+              Delete
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Details Block -->
+        <div style="color: var(--text-muted); font-size: 0.8rem; display: flex; flex-wrap: wrap; gap: 12px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.04);">
+          <span>🪪 ID Card No: <strong style="color: var(--cyan-primary);">${idVal}</strong></span>
+          <span>📞 Phone: <strong style="color: #fff;">${u.phone || 'N/A'}</strong></span>
+          <span>✉️ Email: <strong style="color: #fff;">${u.email || 'N/A'}</strong></span>
+        </div>
+
+        <!-- SEPARATE HIGHLIGHTED PASSWORD BLOCK -->
+        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; color: #f59e0b;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <span>Assigned Password:</span>
+            <strong style="color: #fff; font-family: var(--font-mono); letter-spacing: 0.05em; font-size: 0.9rem;">${u.password || '••••••••'}</strong>
+          </div>
+          <span style="font-size: 0.7rem; color: var(--text-subtle); text-transform: uppercase;">LOGIN KEY</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.deleteTeamMember = function(memberId) {
+  if (confirm(`Delete team account for ID ${memberId}?`)) {
+    let users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+    users = users.filter(u => (u.teamId ? u.teamId.toLowerCase() : u.email.toLowerCase()) !== memberId.toLowerCase());
+    localStorage.setItem('ewk_team_users', JSON.stringify(users));
+    renderAdminTeamMembers();
+    loadTeamMembersDropdown();
+    renderTeamAnalytics();
+  }
+};
+
+function renderAdminAssignedTasks() {
+  const tasks = JSON.parse(localStorage.getItem('ewk_team_tasks') || '[]');
+  
+  const sidebarCount = document.getElementById('sidebar-tasks-count');
+  const badgeCount = document.getElementById('total-assigned-badge');
+  if (sidebarCount) sidebarCount.textContent = tasks.length;
+  if (badgeCount) badgeCount.textContent = `${tasks.length} TASKS`;
+
+  const tbody = document.getElementById('admin-tasks-tbody');
+  if (!tbody) return;
+
+  if (tasks.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">No assigned works found. Use the form above to assign work to a team member.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = tasks.map(t => `
+    <tr>
+      <td style="font-weight: 600; color: #fff;">${t.title}</td>
+      <td><span style="color: var(--cyan-primary); font-weight: 600;">${t.assignedTo}</span></td>
+      <td><span style="background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 4px; font-size: 0.78rem;">${t.category}</span></td>
+      <td><span style="padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; background: ${getPriorityColorBg(t.priority)}; color: ${getPriorityColorText(t.priority)};">${t.priority}</span></td>
+      <td><span style="font-weight: 600; color: ${getAdminStatusColor(t.status)};">${t.status}</span></td>
+      <td style="font-size: 0.82rem; color: var(--text-muted);">${t.dueDate || 'No Due Date'}</td>
+      <td>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; color: #f43f5e; border-color: rgba(244,63,94,0.3);" onclick="deleteAdminTask('${t.id}')">
+          Remove
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function getPriorityColorBg(p) {
+  switch(p) {
+    case 'Critical': return 'rgba(244,63,94,0.15)';
+    case 'High': return 'rgba(245,158,11,0.15)';
+    case 'Medium': return 'rgba(59,130,246,0.15)';
+    default: return 'rgba(16,185,129,0.15)';
+  }
+}
+
+function getPriorityColorText(p) {
+  switch(p) {
+    case 'Critical': return '#f43f5e';
+    case 'High': return '#f59e0b';
+    case 'Medium': return '#3b82f6';
+    default: return '#10b981';
+  }
+}
+
+function getAdminStatusColor(s) {
+  switch(s) {
+    case 'In Progress': return '#f59e0b';
+    case 'Code Review': return '#8b5cf6';
+    case 'Completed': return '#10b981';
+    default: return '#94a3b8';
+  }
+}
+
+// Handle Form Submissions
+document.addEventListener('DOMContentLoaded', () => {
+  const assignForm = document.getElementById('assign-work-form');
+  if (assignForm) {
+    assignForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const assignedTo = document.getElementById('assignee-select').value;
+      const title = document.getElementById('task-title-input').value.trim();
+      const category = document.getElementById('task-category-select').value;
+      const priority = document.getElementById('task-priority-select').value;
+      const dueDate = document.getElementById('task-duedate-input').value;
+      const description = document.getElementById('task-desc-input').value.trim();
+
+      const newTask = {
+        id: 'task-' + Date.now(),
+        title,
+        description,
+        category,
+        priority,
+        assignedTo,
+        assignedByName: 'Admin',
+        status: 'Pending',
+        dueDate,
+        createdAt: new Date().toISOString()
+      };
+
+      const tasks = JSON.parse(localStorage.getItem('ewk_team_tasks') || '[]');
+      tasks.unshift(newTask);
+      localStorage.setItem('ewk_team_tasks', JSON.stringify(tasks));
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('team_tasks').insert([{
+            title, description, category, priority, assigned_to: assignedTo, status: 'Pending', due_date: dueDate
+          }]);
+        } catch (err) {
+          console.warn('Supabase task insert:', err);
+        }
+      }
+
+      assignForm.reset();
+      alert(`Work successfully assigned to ${assignedTo}!`);
+      renderAdminAssignedTasks();
+    });
+  }
+
+  const registerForm = document.getElementById('register-team-form');
+  if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('new-member-name').value.trim();
+      const memberIdEl = document.getElementById('new-member-id') || document.getElementById('new-member-email');
+      const teamId = memberIdEl ? memberIdEl.value.trim() : '';
+      const phone = (document.getElementById('new-member-phone')?.value || '').trim();
+      const email = (document.getElementById('new-member-email')?.value || '').trim();
+      const role = document.getElementById('new-member-role').value.trim();
+      const password = document.getElementById('new-member-password').value.trim();
+
+      const newUser = {
+        teamId: teamId,
+        email: email || `${teamId.toLowerCase()}@elitewebkingdom.com`,
+        phone: phone || '+91 9985369590',
+        password,
+        name,
+        role,
+        avatar: name.substring(0, 2).toUpperCase(),
+        status: 'Online'
+      };
+
+      const users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+      if (users.some(u => (u.teamId && u.teamId.toLowerCase() === teamId.toLowerCase()) || (u.email && u.email.toLowerCase() === teamId.toLowerCase()))) {
+        alert('A team member with this ID Card Number already exists!');
+        return;
+      }
+      users.push(newUser);
+      localStorage.setItem('ewk_team_users', JSON.stringify(users));
+
+      registerForm.reset();
+      alert(`Team member account for ${name} (ID: ${teamId}) created successfully!`);
+      loadTeamMembersDropdown();
+      renderAdminTeamMembers();
+      renderTeamAnalytics();
+    });
+  }
+
+  // Handle Edit Member Form
+  const editForm = document.getElementById('edit-member-form');
+  if (editForm) {
+    editForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const origId = document.getElementById('edit-original-id').value;
+      const name = document.getElementById('edit-member-name').value.trim();
+      const newId = document.getElementById('edit-member-id').value.trim();
+      const phone = document.getElementById('edit-member-phone').value.trim();
+      const email = document.getElementById('edit-member-email').value.trim();
+      const role = document.getElementById('edit-member-role').value.trim();
+      const password = document.getElementById('edit-member-password').value.trim();
+
+      let users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+      const userIndex = users.findIndex(u => (u.teamId || u.email).toLowerCase() === origId.toLowerCase());
+
+      if (userIndex !== -1) {
+        users[userIndex] = {
+          ...users[userIndex],
+          name,
+          teamId: newId,
+          phone,
+          email,
+          role,
+          password,
+          avatar: name.substring(0, 2).toUpperCase()
+        };
+        localStorage.setItem('ewk_team_users', JSON.stringify(users));
+
+        // Update assigned tasks if ID changed
+        if (origId !== newId) {
+          let tasks = JSON.parse(localStorage.getItem('ewk_team_tasks') || '[]');
+          tasks.forEach(t => {
+            if (t.assignedTo && t.assignedTo.toLowerCase() === origId.toLowerCase()) {
+              t.assignedTo = newId;
+            }
+          });
+          localStorage.setItem('ewk_team_tasks', JSON.stringify(tasks));
+        }
+
+        closeEditModal();
+        alert('Team member details updated successfully!');
+        renderAdminTeamMembers();
+        loadTeamMembersDropdown();
+        renderTeamAnalytics();
+        renderAdminAssignedTasks();
+      }
+    });
+  }
+});
+
+// Edit Member Modal Handlers
+window.openEditMemberModal = function(memberId) {
+  const users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+  const user = users.find(u => (u.teamId || u.email).toLowerCase() === memberId.toLowerCase());
+  if (!user) return;
+
+  document.getElementById('edit-original-id').value = user.teamId || user.email;
+  document.getElementById('edit-member-name').value = user.name || '';
+  document.getElementById('edit-member-id').value = user.teamId || user.email;
+  document.getElementById('edit-member-phone').value = user.phone || '';
+  document.getElementById('edit-member-email').value = user.email || '';
+  document.getElementById('edit-member-role').value = user.role || '';
+  document.getElementById('edit-member-password').value = user.password || '';
+
+  const modal = document.getElementById('edit-member-modal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeEditModal = function() {
+  const modal = document.getElementById('edit-member-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.deleteAdminTask = function(taskId) {
+  if (confirm('Are you sure you want to remove this assigned task?')) {
+    let tasks = JSON.parse(localStorage.getItem('ewk_team_tasks') || '[]');
+    tasks = tasks.filter(t => t.id !== taskId);
+    localStorage.setItem('ewk_team_tasks', JSON.stringify(tasks));
+    renderAdminAssignedTasks();
+    renderTeamAnalytics();
+  }
+};
+
+// --- REAL-TIME TEAM ANALYTICS & MONITORING MODULE ---
+function renderTeamAnalytics() {
+  const users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+  const tasks = JSON.parse(localStorage.getItem('ewk_team_tasks') || '[]');
+  const standups = JSON.parse(localStorage.getItem('ewk_team_standups') || '[]');
+
+  // 1. KPI Cards
+  const totalMembersEl = document.getElementById('analytics-total-members');
+  const assignedWorksEl = document.getElementById('analytics-assigned-works');
+  const completionRateEl = document.getElementById('analytics-completion-rate');
+  const standupsCountEl = document.getElementById('analytics-standups-count');
+
+  const completedTasksCount = tasks.filter(t => t.status === 'Completed').length;
+  const ratePct = tasks.length > 0 ? Math.round((completedTasksCount / tasks.length) * 100) : 0;
+
+  if (totalMembersEl) totalMembersEl.textContent = users.length;
+  if (assignedWorksEl) assignedWorksEl.textContent = tasks.length;
+  if (completionRateEl) completionRateEl.textContent = `${ratePct}%`;
+  if (standupsCountEl) standupsCountEl.textContent = standups.length;
+
+  // 2. Individual Member Workload Breakdown Cards
+  const gridContainer = document.getElementById('team-analytics-grid');
+  if (gridContainer) {
+    if (users.length === 0) {
+      gridContainer.innerHTML = `<div style="font-size: 0.88rem; color: var(--text-muted); padding: 12px;">No registered team members to analyze yet. Add members in the Assign Work & Team tab!</div>`;
+    } else {
+      gridContainer.innerHTML = users.map(u => {
+        const uEmail = u.email.toLowerCase();
+        const memberTasks = tasks.filter(t => t.assignedTo && t.assignedTo.toLowerCase() === uEmail);
+        const doneCount = memberTasks.filter(t => t.status === 'Completed').length;
+        const inProgressCount = memberTasks.filter(t => t.status === 'In Progress').length;
+        const reviewCount = memberTasks.filter(t => t.status === 'Code Review').length;
+        const memberRate = memberTasks.length > 0 ? Math.round((doneCount / memberTasks.length) * 100) : 0;
+
+        let badgeLabel = '⚡ On Track';
+        let badgeColor = '#3b82f6';
+        if (memberRate >= 75 && memberTasks.length > 0) { badgeLabel = '🔥 High Performer'; badgeColor = '#10b981'; }
+        else if (memberTasks.length === 0) { badgeLabel = '⏳ Ready for Assignment'; badgeColor = '#94a3b8'; }
+
+        return `
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h4 style="font-size: 1.05rem; font-weight: 700; color: #fff;">${u.name}</h4>
+                <div style="font-size: 0.8rem; color: var(--cyan-primary); font-weight: 600;">${u.role}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${u.email}</div>
+              </div>
+              <span style="font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full); background: rgba(255,255,255,0.05); color: ${badgeColor}; border: 1px solid ${badgeColor}40;">
+                ${badgeLabel}
+              </span>
+            </div>
+
+            <!-- Progress Meter -->
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px;">
+                <span style="color: var(--text-muted);">Work Completion:</span>
+                <strong style="color: #fff;">${memberRate}% (${doneCount}/${memberTasks.length})</strong>
+              </div>
+              <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;">
+                <div style="width: ${memberRate}%; height: 100%; background: linear-gradient(90deg, #00f2fe, #10b981);"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.04); color: var(--text-muted);">
+              <span>In Progress: <strong style="color: #f59e0b;">${inProgressCount}</strong></span>
+              <span>Review: <strong style="color: #8b5cf6;">${reviewCount}</strong></span>
+              <span>Completed: <strong style="color: #10b981;">${doneCount}</strong></span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // 3. Live Daily Standup Feed
+  const standupsFeed = document.getElementById('admin-standups-feed');
+  if (standupsFeed) {
+    if (standups.length === 0) {
+      standupsFeed.innerHTML = `<div style="font-size: 0.88rem; color: var(--text-muted); padding: 12px; text-align: center;">No daily standup reports submitted by team members yet today.</div>`;
+    } else {
+      standupsFeed.innerHTML = standups.map(s => `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-sm); padding: 14px 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.82rem;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 700; color: #fff;">${s.userName}</span>
+              <span style="color: var(--cyan-primary); font-size: 0.78rem;">(${s.userRole})</span>
+            </div>
+            <span style="color: var(--text-muted); font-size: 0.78rem;">${s.createdAt}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px;">
+            <strong style="color: #10b981;">Accomplished:</strong> ${s.accomplished}
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px;">
+            <strong style="color: #00f2fe;">Next Steps:</strong> ${s.next}
+          </div>
+          ${s.blockers && s.blockers !== 'None' ? `
+            <div style="font-size: 0.85rem; color: #f43f5e;">
+              <strong>Blockers:</strong> ${s.blockers}
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+  }
+}
+
+// --- PRODUCTION CLIENT BUILDS MANAGEMENT ---
+function renderAdminProjects() {
+  const projects = JSON.parse(localStorage.getItem('ewk_client_projects') || '[]');
+
+  const badge = document.getElementById('admin-projects-badge');
+  const sidebarTakenCount = document.getElementById('sidebar-taken-count');
+  if (badge) badge.textContent = `${projects.length} BUILDS`;
+  if (sidebarTakenCount) sidebarTakenCount.textContent = projects.length;
+
+  const tbody = document.getElementById('admin-projects-tbody');
+  if (!tbody) return;
+
+  if (projects.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">No client production builds created yet. Use the form above to add a project.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = projects.map(p => `
+    <tr>
+      <td style="font-weight: 700; color: #fff;">${p.title}</td>
+      <td><span style="color: var(--cyan-primary); font-weight: 600;">${p.client}</span></td>
+      <td><span style="font-size: 0.78rem; color: var(--text-muted);">${Array.isArray(p.tech) ? p.tech.join(', ') : p.tech}</span></td>
+      <td>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="number" min="0" max="100" value="${p.progress || 0}" style="width: 60px; padding: 2px 6px; background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;" onchange="updateProjectProgress('${p.id}', this.value)">
+          <span style="font-size: 0.8rem; font-weight: 600; color: #10b981;">%</span>
+        </div>
+      </td>
+      <td style="font-size: 0.82rem; color: var(--text-muted);">${p.deadline}</td>
+      <td>
+        <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 0.72rem; color: #f43f5e; border-color: rgba(244,63,94,0.3);" onclick="deleteAdminProject('${p.id}')">
+          Remove
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.updateProjectProgress = function(projectId, newProgress) {
+  let projects = JSON.parse(localStorage.getItem('ewk_client_projects') || '[]');
+  const project = projects.find(p => p.id === projectId);
+  if (project) {
+    project.progress = parseInt(newProgress) || 0;
+    localStorage.setItem('ewk_client_projects', JSON.stringify(projects));
+    renderAdminProjects();
+  }
+};
+
+window.deleteAdminProject = function(projectId) {
+  if (confirm('Are you sure you want to remove this client production build?')) {
+    let projects = JSON.parse(localStorage.getItem('ewk_client_projects') || '[]');
+    projects = projects.filter(p => p.id !== projectId);
+    localStorage.setItem('ewk_client_projects', JSON.stringify(projects));
+    renderAdminProjects();
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  const projectForm = document.getElementById('create-project-form');
+  if (projectForm) {
+    projectForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('proj-title-input').value.trim();
+      const client = document.getElementById('proj-client-input').value.trim();
+      const techStr = document.getElementById('proj-tech-input').value.trim();
+      const deadline = document.getElementById('proj-deadline-input').value.trim();
+      const progress = parseInt(document.getElementById('proj-progress-input').value) || 0;
+
+      const newProject = {
+        id: 'proj-' + Date.now(),
+        title,
+        client,
+        tech: techStr.split(',').map(s => s.trim()),
+        deadline,
+        progress,
+        createdAt: new Date().toISOString()
+      };
+
+      const projects = JSON.parse(localStorage.getItem('ewk_client_projects') || '[]');
+      projects.unshift(newProject);
+      localStorage.setItem('ewk_client_projects', JSON.stringify(projects));
+
+      projectForm.reset();
+      alert(`Production Client Build "${title}" created successfully!`);
+      renderAdminProjects();
+    });
+  }
+});
+
+// --- INTERACTIVE KPI STAT BUTTONS HANDLER ---
+window.onKpiClick = function(type) {
+  if (type === 'members') {
+    switchTab('assign-work');
+    setTimeout(() => {
+      const el = document.getElementById('admin-members-list');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
+  } else if (type === 'tasks') {
+    switchTab('assign-work');
+    setTimeout(() => {
+      const el = document.getElementById('admin-tasks-tbody');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
+  } else if (type === 'completion') {
+    switchTab('team-analytics');
+    setTimeout(() => {
+      const el = document.getElementById('team-analytics-grid');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
+  } else if (type === 'standups') {
+    switchTab('team-analytics');
+    setTimeout(() => {
+      const el = document.getElementById('admin-standups-feed');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 120);
+  }
+};
+

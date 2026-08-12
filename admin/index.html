@@ -80,11 +80,27 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
           Taken Projects (<span id="sidebar-taken-count">0</span>)
         </a>
+        <a href="#team-members" class="sidebar-link" onclick="switchTab('team-members')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Active Team Accounts (<span id="sidebar-members-count">0</span>)
+        </a>
+        <a href="#assign-work" class="sidebar-link" onclick="switchTab('assign-work')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+          Assign Work & Tasks (<span id="sidebar-tasks-count">0</span>)
+        </a>
+        <a href="#team-analytics" class="sidebar-link" onclick="switchTab('team-analytics')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Team Analytics & Insights
+        </a>
         <a href="#settings" class="sidebar-link" onclick="switchTab('settings')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           System Settings
         </a>
-        <a href="../index.html" class="sidebar-link" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px;">
+        <a href="../team/index.html" class="sidebar-link" target="_blank" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; color: var(--cyan-primary);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Open Team Portal ↗
+        </a>
+        <a href="../index.html" class="sidebar-link">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
           Go To Main Site
         </a>
@@ -197,29 +213,299 @@
           </div>
         </div>
 
-        <!-- PANEL: TAKEN PROJECTS -->
-        <div id="tab-taken" class="tab-panel">
+        <!-- PANEL: ASSIGN WORK & TEAM MANAGEMENT -->
+        <div id="tab-assign-work" class="tab-panel">
           <div class="admin-section-header">
-            <h2 class="admin-section-title">Taken & Active Projects</h2>
-            <div style="max-width: 320px; width: 100%;">
-              <input type="text" id="taken-search-input" class="form-control" placeholder="Search by ID, Name, Category..." oninput="filterTakenProjects()">
+            <h2 class="admin-section-title">Assign Work to Team Members</h2>
+            <span class="badge">ADMIN MANAGEMENT</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 32px;">
+            <!-- WORK ASSIGNMENT FORM -->
+            <div class="admin-card glass-card" style="padding: 24px;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; color: var(--text-bright);">Create & Assign New Task</h3>
+              <form id="assign-work-form" style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="form-group">
+                  <label for="assignee-select">Select Team Member</label>
+                  <select id="assignee-select" class="form-control" required style="background: #0f172a; color: #fff;">
+                    <option value="">-- Choose Team Member --</option>
+                    <option value="gowri@elitewebkingdom.com">Gowri Narayana (System Architect)</option>
+                    <option value="sarah@elitewebkingdom.com">Sarah Jenkins (Frontend Lead)</option>
+                    <option value="alex@elitewebkingdom.com">Alex Rivera (UI/UX Designer)</option>
+                    <option value="david@elitewebkingdom.com">David Vance (QA Lead)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="task-title-input">Work / Task Title</label>
+                  <input type="text" id="task-title-input" class="form-control" placeholder="e.g. Build Payment Gateway Webhook Handler" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="form-group">
+                    <label for="task-category-select">Category</label>
+                    <select id="task-category-select" class="form-control" style="background: #0f172a; color: #fff;">
+                      <option value="Backend">Backend</option>
+                      <option value="Frontend">Frontend</option>
+                      <option value="UI Design">UI Design</option>
+                      <option value="QA">QA & Testing</option>
+                      <option value="DevOps">DevOps & Cloud</option>
+                      <option value="Mobile App">Mobile App</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="task-priority-select">Priority</label>
+                    <select id="task-priority-select" class="form-control" style="background: #0f172a; color: #fff;">
+                      <option value="Critical">Critical</option>
+                      <option value="High" selected>High</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Low">Low</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="task-duedate-input">Target Due Date</label>
+                  <input type="date" id="task-duedate-input" class="form-control" required style="background: #0f172a; color: #fff;">
+                </div>
+
+                <div class="form-group">
+                  <label for="task-desc-input">Detailed Requirements / Instructions</label>
+                  <textarea id="task-desc-input" class="form-control" rows="3" placeholder="Provide precise guidelines for the assigned team member..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 8px;">
+                  <span>Assign Work To Team Member</span>
+                </button>
+              </form>
+            </div>
+
+            <!-- REGISTER TEAM ACCOUNT FORM -->
+            <div class="admin-card glass-card" style="padding: 24px;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; color: var(--text-bright);">Register New Team Account</h3>
+              <form id="register-team-form" style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="form-group">
+                  <label for="new-member-name">Member Full Name</label>
+                  <input type="text" id="new-member-name" class="form-control" placeholder="e.g. John Doe" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="new-member-id">Team ID Card Number (Login ID)</label>
+                  <input type="text" id="new-member-id" class="form-control" placeholder="e.g. EWK-1001" required>
+                </div>
+
+                <div class="form-group">
+                  <label for="new-member-role">Assigned Role / Designation</label>
+                  <input type="text" id="new-member-role" class="form-control" placeholder="e.g. Senior React Developer" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div class="form-group">
+                    <label for="new-member-phone">Phone Number</label>
+                    <input type="tel" id="new-member-phone" class="form-control" placeholder="+91 9985369590">
+                  </div>
+                  <div class="form-group">
+                    <label for="new-member-email">Email Address</label>
+                    <input type="email" id="new-member-email" class="form-control" placeholder="john@elitewebkingdom.com">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="new-member-password">Initial Password</label>
+                  <input type="password" id="new-member-password" class="form-control" placeholder="••••••••" value="team123456" required>
+                </div>
+
+                <button type="submit" class="btn btn-secondary" style="margin-top: 8px;">
+                  <span>Create Team Account</span>
+                </button>
+              </form>
             </div>
           </div>
 
+          <!-- ASSIGNED TASKS TABLE -->
           <div class="admin-card glass-card" style="padding: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <h3 style="font-size: 1.2rem;">All Active Assigned Team Works</h3>
+              <span class="badge" id="total-assigned-badge">0 TASKS</span>
+            </div>
             <div class="table-wrapper">
               <table class="admin-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Client / Contact</th>
-                    <th>Project Category</th>
-                    <th>Budget / Timeline</th>
+                    <th>Task Title</th>
+                    <th>Assigned To</th>
+                    <th>Category</th>
+                    <th>Priority</th>
                     <th>Status</th>
+                    <th>Due Date</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody id="taken-tbody">
+                <tbody id="admin-tasks-tbody">
+                  <!-- Dynamic Insertion -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: DEDICATED ACTIVE TEAM MEMBER ACCOUNTS -->
+        <div id="tab-team-members" class="tab-panel">
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Active Team Member Accounts</h2>
+            <span class="badge">REGISTERED CREDENTIALS</span>
+          </div>
+
+          <div class="admin-card glass-card" style="padding: 24px; margin-bottom: 28px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+              <div>
+                <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-bright);">Registered Team Directory & Login Keys</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Manage member ID Card Numbers, passwords, phone numbers, and credentials</p>
+              </div>
+              <button class="btn btn-primary" onclick="switchTab('assign-work')">
+                + Add New Team Member
+              </button>
+            </div>
+
+            <!-- DIRECTORY LIST -->
+            <div id="admin-members-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px;">
+              <!-- Dynamic Insertion -->
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: TEAM ANALYTICS & INSIGHTS -->
+        <div id="tab-team-analytics" class="tab-panel">
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Team Performance & Work Analytics</h2>
+            <span class="badge">REAL-TIME MONITOR</span>
+          </div>
+
+          <!-- KPI Cards (Interactive Quick Action Buttons) -->
+          <div class="admin-stats-grid" style="margin-bottom: 28px;">
+            <div class="admin-stat-card glass-card kpi-btn" onclick="onKpiClick('members')" title="Click to view & manage Team Members" style="cursor: pointer; transition: all 0.2s ease;">
+              <div>
+                <span class="stat-card-lbl">Total Team Members ↗</span>
+                <span class="stat-card-val" id="analytics-total-members">0</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card kpi-btn" onclick="onKpiClick('tasks')" title="Click to view Assigned Works Table" style="cursor: pointer; transition: all 0.2s ease;">
+              <div>
+                <span class="stat-card-lbl">Total Assigned Works ↗</span>
+                <span class="stat-card-val" id="analytics-assigned-works">0</span>
+              </div>
+              <div class="stat-card-icon" style="color: var(--cyan-primary);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card kpi-btn" onclick="onKpiClick('completion')" title="Click to view Completion Analytics" style="cursor: pointer; transition: all 0.2s ease;">
+              <div>
+                <span class="stat-card-lbl">Completion Rate ↗</span>
+                <span class="stat-card-val" id="analytics-completion-rate">0%</span>
+              </div>
+              <div class="stat-card-icon" style="color: #10b981;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card kpi-btn" onclick="onKpiClick('standups')" title="Click to view Daily Standup Feed" style="cursor: pointer; transition: all 0.2s ease;">
+              <div>
+                <span class="stat-card-lbl">Standups Submitted ↗</span>
+                <span class="stat-card-val" id="analytics-standups-count">0</span>
+              </div>
+              <div class="stat-card-icon" style="color: #8b5cf6;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Team Member Workload Breakdown -->
+          <div class="admin-card glass-card" style="padding: 24px; margin-bottom: 32px;">
+            <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: var(--text-bright);">Individual Team Workload & Performance Analytics</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;" id="team-analytics-grid">
+              <!-- Dynamic Insertion -->
+            </div>
+          </div>
+
+          <!-- Daily Standup Live Feed -->
+          <div class="admin-card glass-card" style="padding: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <h3 style="font-size: 1.2rem; font-weight: 700; color: var(--text-bright);">Live Team Daily Standup Reports</h3>
+              <span class="badge">REAL-TIME STANDUP FEED</span>
+            </div>
+            <div id="admin-standups-feed" style="display: flex; flex-direction: column; gap: 12px;">
+              <!-- Dynamic Insertion -->
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: TAKEN PROJECTS -->
+        <div id="tab-taken" class="tab-panel">
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Taken & Active Client Builds</h2>
+            <span class="badge">PRODUCTION DELIVERABLES</span>
+          </div>
+
+          <!-- CREATE CLIENT PROJECT FORM -->
+          <div class="admin-card glass-card" style="padding: 24px; margin-bottom: 28px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; color: var(--text-bright);">Create New Client Production Build</h3>
+            <form id="create-project-form" style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+                <div class="form-group">
+                  <label for="proj-title-input">Project Deliverable Title</label>
+                  <input type="text" id="proj-title-input" class="form-control" placeholder="e.g. FinTech Payment Processing Portal" required>
+                </div>
+                <div class="form-group">
+                  <label for="proj-client-input">Client Organization / Name</label>
+                  <input type="text" id="proj-client-input" class="form-control" placeholder="e.g. Apex Capital Ltd." required>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                <div class="form-group">
+                  <label for="proj-tech-input">Tech Stack (comma separated)</label>
+                  <input type="text" id="proj-tech-input" class="form-control" placeholder="e.g. Node.js, React, PostgreSQL, Docker" required>
+                </div>
+                <div class="form-group">
+                  <label for="proj-deadline-input">Target Deadline</label>
+                  <input type="text" id="proj-deadline-input" class="form-control" placeholder="e.g. Aug 30, 2026" required>
+                </div>
+                <div class="form-group">
+                  <label for="proj-progress-input">Progress Completion (%)</label>
+                  <input type="number" id="proj-progress-input" class="form-control" min="0" max="100" value="0" required>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="align-self: flex-start;">
+                Create Client Deliverable Build
+              </button>
+            </form>
+          </div>
+
+          <!-- ACTIVE CLIENT PROJECTS TABLE -->
+          <div class="admin-card glass-card" style="padding: 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <h3 style="font-size: 1.2rem;">Active Production Builds & Timelines</h3>
+              <span class="badge" id="admin-projects-badge">0 BUILDS</span>
+            </div>
+            <div class="table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Project Deliverable</th>
+                    <th>Client Organization</th>
+                    <th>Tech Stack</th>
+                    <th>Progress (%)</th>
+                    <th>Deadline</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-projects-tbody">
                   <!-- Dynamic Insertion -->
                 </tbody>
               </table>
@@ -268,6 +554,47 @@
         </div>
 
       </main>
+    </div>
+  </div>
+
+  <!-- EDIT TEAM MEMBER MODAL -->
+  <div id="edit-member-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div class="admin-card glass-card" style="max-width: 500px; width: 100%; padding: 28px;">
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 18px; color: var(--text-bright);">Edit Team Member Details</h3>
+      <form id="edit-member-form" style="display: flex; flex-direction: column; gap: 14px;">
+        <input type="hidden" id="edit-original-id">
+        <div class="form-group">
+          <label for="edit-member-name">Member Full Name</label>
+          <input type="text" id="edit-member-name" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-member-id">Team ID Card Number</label>
+          <input type="text" id="edit-member-id" class="form-control" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="edit-member-phone">Phone Number</label>
+            <input type="tel" id="edit-member-phone" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="edit-member-email">Email Address</label>
+            <input type="email" id="edit-member-email" class="form-control">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="edit-member-role">Assigned Role</label>
+          <input type="text" id="edit-member-role" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-member-password">Password</label>
+          <input type="text" id="edit-member-password" class="form-control" required>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 12px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
 
