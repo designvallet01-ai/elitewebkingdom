@@ -70,6 +70,58 @@ html {
   color-scheme: dark;
 }
 
+/* TOP ANNOUNCEMENT TICKER BAR */
+.top-announcement-bar {
+  background: linear-gradient(90deg, #020617 0%, #0b0f19 50%, #020617 100%);
+  border-bottom: 1px solid rgba(0, 242, 254, 0.2);
+  padding: 8px 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  position: relative;
+  z-index: 101;
+}
+.announcement-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.announcement-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.live-pulse {
+  width: 8px;
+  height: 8px;
+  background: var(--emerald-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--emerald-accent);
+  animation: pulseGlow 1.8s infinite;
+}
+.announcement-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.top-bar-link {
+  color: var(--cyan-primary);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.78rem;
+  transition: opacity 0.2s ease;
+}
+.top-bar-link:hover {
+  opacity: 0.8;
+}
+.top-bar-wa {
+  color: var(--whatsapp-green);
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 0.78rem;
+}
+
 body {
   background-color: var(--bg-dark);
   color: var(--text-main);
