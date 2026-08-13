@@ -626,10 +626,7 @@ function renderTeamRoster() {
       <div class="member-avatar">${u.avatar || u.name.substring(0,2).toUpperCase()}</div>
       <div class="member-name">${u.name}</div>
       <div class="member-role">${u.role}</div>
-      <div style="font-size: 0.8rem; color: var(--cyan-primary); font-weight: 600; margin-top: 4px;">
-        ID Card: ${u.teamId || u.email}
-      </div>
-      <div style="font-size: 0.83rem; color: var(--text-muted); margin-top: 6px; display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 0.83rem; color: var(--text-muted); margin-top: 8px; display: flex; flex-direction: column; gap: 4px;">
         <span>📞 <a href="tel:${u.phone || ''}" style="color: var(--text-main); text-decoration: none;">${u.phone || 'N/A'}</a></span>
         <span>✉️ <a href="mailto:${u.email || ''}" style="color: var(--text-main); text-decoration: none;">${u.email || 'N/A'}</a></span>
       </div>
