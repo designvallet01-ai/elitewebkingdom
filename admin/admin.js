@@ -295,6 +295,7 @@ window.uploadAllTeamDataToSupabase = async function() {
 
   try {
     let syncedMembers = 0, syncedTasks = 0, syncedStandups = 0, syncedProjects = 0;
+    let missingTables = [];
 
     // 1. Team Members
     const users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
@@ -311,8 +312,14 @@ window.uploadAllTeamDataToSupabase = async function() {
         status: u.status || 'Online'
       }));
       const { error: memErr } = await supabaseClient.from('team_members').upsert(memberPayloads, { onConflict: 'team_id' });
-      if (memErr) console.warn('Supabase members upsert error:', memErr);
-      else syncedMembers = memberPayloads.length;
+      if (memErr) {
+        console.warn('Supabase members upsert error:', memErr);
+        if (memErr.code === 'PGRST205' || (memErr.message && memErr.message.includes('not find'))) {
+          missingTables.push('team_members');
+        }
+      } else {
+        syncedMembers = memberPayloads.length;
+      }
     }
 
     // 2. Team Tasks
@@ -330,8 +337,14 @@ window.uploadAllTeamDataToSupabase = async function() {
         due_date: t.dueDate || null
       }));
       const { error: taskErr } = await supabaseClient.from('team_tasks').upsert(taskPayloads, { onConflict: 'id' });
-      if (taskErr) console.warn('Supabase tasks upsert error:', taskErr);
-      else syncedTasks = taskPayloads.length;
+      if (taskErr) {
+        console.warn('Supabase tasks upsert error:', taskErr);
+        if (taskErr.code === 'PGRST205' || (taskErr.message && taskErr.message.includes('not find'))) {
+          missingTables.push('team_tasks');
+        }
+      } else {
+        syncedTasks = taskPayloads.length;
+      }
     }
 
     // 3. Team Standups
@@ -347,8 +360,14 @@ window.uploadAllTeamDataToSupabase = async function() {
         blockers: s.blockers || 'None'
       }));
       const { error: stErr } = await supabaseClient.from('team_standups').upsert(standupPayloads, { onConflict: 'id' });
-      if (stErr) console.warn('Supabase standups upsert error:', stErr);
-      else syncedStandups = standupPayloads.length;
+      if (stErr) {
+        console.warn('Supabase standups upsert error:', stErr);
+        if (stErr.code === 'PGRST205' || (stErr.message && stErr.message.includes('not find'))) {
+          missingTables.push('team_standups');
+        }
+      } else {
+        syncedStandups = standupPayloads.length;
+      }
     }
 
     // 4. Client Projects
@@ -364,11 +383,21 @@ window.uploadAllTeamDataToSupabase = async function() {
         status: p.status || 'Active'
       }));
       const { error: prjErr } = await supabaseClient.from('client_projects').upsert(projPayloads, { onConflict: 'id' });
-      if (prjErr) console.warn('Supabase projects upsert error:', prjErr);
-      else syncedProjects = projPayloads.length;
+      if (prjErr) {
+        console.warn('Supabase projects upsert error:', prjErr);
+        if (prjErr.code === 'PGRST205' || (prjErr.message && prjErr.message.includes('not find'))) {
+          missingTables.push('client_projects');
+        }
+      } else {
+        syncedProjects = projPayloads.length;
+      }
     }
 
-    alert(`Successfully synced team data to Supabase Database!\n\n- ${syncedMembers} Team Members\n- ${syncedTasks} Tasks\n- ${syncedStandups} Daily Standups\n- ${syncedProjects} Client Builds`);
+    if (missingTables.length > 0) {
+      alert(`⚠️ SUPABASE TABLES MISSING IN DATABASE!\n\nThe following tables do not exist in your Supabase DB yet:\n- ${missingTables.join('\n- ')}\n\n👉 FIX: Please open https://supabase.com/dashboard -> SQL Editor -> Run the SQL script from team_data_supabase_schema.sql`);
+    } else {
+      alert(`Successfully synced team data to Supabase Database!\n\n- ${syncedMembers} Team Members\n- ${syncedTasks} Tasks\n- ${syncedStandups} Daily Standups\n- ${syncedProjects} Client Builds`);
+    }
 
     await loadTeamDataFromSupabase();
   } catch (err) {
@@ -1006,7 +1035,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (supabaseClient) {
         try {
-          await supabaseClient.from('team_members').insert([{
+          const { error: dbErr } = await supabaseClient.from('team_members').upsert([{
             id: 'mem-' + (teamId || email).replace(/[^a-zA-Z0-9-]/g, ''),
             team_id: teamId,
             name,
@@ -1016,7 +1045,16 @@ document.addEventListener('DOMContentLoaded', () => {
             password,
             avatar: name.substring(0, 2).toUpperCase(),
             status: 'Online'
-          }]);
+          }], { onConflict: 'team_id' });
+
+          if (dbErr) {
+            console.error('Supabase member upsert error:', dbErr);
+            if (dbErr.code === 'PGRST205' || (dbErr.message && dbErr.message.includes('not find'))) {
+              alert(`⚠️ Saved locally, but Supabase Table Missing!\n\nThe table "team_members" was not found in your Supabase DB.\nPlease run the SQL query from team_data_supabase_schema.sql in Supabase SQL Editor.`);
+            } else {
+              alert(`Saved locally! Supabase Warning: ${dbErr.message}`);
+            }
+          }
         } catch (err) {
           console.warn('Supabase member insert error:', err);
         }
