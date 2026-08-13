@@ -181,7 +181,206 @@ function initDashboard() {
   renderAdminAssignedTasks();
   renderTeamAnalytics();
   renderAdminProjects();
+  loadTeamDataFromSupabase();
 }
+
+// --- SUPABASE TEAM DATA LOAD & UPLOAD ENGINE ---
+async function loadTeamDataFromSupabase() {
+  if (!supabaseClient) return;
+
+  try {
+    // 1. Fetch Team Members
+    const { data: members, error: memErr } = await supabaseClient
+      .from('team_members')
+      .select('*')
+      .order('created_at', { ascending: true });
+      
+    if (!memErr && members && members.length > 0) {
+      const formattedMembers = members.map(m => ({
+        id: m.id,
+        teamId: m.team_id,
+        name: m.name,
+        role: m.role,
+        phone: m.phone || '',
+        email: m.email || '',
+        password: m.password,
+        avatar: m.avatar || m.name.substring(0, 2).toUpperCase(),
+        status: m.status || 'Online'
+      }));
+      localStorage.setItem('ewk_team_users', JSON.stringify(formattedMembers));
+      loadTeamMembersDropdown();
+      renderAdminTeamMembers();
+    }
+
+    // 2. Fetch Team Tasks
+    const { data: tasks, error: taskErr } = await supabaseClient
+      .from('team_tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!taskErr && tasks && tasks.length > 0) {
+      const formattedTasks = tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || '',
+        category: t.category || 'Backend',
+        priority: t.priority || 'Medium',
+        assignedTo: t.assigned_to,
+        assignedByName: t.assigned_by_name || 'Admin',
+        status: t.status || 'Pending',
+        dueDate: t.due_date || '',
+        createdAt: t.created_at
+      }));
+      localStorage.setItem('ewk_team_tasks', JSON.stringify(formattedTasks));
+      renderAdminAssignedTasks();
+      renderTeamAnalytics();
+    }
+
+    // 3. Fetch Team Standups
+    const { data: standups, error: stErr } = await supabaseClient
+      .from('team_standups')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!stErr && standups && standups.length > 0) {
+      const formattedStandups = standups.map(s => ({
+        id: s.id,
+        userName: s.user_name,
+        userRole: s.user_role || 'Specialist',
+        userAvatar: s.user_avatar || 'TM',
+        accomplished: s.accomplished,
+        next: s.next,
+        blockers: s.blockers || 'None',
+        createdAt: new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' Today'
+      }));
+      localStorage.setItem('ewk_team_standups', JSON.stringify(formattedStandups));
+      renderTeamAnalytics();
+    }
+
+    // 4. Fetch Client Projects
+    const { data: projects, error: prjErr } = await supabaseClient
+      .from('client_projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!prjErr && projects && projects.length > 0) {
+      const formattedProjects = projects.map(p => ({
+        id: p.id,
+        title: p.title,
+        client: p.client,
+        progress: p.progress || 0,
+        tech: p.tech ? p.tech.split(',').map(s => s.trim()) : [],
+        deadline: p.deadline || 'Ongoing',
+        createdAt: p.created_at
+      }));
+      localStorage.setItem('ewk_client_projects', JSON.stringify(formattedProjects));
+      renderAdminProjects();
+    }
+  } catch (err) {
+    console.warn('Error loading team data from Supabase:', err);
+  }
+}
+
+window.uploadAllTeamDataToSupabase = async function() {
+  if (!supabaseClient) {
+    alert('Supabase client SDK is not initialized. Please verify network connection.');
+    return;
+  }
+
+  const syncBtns = document.querySelectorAll('#upload-team-data-btn');
+  syncBtns.forEach(btn => {
+    btn.disabled = true;
+    btn.innerHTML = `⚡ Syncing to Supabase...`;
+  });
+
+  try {
+    let syncedMembers = 0, syncedTasks = 0, syncedStandups = 0, syncedProjects = 0;
+
+    // 1. Team Members
+    const users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+    if (users.length > 0) {
+      const memberPayloads = users.map(u => ({
+        id: u.id || ('mem-' + (u.teamId || u.email || Date.now()).replace(/[^a-zA-Z0-9-]/g, '')),
+        team_id: u.teamId || u.email,
+        name: u.name,
+        role: u.role,
+        phone: u.phone || null,
+        email: u.email || null,
+        password: u.password || 'team123456',
+        avatar: u.avatar || u.name.substring(0, 2).toUpperCase(),
+        status: u.status || 'Online'
+      }));
+      const { error: memErr } = await supabaseClient.from('team_members').upsert(memberPayloads, { onConflict: 'team_id' });
+      if (memErr) console.warn('Supabase members upsert error:', memErr);
+      else syncedMembers = memberPayloads.length;
+    }
+
+    // 2. Team Tasks
+    const tasks = JSON.parse(localStorage.getItem('ewk_team_tasks') || '[]');
+    if (tasks.length > 0) {
+      const taskPayloads = tasks.map(t => ({
+        id: t.id || ('task-' + Date.now()),
+        title: t.title,
+        description: t.description || '',
+        category: t.category || 'General',
+        priority: t.priority || 'Medium',
+        assigned_to: t.assignedTo,
+        assigned_by_name: t.assignedByName || 'Admin',
+        status: t.status || 'Pending',
+        due_date: t.dueDate || null
+      }));
+      const { error: taskErr } = await supabaseClient.from('team_tasks').upsert(taskPayloads, { onConflict: 'id' });
+      if (taskErr) console.warn('Supabase tasks upsert error:', taskErr);
+      else syncedTasks = taskPayloads.length;
+    }
+
+    // 3. Team Standups
+    const standups = JSON.parse(localStorage.getItem('ewk_team_standups') || '[]');
+    if (standups.length > 0) {
+      const standupPayloads = standups.map(s => ({
+        id: s.id || ('st-' + Date.now()),
+        user_name: s.userName || 'Team Member',
+        user_role: s.userRole || 'Specialist',
+        user_avatar: s.userAvatar || 'TM',
+        accomplished: s.accomplished,
+        next: s.next,
+        blockers: s.blockers || 'None'
+      }));
+      const { error: stErr } = await supabaseClient.from('team_standups').upsert(standupPayloads, { onConflict: 'id' });
+      if (stErr) console.warn('Supabase standups upsert error:', stErr);
+      else syncedStandups = standupPayloads.length;
+    }
+
+    // 4. Client Projects
+    const projects = JSON.parse(localStorage.getItem('ewk_client_projects') || '[]');
+    if (projects.length > 0) {
+      const projPayloads = projects.map(p => ({
+        id: p.id || ('proj-' + Date.now()),
+        title: p.title,
+        client: p.client,
+        progress: parseInt(p.progress || 0),
+        tech: Array.isArray(p.tech) ? p.tech.join(', ') : (p.tech || ''),
+        deadline: p.deadline || 'Ongoing',
+        status: p.status || 'Active'
+      }));
+      const { error: prjErr } = await supabaseClient.from('client_projects').upsert(projPayloads, { onConflict: 'id' });
+      if (prjErr) console.warn('Supabase projects upsert error:', prjErr);
+      else syncedProjects = projPayloads.length;
+    }
+
+    alert(`Successfully synced team data to Supabase Database!\n\n- ${syncedMembers} Team Members\n- ${syncedTasks} Tasks\n- ${syncedStandups} Daily Standups\n- ${syncedProjects} Client Builds`);
+
+    await loadTeamDataFromSupabase();
+  } catch (err) {
+    console.error('Failed to upload team data to Supabase:', err);
+    alert(`Supabase Sync Error: ${err.message || err}`);
+  } finally {
+    syncBtns.forEach(btn => {
+      btn.disabled = false;
+      btn.innerHTML = `⚡ Upload Team Data to Supabase`;
+    });
+  }
+};
 
 async function loadRealVisitorCount() {
   const totalVisitorsVal = document.getElementById('total-visitors-val');
@@ -648,11 +847,20 @@ function renderAdminTeamMembers() {
   }).join('');
 }
 
-window.deleteTeamMember = function(memberId) {
+window.deleteTeamMember = async function(memberId) {
   if (confirm(`Delete team account for ID ${memberId}?`)) {
     let users = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
     users = users.filter(u => (u.teamId ? u.teamId.toLowerCase() : u.email.toLowerCase()) !== memberId.toLowerCase());
     localStorage.setItem('ewk_team_users', JSON.stringify(users));
+
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('team_members').delete().eq('team_id', memberId);
+      } catch (err) {
+        console.warn('Supabase member delete error:', err);
+      }
+    }
+
     renderAdminTeamMembers();
     loadTeamMembersDropdown();
     renderTeamAnalytics();
@@ -796,6 +1004,24 @@ document.addEventListener('DOMContentLoaded', () => {
       users.push(newUser);
       localStorage.setItem('ewk_team_users', JSON.stringify(users));
 
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('team_members').insert([{
+            id: 'mem-' + (teamId || email).replace(/[^a-zA-Z0-9-]/g, ''),
+            team_id: teamId,
+            name,
+            role,
+            phone,
+            email,
+            password,
+            avatar: name.substring(0, 2).toUpperCase(),
+            status: 'Online'
+          }]);
+        } catch (err) {
+          console.warn('Supabase member insert error:', err);
+        }
+      }
+
       registerForm.reset();
       alert(`Team member account for ${name} (ID: ${teamId}) created successfully!`);
       loadTeamMembersDropdown();
@@ -807,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle Edit Member Form
   const editForm = document.getElementById('edit-member-form');
   if (editForm) {
-    editForm.addEventListener('submit', (e) => {
+    editForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const origId = document.getElementById('edit-original-id').value;
       const name = document.getElementById('edit-member-name').value.trim();
@@ -821,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const userIndex = users.findIndex(u => (u.teamId || u.email).toLowerCase() === origId.toLowerCase());
 
       if (userIndex !== -1) {
-        users[userIndex] = {
+        const updatedUser = {
           ...users[userIndex],
           name,
           teamId: newId,
@@ -831,7 +1057,26 @@ document.addEventListener('DOMContentLoaded', () => {
           password,
           avatar: name.substring(0, 2).toUpperCase()
         };
+        users[userIndex] = updatedUser;
         localStorage.setItem('ewk_team_users', JSON.stringify(users));
+
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('team_members').upsert([{
+              id: updatedUser.id || ('mem-' + newId.replace(/[^a-zA-Z0-9-]/g, '')),
+              team_id: newId,
+              name,
+              role,
+              phone,
+              email,
+              password,
+              avatar: name.substring(0, 2).toUpperCase(),
+              status: 'Online'
+            }], { onConflict: 'team_id' });
+          } catch (err) {
+            console.warn('Supabase member update error:', err);
+          }
+        }
 
         // Update assigned tasks if ID changed
         if (origId !== newId) {
@@ -878,11 +1123,20 @@ window.closeEditModal = function() {
   if (modal) modal.style.display = 'none';
 };
 
-window.deleteAdminTask = function(taskId) {
+window.deleteAdminTask = async function(taskId) {
   if (confirm('Are you sure you want to remove this assigned task?')) {
     let tasks = JSON.parse(localStorage.getItem('ewk_team_tasks') || '[]');
     tasks = tasks.filter(t => t.id !== taskId);
     localStorage.setItem('ewk_team_tasks', JSON.stringify(tasks));
+
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('team_tasks').delete().eq('id', taskId);
+      } catch (err) {
+        console.warn('Supabase task delete error:', err);
+      }
+    }
+
     renderAdminAssignedTasks();
     renderTeamAnalytics();
   }
@@ -1032,21 +1286,39 @@ function renderAdminProjects() {
   `).join('');
 }
 
-window.updateProjectProgress = function(projectId, newProgress) {
+window.updateProjectProgress = async function(projectId, newProgress) {
   let projects = JSON.parse(localStorage.getItem('ewk_client_projects') || '[]');
   const project = projects.find(p => p.id === projectId);
   if (project) {
     project.progress = parseInt(newProgress) || 0;
     localStorage.setItem('ewk_client_projects', JSON.stringify(projects));
+
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('client_projects').update({ progress: project.progress }).eq('id', projectId);
+      } catch (err) {
+        console.warn('Supabase project progress update error:', err);
+      }
+    }
+
     renderAdminProjects();
   }
 };
 
-window.deleteAdminProject = function(projectId) {
+window.deleteAdminProject = async function(projectId) {
   if (confirm('Are you sure you want to remove this client production build?')) {
     let projects = JSON.parse(localStorage.getItem('ewk_client_projects') || '[]');
     projects = projects.filter(p => p.id !== projectId);
     localStorage.setItem('ewk_client_projects', JSON.stringify(projects));
+
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('client_projects').delete().eq('id', projectId);
+      } catch (err) {
+        console.warn('Supabase project delete error:', err);
+      }
+    }
+
     renderAdminProjects();
   }
 };
@@ -1054,7 +1326,7 @@ window.deleteAdminProject = function(projectId) {
 document.addEventListener('DOMContentLoaded', () => {
   const projectForm = document.getElementById('create-project-form');
   if (projectForm) {
-    projectForm.addEventListener('submit', (e) => {
+    projectForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = document.getElementById('proj-title-input').value.trim();
       const client = document.getElementById('proj-client-input').value.trim();
@@ -1075,6 +1347,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const projects = JSON.parse(localStorage.getItem('ewk_client_projects') || '[]');
       projects.unshift(newProject);
       localStorage.setItem('ewk_client_projects', JSON.stringify(projects));
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('client_projects').insert([{
+            id: newProject.id,
+            title,
+            client,
+            progress,
+            tech: techStr,
+            deadline,
+            status: 'Active'
+          }]);
+        } catch (err) {
+          console.warn('Supabase project insert error:', err);
+        }
+      }
 
       projectForm.reset();
       alert(`Production Client Build "${title}" created successfully!`);

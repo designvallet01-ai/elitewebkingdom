@@ -217,7 +217,12 @@
         <div id="tab-assign-work" class="tab-panel">
           <div class="admin-section-header">
             <h2 class="admin-section-title">Assign Work to Team Members</h2>
-            <span class="badge">ADMIN MANAGEMENT</span>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button id="upload-team-data-btn" class="btn btn-secondary" onclick="uploadAllTeamDataToSupabase()" style="padding: 6px 14px; font-size: 0.82rem; border-color: rgba(0,242,254,0.4); color: var(--cyan-primary); background: rgba(0,242,254,0.08);">
+                ⚡ Upload Team Data to Supabase
+              </button>
+              <span class="badge" id="supabase-sync-badge">ADMIN MANAGEMENT</span>
+            </div>
           </div>
 
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 32px;">
@@ -353,7 +358,12 @@
         <div id="tab-team-members" class="tab-panel">
           <div class="admin-section-header">
             <h2 class="admin-section-title">Active Team Member Accounts</h2>
-            <span class="badge">REGISTERED CREDENTIALS</span>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button class="btn btn-secondary" onclick="uploadAllTeamDataToSupabase()" style="padding: 6px 14px; font-size: 0.82rem; border-color: rgba(0,242,254,0.4); color: var(--cyan-primary); background: rgba(0,242,254,0.08);">
+                ⚡ Upload Team Data to Supabase
+              </button>
+              <span class="badge">REGISTERED CREDENTIALS</span>
+            </div>
           </div>
 
           <div class="admin-card glass-card" style="padding: 24px; margin-bottom: 28px;">

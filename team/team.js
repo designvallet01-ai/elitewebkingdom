@@ -144,7 +144,40 @@ if (loginForm) {
       return;
     }
 
-    // 2. Try Supabase Authentication if configured
+    // 2. Try Supabase Database public.team_members check
+    if (supabaseClient) {
+      try {
+        const { data: dbMembers } = await supabaseClient.from('team_members').select('*');
+        if (dbMembers && dbMembers.length > 0) {
+          const match = dbMembers.find(m => 
+            ((m.team_id && m.team_id.toLowerCase() === inputId.toLowerCase()) || 
+             (m.email && m.email.toLowerCase() === inputId.toLowerCase())) &&
+            m.password === password
+          );
+
+          if (match) {
+            currentUser = {
+              id: match.id,
+              teamId: match.team_id,
+              email: match.email || `${match.team_id.toLowerCase()}@elitewebkingdom.com`,
+              name: match.name,
+              role: match.role,
+              phone: match.phone || '',
+              password: match.password,
+              avatar: match.avatar || match.name.substring(0, 2).toUpperCase(),
+              status: match.status || 'Online'
+            };
+            localStorage.setItem('ewk_team_current_user', JSON.stringify(currentUser));
+            showDashboard(currentUser);
+            return;
+          }
+        }
+      } catch (dbErr) {
+        console.warn('Supabase DB team_members auth check error:', dbErr);
+      }
+    }
+
+    // 3. Try Supabase Auth API if configured
     if (supabaseClient) {
       try {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email: inputId, password });
@@ -211,12 +244,109 @@ window.switchTab = function(tabId) {
 };
 
 // --- DATA INITIALIZATION & RENDERING ---
-function initDashboardData() {
+async function initDashboardData() {
   renderAssignedWorks();
   renderKanbanBoard();
   renderProjects();
   renderStandupHistory();
   renderTeamRoster();
+  
+  await loadTeamPortalDataFromSupabase();
+}
+
+async function loadTeamPortalDataFromSupabase() {
+  if (!supabaseClient) return;
+
+  try {
+    // 1. Fetch Team Members
+    const { data: members, error: memErr } = await supabaseClient
+      .from('team_members')
+      .select('*')
+      .order('created_at', { ascending: true });
+      
+    if (!memErr && members && members.length > 0) {
+      const formattedMembers = members.map(m => ({
+        id: m.id,
+        teamId: m.team_id,
+        name: m.name,
+        role: m.role,
+        phone: m.phone || '',
+        email: m.email || '',
+        password: m.password,
+        avatar: m.avatar || m.name.substring(0, 2).toUpperCase(),
+        status: m.status || 'Online'
+      }));
+      localStorage.setItem('ewk_team_users', JSON.stringify(formattedMembers));
+      renderTeamRoster();
+    }
+
+    // 2. Fetch Team Tasks
+    const { data: tasks, error: taskErr } = await supabaseClient
+      .from('team_tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!taskErr && tasks && tasks.length > 0) {
+      const formattedTasks = tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || '',
+        category: t.category || 'Backend',
+        priority: t.priority || 'Medium',
+        assignedTo: t.assigned_to,
+        assignedByName: t.assigned_by_name || 'Admin',
+        status: t.status || 'Pending',
+        dueDate: t.due_date || '',
+        createdAt: t.created_at
+      }));
+      localStorage.setItem('ewk_team_tasks', JSON.stringify(formattedTasks));
+      renderAssignedWorks();
+      renderKanbanBoard();
+    }
+
+    // 3. Fetch Team Standups
+    const { data: standups, error: stErr } = await supabaseClient
+      .from('team_standups')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!stErr && standups && standups.length > 0) {
+      const formattedStandups = standups.map(s => ({
+        id: s.id,
+        userName: s.user_name,
+        userRole: s.user_role || 'Specialist',
+        userAvatar: s.user_avatar || 'TM',
+        accomplished: s.accomplished,
+        next: s.next,
+        blockers: s.blockers || 'None',
+        createdAt: new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' Today'
+      }));
+      localStorage.setItem('ewk_team_standups', JSON.stringify(formattedStandups));
+      renderStandupHistory();
+    }
+
+    // 4. Fetch Client Projects
+    const { data: projects, error: prjErr } = await supabaseClient
+      .from('client_projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!prjErr && projects && projects.length > 0) {
+      const formattedProjects = projects.map(p => ({
+        id: p.id,
+        title: p.title,
+        client: p.client,
+        progress: p.progress || 0,
+        tech: p.tech ? p.tech.split(',').map(s => s.trim()) : [],
+        deadline: p.deadline || 'Ongoing',
+        createdAt: p.created_at
+      }));
+      localStorage.setItem('ewk_client_projects', JSON.stringify(formattedProjects));
+      renderProjects();
+    }
+  } catch (err) {
+    console.warn('Team Portal Supabase Sync Error:', err);
+  }
 }
 
 // Render Works Assigned Specifically to Logged In User
@@ -295,13 +425,23 @@ function getStatusColor(status) {
   }
 }
 
-window.updateTaskStatus = function(taskId, newStatus) {
+window.updateTaskStatus = async function(taskId, newStatus) {
   const tasks = getTeamTasks();
   const task = tasks.find(t => t.id === taskId);
   if (task) {
     task.status = newStatus;
     saveTeamTasks(tasks);
-    initDashboardData();
+
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('team_tasks').update({ status: newStatus }).eq('id', taskId);
+      } catch (err) {
+        console.warn('Supabase task status update error:', err);
+      }
+    }
+
+    renderAssignedWorks();
+    renderKanbanBoard();
   }
 };
 
@@ -392,14 +532,13 @@ function renderProjects() {
 // Render Daily Standups
 const standupForm = document.getElementById('standup-form');
 if (standupForm) {
-  standupForm.addEventListener('submit', (e) => {
+  standupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const accomplished = document.getElementById('standup-accomplished').value.trim();
     const next = document.getElementById('standup-next').value.trim();
     const blockers = document.getElementById('standup-blockers').value.trim();
 
-    const standups = JSON.parse(localStorage.getItem('ewk_team_standups') || '[]');
-    standups.unshift({
+    const newStandup = {
       id: 'st-' + Date.now(),
       userName: currentUser ? currentUser.name : 'Team Member',
       userRole: currentUser ? currentUser.role : 'Specialist',
@@ -408,9 +547,28 @@ if (standupForm) {
       next,
       blockers: blockers || 'None',
       createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' Today'
-    });
+    };
 
+    const standups = JSON.parse(localStorage.getItem('ewk_team_standups') || '[]');
+    standups.unshift(newStandup);
     localStorage.setItem('ewk_team_standups', JSON.stringify(standups));
+
+    if (supabaseClient) {
+      try {
+        await supabaseClient.from('team_standups').insert([{
+          id: newStandup.id,
+          user_name: newStandup.userName,
+          user_role: newStandup.userRole,
+          user_avatar: newStandup.userAvatar,
+          accomplished: newStandup.accomplished,
+          next: newStandup.next,
+          blockers: newStandup.blockers
+        }]);
+      } catch (err) {
+        console.warn('Supabase standup insert error:', err);
+      }
+    }
+
     standupForm.reset();
     renderStandupHistory();
   });
