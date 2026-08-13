@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   trackRealVisitor();
 
-  // --- CURSOR SPOTLIGHT EFFECT & CARD MOUSE TRACKING ---
+  // --- CURSOR SPOTLIGHT & CARD MOUSE TRACKING ---
   const spotlight = document.getElementById('spotlight');
   document.addEventListener('mousemove', (e) => {
     if (spotlight) {
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
       spotlight.style.top = `${e.clientY}px`;
     }
     
-    // Update cards mouse position for dynamic radial border gradient
+    // Update mouse position for dynamic glassmorphic radial border highlight
     const cards = document.querySelectorAll('.glass-card');
     cards.forEach(card => {
       const rect = card.getBoundingClientRect();
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --- HEADER SCROLL ACTION ---
+  // --- HEADER SCROLL & BACK TO TOP ---
   const header = document.getElementById('header');
   const backToTopBtn = document.getElementById('back-to-top');
 
@@ -66,6 +66,23 @@ document.addEventListener('DOMContentLoaded', () => {
       header?.classList.remove('scrolled');
       if (backToTopBtn) backToTopBtn.style.opacity = '0';
     }
+    
+    // Active navigation highlight on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const scrollY = window.pageYOffset;
+
+    sections.forEach(current => {
+      const sectionHeight = current.offsetHeight;
+      const sectionTop = current.offsetTop - 120;
+      const sectionId = current.getAttribute('id');
+      const navItem = document.querySelector(`.nav-menu a[href*=${sectionId}]`);
+
+      if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+        navItem?.classList.add('active');
+      } else {
+        navItem?.classList.remove('active');
+      }
+    });
   });
 
   if (backToTopBtn) {
@@ -77,10 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- MOBILE MENU TOGGLE ---
   const menuToggle = document.getElementById('menu-toggle');
   const navMenu = document.getElementById('nav-menu');
-  const navLinks = document.querySelectorAll('.nav-link');
+  const navLinks = document.querySelectorAll('.nav-link, .mobile-cta-btn');
 
   if (menuToggle && navMenu) {
-    menuToggle.addEventListener('click', () => {
+    menuToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
       menuToggle.classList.toggle('open');
       navMenu.classList.toggle('open');
     });
@@ -90,6 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
         menuToggle.classList.remove('open');
         navMenu.classList.remove('open');
       });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!navMenu.contains(e.target) && !menuToggle.contains(e.target)) {
+        menuToggle.classList.remove('open');
+        navMenu.classList.remove('open');
+      }
     });
   }
 
@@ -112,13 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const tabContents = {
     web: `
-      <div class="code-line"><span class="code-keyword">const</span> kingdomSystem = <span class="code-keyword">new</span> EliteEngine({</div>
-      <div class="code-line" style="padding-left: 20px;">framework: <span class="code-str">'React / Next.js'</span>,</div>
-      <div class="code-line" style="padding-left: 20px;">speedIndex: <span class="code-num">0.8</span>, <span class="code-str">// seconds</span></div>
-      <div class="code-line" style="padding-left: 20px;">security: <span class="code-str">'A+ Encrypted'</span>,</div>
-      <div class="code-line" style="padding-left: 20px;">status: <span class="code-str">'PRODUCTION READY'</span></div>
+      <div class="code-line"><span class="code-keyword">const</span> enterpriseCluster = <span class="code-keyword">new</span> SystemArchitecture({</div>
+      <div class="code-line" style="padding-left: 20px;">framework: <span class="code-str">'React / Next.js Micro-Frontends'</span>,</div>
+      <div class="code-line" style="padding-left: 20px;">latency: <span class="code-num">0.8</span>, <span class="code-str">// seconds</span></div>
+      <div class="code-line" style="padding-left: 20px;">security: <span class="code-str">'A+ Zero-Trust Encryption'</span>,</div>
+      <div class="code-line" style="padding-left: 20px;">status: <span class="code-str">'ENTERPRISE PRODUCTION READY'</span></div>
       <div class="code-line">});</div>
-      <div class="code-line" style="margin-top: 15px; color: var(--emerald-accent);">// ⚡ Status: All 15+ nodes online</div>
+      <div class="code-line" style="margin-top: 15px; color: var(--emerald-accent);">// ⚡ Status: 100% Core Nodes Operational</div>
     `,
     mobile: `
       <div class="code-line"><span class="code-keyword">class</span> MobileApp <span class="code-keyword">extends</span> NativeComponent {</div>
@@ -126,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="code-line" style="padding-left: 20px;">uiEngine: <span class="code-str">'Jetpack Compose / SwiftUI'</span>,</div>
       <div class="code-line" style="padding-left: 20px;">storeReady: <span class="code-keyword">true</span></div>
       <div class="code-line">}</div>
-      <div class="code-line" style="margin-top: 15px; color: var(--cyan-primary);">// 📱 60 FPS Fluid Gesture Engine active</div>
+      <div class="code-line" style="margin-top: 15px; color: var(--cyan-primary);">// 📱 60 FPS Fluid Gesture Engine Active</div>
     `,
     cloud: `
       <div class="code-line"><span class="code-keyword">service</span> CloudRealm {</div>
@@ -134,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="code-line" style="padding-left: 20px;">auth: <span class="code-str">'JWT & Multi-Factor'</span>,</div>
       <div class="code-line" style="padding-left: 20px;">hosting: <span class="code-str">'AWS Edge Gateway'</span></div>
       <div class="code-line">}</div>
-      <div class="code-line" style="margin-top: 15px; color: var(--violet-primary);">// ☁️ Distributed server response: 12ms</div>
+      <div class="code-line" style="margin-top: 15px; color: var(--violet-primary);">// ☁️ Distributed Server Response: 12ms</div>
     `
   };
 
@@ -200,136 +225,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (estService && estScale && estTimeline) {
-    estService.addEventListener('change', calculateEstimate);
-    estScale.addEventListener('change', calculateEstimate);
-    estTimeline.addEventListener('change', calculateEstimate);
-    calculateEstimate();
-  }
+  [estService, estScale, estTimeline].forEach(select => {
+    select?.addEventListener('change', calculateEstimate);
+  });
+  calculateEstimate();
 
   if (estApplyBtn) {
     estApplyBtn.addEventListener('click', () => {
       const selectedService = estService.value;
+      const priceText = estResultPrice.textContent;
+      const timelineText = estResultTime.textContent;
+
       const categorySelect = document.getElementById('category');
-      if (categorySelect) {
-        categorySelect.value = selectedService;
+      const budgetSelect = document.getElementById('budget');
+      const messageTextarea = document.getElementById('message');
+
+      if (categorySelect) categorySelect.value = selectedService;
+      
+      // Match budget select
+      if (budgetSelect) {
+        if (priceText.includes('25,000') || priceText.includes('35,000')) {
+          budgetSelect.value = '₹25,000 - ₹50,000';
+        } else if (priceText.includes('50,000') || priceText.includes('60,000')) {
+          budgetSelect.value = '₹50,000 - ₹1,00,000';
+        } else if (priceText.includes('1,00,000')) {
+          budgetSelect.value = '₹1,00,000 - ₹2,50,000';
+        }
       }
-      const contactSection = document.getElementById('contact');
-      if (contactSection) {
-        contactSection.scrollIntoView({ behavior: 'smooth' });
+
+      if (messageTextarea) {
+        messageTextarea.value = `Applied Estimate: Service: ${selectedService} | Estimated Range: ${priceText} | Expected Timeline: ${timelineText}.\n\nAdditional Requirements: `;
       }
+
+      document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
     });
   }
 
-  // --- PROJECT TRACKER & DEMO CHIPS LOGIC ---
+  // --- PROJECT TRACKER LOGIC ---
+  const trackerInput = document.getElementById('tracker-id-input');
   const trackBtn = document.getElementById('track-btn');
-  const trackInput = document.getElementById('tracker-id-input');
-  const trackResults = document.getElementById('tracker-results');
-  const trackError = document.getElementById('tracker-search-error');
+  const trackerError = document.getElementById('tracker-search-error');
+  const trackerResults = document.getElementById('tracker-results');
   const demoChips = document.querySelectorAll('.demo-chip');
 
-  const demoDatabase = {
+  const mockTrackerDb = {
     'EWK8F27A': {
-      client: 'Apex Tech Innovations',
-      type: 'Web & Mobile App Hybrid',
-      status: 'in-progress',
-      memo: 'Sprint 3 complete. Supabase user database integration finalized. API tests clean.'
+      client: 'Acme Enterprise Solutions',
+      type: 'Full Stack Web Platform',
+      status: 'in_progress',
+      statusLabel: 'In Progress (80%)',
+      memo: 'Sprint 4 complete. React micro-frontends deployed to staging server. Final API security audit underway.'
     },
     'DEMO101': {
-      client: 'Vanguard Global',
-      type: 'E-Commerce Hub',
+      client: 'Kingdom Retail Network',
+      type: 'Native Android & iOS App',
       status: 'completed',
-      memo: 'Project live on production server! SSL security A+ rating verified.'
+      statusLabel: 'Production Live',
+      memo: 'App Store & Play Store approval confirmed. Production build live on Google Play & Apple App Store.'
     }
   };
 
-  demoChips.forEach(chip => {
-    chip.addEventListener('click', () => {
-      const demoId = chip.getAttribute('data-id');
-      if (trackInput && demoId) {
-        trackInput.value = demoId;
-        performTrack(demoId);
-      }
-    });
-  });
-
-  if (trackBtn && trackInput) {
-    trackBtn.addEventListener('click', () => {
-      const inputVal = trackInput.value.trim().toUpperCase();
-      if (inputVal) {
-        performTrack(inputVal);
-      } else {
-        showTrackError('Please enter a valid Project ID.');
-      }
-    });
-  }
-
-  async function performTrack(projectId) {
-    hideTrackError();
-    let leadData = null;
-
-    // Check pre-filled demo database
-    if (demoDatabase[projectId]) {
-      leadData = demoDatabase[projectId];
-    }
-
-    // Check localStorage fallback
-    if (!leadData) {
-      try {
-        const localLeads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
-        const found = localLeads.find(l => l.id.toUpperCase() === projectId);
-        if (found) {
-          leadData = {
-            client: found.name + (found.company ? ` (${found.company})` : ''),
-            type: found.category,
-            status: found.status || 'new',
-            memo: `Proposal recorded on ${found.date}. Awaiting developer review.`
-          };
-        }
-      } catch (err) {
-        console.error('LocalStorage lookup error:', err);
-      }
-    }
-
-    // Check Supabase DB
-    if (!leadData && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('leads')
-          .select('*')
-          .eq('id', projectId)
-          .single();
-
-        if (data && !error) {
-          leadData = {
-            client: data.name + (data.company && data.company !== 'N/A' ? ` (${data.company})` : ''),
-            type: data.category,
-            status: data.status || 'new',
-            memo: data.developer_memo || 'Proposal submitted. Our lead developer will reach out shortly.'
-          };
-        }
-      } catch (dbErr) {
-        console.error('Supabase lookup error:', dbErr);
-      }
-    }
-
-    if (leadData) {
-      renderTrackerUI(leadData);
-    } else {
-      showTrackError(`No project found with ID: ${projectId}. Please double check the ID or contact support.`);
-    }
-  }
-
-  function renderTrackerUI(data) {
-    if (!trackResults) return;
-    trackResults.style.display = 'block';
-
+  function updateTrackerUI(data) {
+    if (!data) return;
     document.getElementById('track-client-name').textContent = data.client || '-';
     document.getElementById('track-project-type').textContent = data.type || '-';
-    document.getElementById('track-current-status').textContent = (data.status || 'new').toUpperCase();
-    document.getElementById('track-status-memo').textContent = data.memo || '-';
+    document.getElementById('track-current-status').textContent = data.statusLabel || data.status || '-';
+    document.getElementById('track-status-memo').textContent = data.memo || 'No active developer notes.';
 
-    // Milestone Stepper Highlighting
+    // Stepper progress logic
     const steps = ['new', 'under-review', 'accepted', 'in-progress', 'completed'];
     const stepElements = {
       'new': document.getElementById('step-new'),
@@ -339,39 +302,93 @@ document.addEventListener('DOMContentLoaded', () => {
       'completed': document.getElementById('step-completed')
     };
 
-    const statusIndex = steps.indexOf(data.status || 'new');
-    const progressWidth = statusIndex >= 0 ? (statusIndex / (steps.length - 1)) * 100 : 0;
+    const statusMap = {
+      'new': 0,
+      'under_review': 1,
+      'under-review': 1,
+      'accepted': 2,
+      'in_progress': 3,
+      'in-progress': 3,
+      'completed': 4
+    };
+
+    const activeIndex = statusMap[data.status] ?? 0;
+    const progressWidths = ['0%', '25%', '50%', '75%', '100%'];
     
     const progressBar = document.getElementById('stepper-progress-bar');
-    if (progressBar) progressBar.style.width = `${progressWidth}%`;
+    if (progressBar) progressBar.style.width = progressWidths[activeIndex];
 
     steps.forEach((stepKey, idx) => {
       const el = stepElements[stepKey];
       if (el) {
-        if (idx <= statusIndex) {
+        el.classList.remove('completed', 'active');
+        if (idx < activeIndex) {
+          el.classList.add('completed');
+        } else if (idx === activeIndex) {
           el.classList.add('active');
-        } else {
-          el.classList.remove('active');
         }
       }
     });
 
-    trackResults.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (trackerResults) trackerResults.style.display = 'block';
+    if (trackerError) trackerError.style.display = 'none';
   }
 
-  function showTrackError(msg) {
-    if (trackError) {
-      trackError.style.display = 'block';
-      trackError.textContent = msg;
+  async function searchProject(id) {
+    const cleanId = id.trim().toUpperCase();
+    if (!cleanId) return;
+
+    if (trackerError) trackerError.style.display = 'none';
+
+    // Check Supabase first if available
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('proposals').select('*').eq('project_id', cleanId).single();
+        if (data && !error) {
+          updateTrackerUI({
+            client: data.name || data.company || 'Client Project',
+            type: data.category || 'Software Solution',
+            status: data.status || 'new',
+            statusLabel: (data.status || 'Received').replace('_', ' ').toUpperCase(),
+            memo: data.memo || `Project proposal logged on ${new Date(data.created_at).toLocaleDateString()}.`
+          });
+          return;
+        }
+      } catch (err) {
+        console.log('Supabase lookup note:', err);
+      }
     }
-    if (trackResults) trackResults.style.display = 'none';
+
+    // Fallback to mock DB
+    if (mockTrackerDb[cleanId]) {
+      updateTrackerUI(mockTrackerDb[cleanId]);
+    } else {
+      if (trackerResults) trackerResults.style.display = 'none';
+      if (trackerError) {
+        trackerError.textContent = `Project ID "${cleanId}" not found in current staging registry. Please verify your ID or contact support.`;
+        trackerError.style.display = 'block';
+      }
+    }
   }
 
-  function hideTrackError() {
-    if (trackError) trackError.style.display = 'none';
+  if (trackBtn && trackerInput) {
+    trackBtn.addEventListener('click', () => searchProject(trackerInput.value));
+    trackerInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchProject(trackerInput.value);
+    });
   }
 
-  // --- CONTACT FORM HANDLER WITH WHATSAPP INTEGRATION ---
+  demoChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const demoId = chip.getAttribute('data-id');
+      if (trackerInput && demoId) {
+        trackerInput.value = demoId;
+        searchProject(demoId);
+      }
+    });
+  });
+
+  // --- CONTACT FORM SUBMISSION HANDLER ---
   const contactForm = document.getElementById('contact-form');
   const formStatus = document.getElementById('form-status');
   const submitBtn = document.getElementById('submit-btn');
@@ -379,121 +396,77 @@ document.addEventListener('DOMContentLoaded', () => {
   if (contactForm) {
     contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      const phone = document.getElementById('phone').value.trim();
-      const company = document.getElementById('company').value.trim();
+
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const phone = document.getElementById('phone').value;
+      const company = document.getElementById('company').value;
       const category = document.getElementById('category').value;
       const budget = document.getElementById('budget').value;
-      const timeline = document.getElementById('timeline').value;
-      const message = document.getElementById('message').value.trim();
-      
-      if (!name || !email || !phone || !category || !budget || !timeline || !message) {
-        showStatus('Please fill in all required fields.', 'error');
-        return;
+      const message = document.getElementById('message').value;
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Architecting Scope Proposal...';
       }
 
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = 'Filing Proposal... ⚡';
-      showStatus('Securing lead entry in database...', 'success');
+      const generatedId = 'EWK' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      let success = false;
 
-      // Generate alphanumeric ID (e.g. EWK98A2F)
-      const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      let alphanumericId = 'EWK';
-      for (let i = 0; i < 5; i++) {
-        alphanumericId += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      let finalId = alphanumericId;
-
-      // Save to Supabase
       if (supabase) {
         try {
-          const { data, error } = await supabase
-            .from('leads')
-            .insert([{
-              id: finalId,
-              name: name,
-              email: email,
-              phone: phone,
-              company: company || 'N/A',
-              category: category,
-              budget: budget,
-              timeline: timeline,
-              message: message,
-              status: 'new'
-            }]).select();
-            
-          if (data && data[0]) {
-            finalId = data[0].id;
-          }
-        } catch (dbErr) {
-          console.error('Supabase DB error, using local fallback:', dbErr);
+          const { error } = await supabase.from('proposals').insert([{
+            project_id: generatedId,
+            name,
+            email,
+            phone,
+            company,
+            category,
+            budget,
+            message,
+            status: 'new',
+            created_at: new Date().toISOString()
+          }]);
+
+          if (!error) success = true;
+        } catch (err) {
+          console.error('Supabase proposal insertion error:', err);
         }
       }
 
-      // Save to localStorage
-      try {
-        let leads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
-        leads.unshift({
-          id: finalId,
-          name: name,
-          email: email,
-          phone: phone,
-          company: company || 'N/A',
-          category: category,
-          budget: budget,
-          timeline: timeline,
-          message: message,
-          date: new Date().toLocaleDateString(),
-          status: 'new'
-        });
-        localStorage.setItem('ewk_leads', JSON.stringify(leads));
-      } catch (err) {
-        console.error('LocalStorage write error:', err);
+      // Always display success alert with project ID & WhatsApp direct handoff
+      if (formStatus) {
+        formStatus.className = 'form-status success';
+        formStatus.innerHTML = `
+          <strong>Proposal Submitted Successfully!</strong><br>
+          Your assigned Project Tracking ID is: <strong style="color: var(--cyan-primary); font-family: var(--font-mono);">${generatedId}</strong><br>
+          <span style="font-size: 0.85rem;">Lead Architect Gowri Narayana Guduru will review your requirements shortly.</span>
+          <div style="margin-top: 12px;">
+            <a href="https://wa.me/919985369590?text=Hello%20Gowri%20Narayana,%20I%20just%20submitted%20a%20proposal%20request%20with%20ID:%20${generatedId}" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp" style="padding: 8px 16px; font-size: 0.82rem;">
+              Connect on WhatsApp with ID: ${generatedId}
+            </a>
+          </div>
+        `;
+        formStatus.style.display = 'block';
       }
 
-      // Construct WhatsApp link
-      const whatsappBase = "https://wa.me/919985369590";
-      const textMessage = `Hello Elite Web Kingdom! 🌟\n\n` +
-                          `I would like to file a project brief:\n\n` +
-                          `Project Tracker ID: *${finalId}*\n` +
-                          `Name: *${name}*\n` +
-                          `Email: *${email}*\n` +
-                          `Phone: *${phone}*\n` +
-                          (company ? `Company: *${company}*\n` : '') +
-                          `Service: *${category}*\n` +
-                          `Est. Budget: *${budget}*\n` +
-                          `Est. Timeline: *${timeline}*\n\n` +
-                          `*Project Brief:*\n${message}\n\n` +
-                          `Please let me know when we can connect!`;
-
-      const whatsappURL = `${whatsappBase}?text=${encodeURIComponent(textMessage)}`;
-
-      showStatus(`Proposal filed successfully! Your Project Tracker ID is: ${finalId}. Redirecting to WhatsApp...`, 'success');
-
-      setTimeout(() => {
-        window.open(whatsappURL, '_blank');
-        contactForm.reset();
+      contactForm.reset();
+      if (submitBtn) {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `Submit Proposal Request <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`;
-      }, 1500);
+        submitBtn.innerHTML = `
+          Submit Proposal Request
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        `;
+      }
     });
   }
 
-  function showStatus(msg, type) {
-    if (formStatus) {
-      formStatus.className = `form-status ${type}`;
-      formStatus.textContent = msg;
-    }
-  }
-
-  // --- NEWSLETTER FORM HANDLER ---
+  // --- NEWSLETTER FORM ---
   const newsletterForm = document.getElementById('newsletter-form');
   if (newsletterForm) {
     newsletterForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      alert('Thank you for subscribing to Elite Web Kingdom insights!');
+      alert('Thank you for subscribing to Elite Web Kingdom Architecture Insights!');
       newsletterForm.reset();
     });
   }
