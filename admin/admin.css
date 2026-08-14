@@ -193,17 +193,45 @@ button, input, select, textarea {
 .form-control {
   width: 100%;
   padding: 12px 18px;
-  background: rgba(2, 6, 23, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: var(--radius-md);
-  color: var(--text-bright);
+  color: #ffffff !important;
   font-size: 0.92rem;
+  caret-color: var(--cyan-primary);
+  color-scheme: dark;
   transition: var(--transition-fast);
 }
 
 .form-control:focus {
-  border-color: var(--cyan-primary);
-  box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-color: var(--cyan-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.25) !important;
+  outline: none !important;
+}
+
+.form-control::placeholder {
+  color: rgba(148, 163, 184, 0.7) !important;
+  opacity: 1 !important;
+}
+
+/* Chrome / Safari / Edge Autofill Fix */
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover,
+.form-control:-webkit-autofill:focus,
+.form-control:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0 1000px #0b0f19 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  color: #ffffff !important;
+}
+
+/* Dropdown Option List Fix for Select Elements */
+select.form-control option,
+.form-control option {
+  background-color: #0b0f19 !important;
+  color: #ffffff !important;
 }
 
 /* ==========================================

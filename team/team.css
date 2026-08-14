@@ -201,20 +201,47 @@ body {
 }
 
 .form-control {
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid var(--glass-border);
+  width: 100%;
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid var(--glass-border) !important;
   border-radius: var(--radius-sm);
   padding: 12px 16px;
-  color: var(--text-main);
+  color: #ffffff !important;
   font-family: var(--font-body);
   font-size: 0.95rem;
+  caret-color: var(--cyan-primary);
+  color-scheme: dark;
   outline: none;
   transition: all var(--transition-fast);
 }
 
 .form-control:focus {
-  border-color: var(--cyan-primary);
-  box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: var(--cyan-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.25) !important;
+  outline: none !important;
+}
+
+.form-control::placeholder {
+  color: rgba(148, 163, 184, 0.7) !important;
+  opacity: 1 !important;
+}
+
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover,
+.form-control:-webkit-autofill:focus,
+.form-control:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0 1000px #0b0f19 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  color: #ffffff !important;
+}
+
+select.form-control option,
+.form-control option {
+  background-color: #0b0f19 !important;
+  color: #ffffff !important;
 }
 
 .btn {
