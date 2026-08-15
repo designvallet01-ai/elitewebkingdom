@@ -55,11 +55,28 @@ CREATE TABLE IF NOT EXISTS public.client_projects (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 5. PUBLISHED STORE ITEMS TABLE
+CREATE TABLE IF NOT EXISTS public.published_store_items (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    category TEXT NOT NULL,
+    price TEXT DEFAULT 'Free',
+    preview_url TEXT,
+    download_url TEXT,
+    description TEXT,
+    tech_stack TEXT,
+    image_url TEXT,
+    badge TEXT DEFAULT 'Verified',
+    status TEXT DEFAULT 'Published',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Enable Row Level Security (RLS) & Grant Permissive Access for Anon/Authenticated
 ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.team_standups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.client_projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.published_store_items ENABLE ROW LEVEL SECURITY;
 
 -- Create Policies for Anonymous & Authenticated access
 CREATE POLICY "Allow public select team_members" ON public.team_members FOR SELECT USING (true);
@@ -81,3 +98,9 @@ CREATE POLICY "Allow public select client_projects" ON public.client_projects FO
 CREATE POLICY "Allow public insert client_projects" ON public.client_projects FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public update client_projects" ON public.client_projects FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete client_projects" ON public.client_projects FOR DELETE USING (true);
+
+CREATE POLICY "Allow public select published_store_items" ON public.published_store_items FOR SELECT USING (true);
+CREATE POLICY "Allow public insert published_store_items" ON public.published_store_items FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update published_store_items" ON public.published_store_items FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete published_store_items" ON public.published_store_items FOR DELETE USING (true);
+

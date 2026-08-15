@@ -92,11 +92,19 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
           Team Analytics & Insights
         </a>
+        <a href="#store-management" class="sidebar-link" onclick="switchTab('store-management')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          Publish Store Items (<span id="sidebar-store-count">0</span>)
+        </a>
         <a href="#settings" class="sidebar-link" onclick="switchTab('settings')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           System Settings
         </a>
-        <a href="/team" class="sidebar-link" target="_blank" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; color: var(--cyan-primary);">
+        <a href="/store" class="sidebar-link" target="_blank" style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; color: var(--saffron-main);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          Open Store Portal ↗
+        </a>
+        <a href="/team" class="sidebar-link" target="_blank" style="color: var(--cyan-primary);">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           Open Team Portal ↗
         </a>
@@ -563,7 +571,206 @@
           </div>
         </div>
 
+        <!-- PANEL: APP & WEB STORE MANAGEMENT -->
+        <div id="tab-store-management" class="tab-panel">
+          <div class="admin-section-header">
+            <div>
+              <h2 class="admin-section-title">Work Showcase & Free Downloads Publisher</h2>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Publish software apps & websites created by Elite Web Kingdom for public showcase and 100% free downloads.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary" onclick="openPublishStoreModal()">
+                + Publish New Work
+              </button>
+              <button class="btn btn-secondary" onclick="uploadStoreItemsToSupabase()">
+                ⚡ Sync Supabase
+              </button>
+            </div>
+          </div>
+
+          <!-- Store Stats Grid -->
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card glass-card">
+              <div>
+                <span class="stat-card-lbl">Total Showcase Items</span>
+                <span class="stat-card-val" id="admin-store-total-count">0</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div>
+                <span class="stat-card-lbl">Published Web Apps</span>
+                <span class="stat-card-val" id="admin-store-web-count">0</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div>
+                <span class="stat-card-lbl">Published Mobile Apps</span>
+                <span class="stat-card-val" id="admin-store-mobile-count">0</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div>
+                <span class="stat-card-lbl">Live Published Ratio</span>
+                <span class="stat-card-val" id="admin-store-active-rate">100%</span>
+              </div>
+              <div class="stat-card-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Store Table Card -->
+          <div class="admin-card glass-card" style="margin-top: 28px; padding: 24px;">
+            <div style="display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 20px;">
+              <h3 style="font-size: 1.1rem; color: var(--text-bright);">Managed Showcase & Free Download Items</h3>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="admin-store-search" class="form-control" placeholder="Search showcase..." onkeyup="filterAdminStoreTable()" style="width: 220px; padding: 6px 12px; font-size: 0.85rem;">
+                <select id="admin-store-cat-filter" class="form-control" onchange="filterAdminStoreTable()" style="width: 160px; padding: 6px 12px; font-size: 0.85rem;">
+                  <option value="ALL">All Categories</option>
+                  <option value="Web App">Web App</option>
+                  <option value="Android App">Android App</option>
+                  <option value="iOS App">iOS App</option>
+                  <option value="Full-stack Website">Full-stack Website</option>
+                  <option value="E-Commerce Store">E-Commerce Store</option>
+                  <option value="SaaS Platform">SaaS Platform</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Title & Info</th>
+                    <th>Category</th>
+                    <th>Price / Download Tag</th>
+                    <th>Tech Stack</th>
+                    <th>Badge</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-store-tbody">
+                  <!-- Dynamic Insertion -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </main>
+    </div>
+  </div>
+
+  <!-- PUBLISH STORE ITEM MODAL -->
+  <div id="publish-store-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+    <div class="admin-card glass-card" style="max-width: 650px; width: 100%; padding: 28px; margin: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+        <h3 id="publish-modal-title" style="font-size: 1.3rem; font-weight: 700; color: var(--text-bright);">Publish Work Showcase & Free Download Item</h3>
+        <button onclick="closePublishStoreModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.4rem;">&times;</button>
+      </div>
+
+      <form id="publish-store-form" style="display: flex; flex-direction: column; gap: 16px;">
+        <input type="hidden" id="store-item-id">
+        
+        <div class="form-group">
+          <label for="store-title">Project / App Name *</label>
+          <input type="text" id="store-title" class="form-control" placeholder="e.g. Student Management System (SMS)" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label for="store-category">Category *</label>
+            <select id="store-category" class="form-control" onchange="onStoreCategoryChange()" required>
+              <option value="Web App">Web App</option>
+              <option value="Android App">Android App</option>
+              <option value="iOS App">iOS App</option>
+              <option value="Full-stack Website">Full-stack Website</option>
+              <option value="E-Commerce Store">E-Commerce Store</option>
+              <option value="SaaS Platform">SaaS Platform</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="store-price">Pricing / Tag (e.g. FREE DOWNLOAD) *</label>
+            <input type="text" id="store-price" class="form-control" value="FREE DOWNLOAD" placeholder="FREE DOWNLOAD" required>
+          </div>
+        </div>
+
+        <!-- DYNAMIC FIELD CONTAINER: WEB LINKS vs APK FILE UPLOADS -->
+        <div id="web-fields-container" style="display: block;">
+          <div class="form-group">
+            <label for="store-preview-url">Live Website / Web App Link 🌐 *</label>
+            <input type="url" id="store-preview-url" class="form-control" placeholder="https://www.elitewebkingdom.in/">
+          </div>
+        </div>
+
+        <div id="app-fields-container" style="display: none; background: rgba(5, 150, 105, 0.08); padding: 16px; border-radius: var(--radius-md); border: 1px solid rgba(5, 150, 105, 0.2);">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label for="store-apk-file" style="color: #10B981; font-weight: 700;">Upload Mobile App File (APK / ZIP) 📤</label>
+            <input type="file" id="store-apk-file" class="form-control" accept=".apk,.zip,.ipa" style="padding: 8px;">
+            <span id="apk-upload-status" style="font-size: 0.78rem; color: #10B981; margin-top: 4px; display: block;"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="store-download-url">Direct APK Download Link / File URL *</label>
+            <input type="url" id="store-download-url" class="form-control" placeholder="Auto-generated on file select or paste direct .apk URL">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="form-group">
+            <label for="store-tech-stack">Tech Stack (comma separated)</label>
+            <input type="text" id="store-tech-stack" class="form-control" placeholder="React, Node.js, Supabase, Tailwind">
+          </div>
+
+          <div class="form-group">
+            <label for="store-badge">Promotional Badge</label>
+            <select id="store-badge" class="form-control">
+              <option value="FREE / OPEN SOURCE">FREE / OPEN SOURCE</option>
+              <option value="FREE SHOWCASE">FREE SHOWCASE</option>
+              <option value="FREE APK DOWNLOAD">FREE APK DOWNLOAD</option>
+              <option value="FREE SOURCE CODE">FREE SOURCE CODE</option>
+              <option value="Verified Asset">Verified Asset</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="store-image-url">Cover Image URL</label>
+          <input type="text" id="store-image-url" class="form-control" placeholder="/1.jpeg or https://images.unsplash.com/...">
+        </div>
+
+        <div class="form-group">
+          <label for="store-description">Product Description & Key Features *</label>
+          <textarea id="store-description" class="form-control" rows="3" placeholder="Describe core features, target users, and capabilities of this app/website..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="store-status">Publish Status</label>
+          <select id="store-status" class="form-control">
+            <option value="Published">Published (Visible on Main Store)</option>
+            <option value="Draft">Draft (Hidden from Public)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 10px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Save & Publish Product</button>
+          <button type="button" class="btn btn-secondary" onclick="closePublishStoreModal()" style="flex: 1;">Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
 

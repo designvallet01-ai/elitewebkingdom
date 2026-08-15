@@ -1578,3 +1578,33 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+/* APP & WEB STORE STYLES */
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+
+.store-card-item {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.store-card-item:hover {
+  transform: translateY(-6px);
+}
+
+@media (max-width: 1024px) {
+  .store-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .store-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

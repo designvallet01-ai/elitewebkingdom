@@ -471,3 +471,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// Handle asset prefill from showcase portal
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const assetName = urlParams.get('asset');
+  if (assetName) {
+    const messageInput = document.getElementById('message');
+    const categoryInput = document.getElementById('category');
+    if (categoryInput) categoryInput.value = 'Web Architecture';
+    if (messageInput) {
+      messageInput.value = `Hello Elite Web Kingdom, I am interested in your showcase work: "${assetName}". Please provide details for custom development.`;
+    }
+  }
+});
+

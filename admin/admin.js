@@ -181,6 +181,7 @@ function initDashboard() {
   renderAdminAssignedTasks();
   renderTeamAnalytics();
   renderAdminProjects();
+  renderAdminStoreItems();
   loadTeamDataFromSupabase();
 }
 
@@ -275,6 +276,31 @@ async function loadTeamDataFromSupabase() {
       }));
       localStorage.setItem('ewk_client_projects', JSON.stringify(formattedProjects));
       renderAdminProjects();
+    }
+
+    // 5. Fetch Published Store Items
+    const { data: storeItems, error: storeErr } = await supabaseClient
+      .from('published_store_items')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!storeErr && storeItems) {
+      const formattedStoreItems = storeItems.map(s => ({
+        id: s.id,
+        title: s.title,
+        category: s.category,
+        price: s.price || 'FREE DOWNLOAD',
+        previewUrl: s.preview_url || '',
+        downloadUrl: s.download_url || '',
+        description: s.description || '',
+        techStack: s.tech_stack || '',
+        imageUrl: s.image_url || '/1.jpeg',
+        badge: s.badge || 'FREE / OPEN SOURCE',
+        status: s.status || 'Published',
+        createdAt: s.created_at
+      }));
+      localStorage.setItem('ewk_published_store_items', JSON.stringify(formattedStoreItems));
+      renderAdminStoreItems();
     }
   } catch (err) {
     console.warn('Error loading team data from Supabase:', err);
@@ -1437,4 +1463,374 @@ window.onKpiClick = function(type) {
     }, 120);
   }
 };
+
+// --- WORK SHOWCASE & FREE DOWNLOADS PUBLISHER ENGINE (PURE SUPABASE) ---
+function getAdminStoreItems() {
+  const local = localStorage.getItem('ewk_published_store_items');
+  if (local) {
+    try {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      console.warn('Error parsing local store items:', e);
+    }
+  }
+  return [];
+}
+
+function saveAdminStoreItemsLocally(items) {
+  localStorage.setItem('ewk_published_store_items', JSON.stringify(items));
+  renderAdminStoreItems();
+}
+
+window.renderAdminStoreItems = function() {
+  const tbody = document.getElementById('admin-store-tbody');
+  const totalCountEl = document.getElementById('admin-store-total-count');
+  const webCountEl = document.getElementById('admin-store-web-count');
+  const mobileCountEl = document.getElementById('admin-store-mobile-count');
+  const ratioEl = document.getElementById('admin-store-active-rate');
+  const sidebarCountEl = document.getElementById('sidebar-store-count');
+
+  const items = getAdminStoreItems();
+
+  const searchVal = (document.getElementById('admin-store-search')?.value || '').toLowerCase();
+  const catVal = document.getElementById('admin-store-cat-filter')?.value || 'ALL';
+
+  const filtered = items.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(searchVal) || (item.techStack || '').toLowerCase().includes(searchVal) || (item.description || '').toLowerCase().includes(searchVal);
+    const matchesCat = catVal === 'ALL' || item.category === catVal;
+    return matchesSearch && matchesCat;
+  });
+
+  const total = items.length;
+  const webApps = items.filter(i => i.category === 'Web App' || i.category === 'Full-stack Website' || i.category === 'SaaS Platform' || i.category === 'E-Commerce Store').length;
+  const mobileApps = items.filter(i => i.category === 'Android App' || i.category === 'iOS App').length;
+  const publishedCount = items.filter(i => i.status === 'Published').length;
+
+  if (totalCountEl) totalCountEl.textContent = total;
+  if (webCountEl) webCountEl.textContent = webApps;
+  if (mobileCountEl) mobileCountEl.textContent = mobileApps;
+  if (sidebarCountEl) sidebarCountEl.textContent = total;
+  if (ratioEl) ratioEl.textContent = total > 0 ? `${Math.round((publishedCount / total) * 100)}%` : '100%';
+
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">No published store assets found matching criteria.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(item => {
+    const statusBadge = item.status === 'Published' 
+      ? `<span class="badge" style="background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3);">Published</span>`
+      : `<span class="badge" style="background: rgba(241,196,15,0.15); color: #f1c40f; border: 1px solid rgba(241,196,15,0.3);">Draft</span>`;
+
+    return `
+      <tr>
+        <td>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="${item.imageUrl || '/1.jpeg'}" alt="${item.title}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
+            <div>
+              <strong style="color: var(--text-bright); display: block; font-size: 0.92rem;">${item.title}</strong>
+              <span style="font-size: 0.75rem; color: var(--text-muted); line-clamp: 1;">${item.description ? item.description.substring(0, 45) + '...' : ''}</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="tech-chip" style="font-size: 0.75rem;">${item.category}</span></td>
+        <td><strong style="color: var(--cyan-primary); font-size: 0.9rem;">${item.price}</strong></td>
+        <td><span style="font-size: 0.8rem; color: var(--text-muted);">${item.techStack || 'Custom'}</span></td>
+        <td><span class="badge" style="font-size: 0.72rem;">${item.badge || 'Verified'}</span></td>
+        <td>${statusBadge}</td>
+        <td>
+          <div style="display: flex; gap: 6px;">
+            <button class="action-icon-btn" title="Toggle Published / Draft Status" onclick="toggleStoreItemStatus('${item.id}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+            <button class="action-icon-btn" title="Edit Asset Details" onclick="openPublishStoreModal('${item.id}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+            <button class="action-icon-btn" title="Delete Asset" onclick="deleteStoreItem('${item.id}')" style="color: #f43f5e;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+};
+
+window.filterAdminStoreTable = function() {
+  renderAdminStoreItems();
+};
+
+window.onStoreCategoryChange = function() {
+  const cat = document.getElementById('store-category')?.value;
+  const webContainer = document.getElementById('web-fields-container');
+  const appContainer = document.getElementById('app-fields-container');
+  if (!webContainer || !appContainer) return;
+
+  if (cat === 'Android App' || cat === 'iOS App') {
+    webContainer.style.display = 'none';
+    appContainer.style.display = 'block';
+  } else {
+    webContainer.style.display = 'block';
+    appContainer.style.display = 'none';
+  }
+};
+
+window.openPublishStoreModal = function(itemId = null) {
+  const modal = document.getElementById('publish-store-modal');
+  const titleEl = document.getElementById('publish-modal-title');
+  const form = document.getElementById('publish-store-form');
+  const apkStatus = document.getElementById('apk-upload-status');
+  if (!modal || !form) return;
+
+  form.reset();
+  document.getElementById('store-item-id').value = '';
+  if (apkStatus) apkStatus.textContent = '';
+
+  if (itemId) {
+    const items = getAdminStoreItems();
+    const target = items.find(i => i.id === itemId);
+    if (target) {
+      titleEl.textContent = 'Edit Work Showcase Details';
+      document.getElementById('store-item-id').value = target.id;
+      document.getElementById('store-title').value = target.title || '';
+      document.getElementById('store-category').value = target.category || 'Web App';
+      document.getElementById('store-price').value = target.price || 'FREE DOWNLOAD';
+      document.getElementById('store-preview-url').value = target.previewUrl || '';
+      document.getElementById('store-download-url').value = target.downloadUrl || '';
+      document.getElementById('store-tech-stack').value = target.techStack || '';
+      document.getElementById('store-badge').value = target.badge || 'FREE / OPEN SOURCE';
+      document.getElementById('store-image-url').value = target.imageUrl || '';
+      document.getElementById('store-description').value = target.description || '';
+      document.getElementById('store-status').value = target.status || 'Published';
+    }
+  } else {
+    titleEl.textContent = 'Publish New Work / Free Download';
+  }
+
+  onStoreCategoryChange();
+  modal.style.display = 'flex';
+};
+
+window.closePublishStoreModal = function() {
+  const modal = document.getElementById('publish-store-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.toggleStoreItemStatus = async function(id) {
+  const items = getAdminStoreItems();
+  const target = items.find(i => i.id === id);
+  if (!target) return;
+
+  target.status = target.status === 'Published' ? 'Draft' : 'Published';
+  saveAdminStoreItemsLocally(items);
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient
+        .from('published_store_items')
+        .update({ status: target.status })
+        .eq('id', id);
+    } catch (err) {
+      console.warn('Error updating store item status in Supabase:', err);
+    }
+  }
+};
+
+window.deleteStoreItem = async function(id) {
+  if (!confirm('Are you sure you want to delete this asset from the store?')) return;
+
+  let items = getAdminStoreItems();
+  items = items.filter(i => i.id !== id);
+  saveAdminStoreItemsLocally(items);
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient
+        .from('published_store_items')
+        .delete()
+        .eq('id', id);
+    } catch (err) {
+      console.warn('Error deleting store item from Supabase:', err);
+    }
+  }
+};
+
+window.uploadStoreItemsToSupabase = async function() {
+  if (!supabaseClient) {
+    alert('Supabase client SDK is not initialized. Check your configuration.');
+    return;
+  }
+
+  const items = getAdminStoreItems();
+  if (items.length === 0) {
+    alert('No local store items available to sync.');
+    return;
+  }
+
+  try {
+    const formatted = items.map(i => ({
+      id: i.id,
+      title: i.title,
+      category: i.category,
+      price: i.price,
+      preview_url: i.previewUrl || '',
+      download_url: i.downloadUrl || '',
+      description: i.description || '',
+      tech_stack: i.techStack || '',
+      image_url: i.imageUrl || '/1.jpeg',
+      badge: i.badge || 'Verified Asset',
+      status: i.status || 'Published',
+      created_at: i.createdAt || new Date().toISOString()
+    }));
+
+    const { error } = await supabaseClient
+      .from('published_store_items')
+      .upsert(formatted, { onConflict: 'id' });
+
+    if (error) throw error;
+    alert(`Successfully synchronized ${items.length} store assets to Supabase!`);
+  } catch (err) {
+    alert(`Supabase Sync Warning: ${err.message}`);
+  }
+};
+
+// Handle Store Publish Form Submit & APK Uploads
+document.addEventListener('DOMContentLoaded', () => {
+
+  // Handle APK File Upload
+  const apkInput = document.getElementById('store-apk-file');
+  if (apkInput) {
+    apkInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      const statusEl = document.getElementById('apk-upload-status');
+      const downloadInput = document.getElementById('store-download-url');
+      if (!file) return;
+
+      if (statusEl) statusEl.textContent = `⚡ Preparing APK file "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)} MB)...`;
+
+      if (supabaseClient) {
+        try {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `apk_${Date.now()}.${fileExt}`;
+          const filePath = `apks/${fileName}`;
+
+          const { data, error } = await supabaseClient.storage
+            .from('published-assets')
+            .upload(filePath, file, { upsert: true });
+
+          if (!error && data) {
+            const { data: publicUrlData } = supabaseClient.storage
+              .from('published-assets')
+              .getPublicUrl(filePath);
+
+            if (publicUrlData && publicUrlData.publicUrl) {
+              if (downloadInput) downloadInput.value = publicUrlData.publicUrl;
+              if (statusEl) statusEl.textContent = `✅ APK file uploaded to Supabase Storage: ${file.name}`;
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn('Supabase storage upload error:', err);
+        }
+      }
+
+      // Fallback: Object URL for direct file download
+      const objectUrl = URL.createObjectURL(file);
+      if (downloadInput) downloadInput.value = objectUrl;
+      if (statusEl) statusEl.textContent = `✅ APK file ready for free download: ${file.name}`;
+    });
+  }
+
+  const publishForm = document.getElementById('publish-store-form');
+  if (publishForm) {
+    publishForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const idInput = document.getElementById('store-item-id').value;
+      const title = document.getElementById('store-title').value.trim();
+      const category = document.getElementById('store-category').value;
+      const price = document.getElementById('store-price').value.trim();
+      const previewUrl = document.getElementById('store-preview-url').value.trim();
+      const downloadUrl = document.getElementById('store-download-url').value.trim();
+      const techStack = document.getElementById('store-tech-stack').value.trim();
+      const badge = document.getElementById('store-badge').value;
+      const imageUrl = document.getElementById('store-image-url').value.trim() || '/1.jpeg';
+      const description = document.getElementById('store-description').value.trim();
+      const status = document.getElementById('store-status').value;
+
+      let items = getAdminStoreItems();
+      let targetId = idInput;
+
+      if (idInput) {
+        // Edit existing
+        const index = items.findIndex(i => i.id === idInput);
+        if (index !== -1) {
+          items[index] = {
+            ...items[index],
+            title,
+            category,
+            price,
+            previewUrl,
+            downloadUrl,
+            techStack,
+            badge,
+            imageUrl,
+            description,
+            status
+          };
+        }
+      } else {
+        // Add new
+        targetId = `store_${Date.now()}`;
+        const newItem = {
+          id: targetId,
+          title,
+          category,
+          price,
+          previewUrl,
+          downloadUrl,
+          techStack,
+          badge,
+          imageUrl,
+          description,
+          status,
+          createdAt: new Date().toISOString()
+        };
+        items.unshift(newItem);
+      }
+
+      saveAdminStoreItemsLocally(items);
+      closePublishStoreModal();
+
+      // Upsert to Supabase if connected
+      if (supabaseClient) {
+        try {
+          await supabaseClient
+            .from('published_store_items')
+            .upsert([{
+              id: targetId,
+              title,
+              category,
+              price,
+              preview_url: previewUrl,
+              download_url: downloadUrl,
+              tech_stack: techStack,
+              badge,
+              image_url: imageUrl,
+              description,
+              status,
+              created_at: new Date().toISOString()
+            }], { onConflict: 'id' });
+        } catch (err) {
+          console.warn('Supabase store item upsert warning:', err);
+        }
+      }
+
+      alert(`Success! Asset "${title}" has been saved and published.`);
+    });
+  }
+});
+
 
