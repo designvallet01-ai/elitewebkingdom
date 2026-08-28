@@ -33,14 +33,20 @@ const DEFAULT_PROJECTS = [];
 
 // --- INITIALIZE LOCAL STORAGE STORES ---
 function initTeamStorage() {
-  if (!localStorage.getItem('ewk_team_users')) {
-    localStorage.setItem('ewk_team_users', JSON.stringify(DEFAULT_TEAM_USERS));
-  }
-  if (!localStorage.getItem('ewk_team_tasks')) {
-    localStorage.setItem('ewk_team_tasks', JSON.stringify(DEFAULT_ASSIGNED_TASKS));
-  }
-  if (!localStorage.getItem('ewk_team_standups')) {
-    localStorage.setItem('ewk_team_standups', JSON.stringify([]));
+  try {
+    if (typeof localStorage !== 'undefined') {
+      if (!localStorage.getItem('ewk_team_users')) {
+        localStorage.setItem('ewk_team_users', JSON.stringify(DEFAULT_TEAM_USERS));
+      }
+      if (!localStorage.getItem('ewk_team_tasks')) {
+        localStorage.setItem('ewk_team_tasks', JSON.stringify(DEFAULT_ASSIGNED_TASKS));
+      }
+      if (!localStorage.getItem('ewk_team_standups')) {
+        localStorage.setItem('ewk_team_standups', JSON.stringify([]));
+      }
+    }
+  } catch (e) {
+    console.warn('Storage unavailable in current browser mode:', e);
   }
 }
 initTeamStorage();

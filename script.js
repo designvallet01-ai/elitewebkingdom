@@ -1,65 +1,104 @@
+// Safe Local & Session Storage wrappers for iOS Safari / Private Browsing / WebViews
+const SafeStorage = {
+  get(type, key, defaultValue = null) {
+    try {
+      const storage = window[type];
+      if (!storage) return defaultValue;
+      const val = storage.getItem(key);
+      return val !== null ? val : defaultValue;
+    } catch (e) {
+      return defaultValue;
+    }
+  },
+  set(type, key, value) {
+    try {
+      const storage = window[type];
+      if (storage) storage.setItem(key, value);
+    } catch (e) {}
+  }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+  // --- IMMEDIATE FAILSAFE REVEAL FOR IOS / SLOW CONNECTIONS ---
+  function activateReveals() {
+    const revealElements = document.querySelectorAll('.reveal');
+    revealElements.forEach(el => {
+      // If element is already in viewport or above fold, activate immediately
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 50) {
+        el.classList.add('active');
+      }
+    });
+  }
+  activateReveals();
+  setTimeout(activateReveals, 100);
+  setTimeout(activateReveals, 500);
+
   // --- SUPABASE CLIENT INITIALIZATION ---
   const SUPABASE_URL = "https://jgvgqgbhzadxvcolgvly.supabase.co";
   const SUPABASE_KEY = "sb_publishable_5ToLoZzsP_B3FQoYBzTnEA_re1QwPPv";
   let supabase = null;
   
   try {
-    if (window.supabase) {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
       supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     }
   } catch (err) {
     console.error('Failed to initialize Supabase client:', err);
   }
 
-  // --- REAL VISITORS TRACKER ---
+  // --- REAL VISITORS TRACKER (SAFE FOR IOS PRIVATE MODE) ---
   async function trackRealVisitor() {
-    let count = parseInt(localStorage.getItem('ewk_real_visitors') || '0');
-    if (!sessionStorage.getItem('ewk_session_logged')) {
-      sessionStorage.setItem('ewk_session_logged', 'true');
-      count += 1;
-      localStorage.setItem('ewk_real_visitors', count.toString());
+    try {
+      let count = parseInt(SafeStorage.get('localStorage', 'ewk_real_visitors', '0') || '0');
+      if (!SafeStorage.get('sessionStorage', 'ewk_session_logged')) {
+        SafeStorage.set('sessionStorage', 'ewk_session_logged', 'true');
+        count += 1;
+        SafeStorage.set('localStorage', 'ewk_real_visitors', count.toString());
 
-      if (supabase) {
-        try {
-          await supabase.from('pageviews').insert([{
-            url: window.location.pathname || '/',
-            user_agent: navigator.userAgent.substring(0, 100),
-            created_at: new Date().toISOString()
-          }]);
-        } catch (err) {
-          console.log('Supabase pageview insertion log:', err);
+        if (supabase) {
+          try {
+            await supabase.from('pageviews').insert([{
+              url: window.location.pathname || '/',
+              user_agent: (navigator.userAgent || '').substring(0, 100),
+              created_at: new Date().toISOString()
+            }]);
+          } catch (err) {
+            console.log('Supabase pageview insertion log:', err);
+          }
         }
       }
+    } catch (e) {
+      console.warn('Visitor tracking error:', e);
     }
   }
   trackRealVisitor();
 
   // --- CURSOR SPOTLIGHT & CARD MOUSE TRACKING ---
   const spotlight = document.getElementById('spotlight');
-  document.addEventListener('mousemove', (e) => {
-    if (spotlight) {
+  if (spotlight && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    document.addEventListener('mousemove', (e) => {
       spotlight.style.left = `${e.clientX}px`;
       spotlight.style.top = `${e.clientY}px`;
-    }
-    
-    // Update mouse position for dynamic glassmorphic radial border highlight
-    const cards = document.querySelectorAll('.glass-card');
-    cards.forEach(card => {
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      card.style.setProperty('--mouse-x', `${x}px`);
-      card.style.setProperty('--mouse-y', `${y}px`);
-    });
-  });
+      
+      const cards = document.querySelectorAll('.glass-card');
+      cards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    }, { passive: true });
+  }
 
   // --- HEADER SCROLL & BACK TO TOP ---
   const header = document.getElementById('header');
   const backToTopBtn = document.getElementById('back-to-top');
 
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (scrollY > 50) {
       header?.classList.add('scrolled');
       if (backToTopBtn) backToTopBtn.style.opacity = '1';
     } else {
@@ -69,21 +108,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Active navigation highlight on scroll
     const sections = document.querySelectorAll('section[id]');
-    const scrollY = window.pageYOffset;
-
     sections.forEach(current => {
       const sectionHeight = current.offsetHeight;
-      const sectionTop = current.offsetTop - 120;
+      const sectionTop = current.offsetTop - 140;
       const sectionId = current.getAttribute('id');
-      const navItem = document.querySelector(`.nav-menu a[href*=${sectionId}]`);
+      const navItem = document.querySelector(`.nav-menu a[href*="${sectionId}"]`);
 
-      if (scrollY > sectionTop && scrollY <= sectionTop + sectionHeight) {
+      if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
         navItem?.classList.add('active');
       } else {
         navItem?.classList.remove('active');
       }
     });
-  });
+  }, { passive: true });
 
   if (backToTopBtn) {
     backToTopBtn.addEventListener('click', () => {
@@ -118,18 +155,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- SCROLL REVEAL ANIMATIONS ---
+  // --- SCROLL REVEAL ANIMATIONS (WITH SAFARI COMPATIBILITY) ---
   const revealElements = document.querySelectorAll('.reveal');
-  const revealOnScroll = new IntersectionObserver((entries, observer) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('active');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  if ('IntersectionObserver' in window) {
+    const revealOnScroll = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.05, rootMargin: '0px 0px 50px 0px' });
 
-  revealElements.forEach(el => revealOnScroll.observe(el));
+    revealElements.forEach(el => revealOnScroll.observe(el));
+  } else {
+    revealElements.forEach(el => el.classList.add('active'));
+  }
 
   // --- HERO INTERACTIVE TAB PREVIEW ---
   const tabBtns = document.querySelectorAll('.preview-tabs .tab-btn');

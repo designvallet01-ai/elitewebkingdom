@@ -50,16 +50,16 @@ async function loadPortalStoreItems() {
 
   // Fallback to local storage if offline
   if (items.length === 0) {
-    const local = localStorage.getItem('ewk_published_store_items');
-    if (local) {
-      try {
+    try {
+      const local = typeof localStorage !== 'undefined' ? localStorage.getItem('ewk_published_store_items') : null;
+      if (local) {
         const parsed = JSON.parse(local);
         if (Array.isArray(parsed)) {
           items = parsed.filter(i => i.status === 'Published');
         }
-      } catch (e) {
-        console.warn('Error parsing local store items:', e);
       }
+    } catch (e) {
+      console.warn('Error reading local store items:', e);
     }
   }
 
