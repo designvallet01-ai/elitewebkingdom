@@ -195,9 +195,15 @@
         <div id="tab-leads" class="tab-panel">
           <div class="admin-section-header">
             <h2 class="admin-section-title">Incoming Project Proposals</h2>
-            <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.82rem;" onclick="clearAllLeads()">
-              Reset Demo Proposals
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.82rem; border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary);" onclick="loadLeads()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Refresh Proposals
+              </button>
+              <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.82rem;" onclick="clearAllLeads()">
+                Reset Demo Proposals
+              </button>
+            </div>
           </div>
 
           <div class="admin-card glass-card" style="padding: 24px;">

@@ -166,6 +166,10 @@ window.switchTab = function(tabId) {
     }
   });
 
+  if (tabId === 'leads' || tabId === 'overview' || tabId === 'taken') {
+    loadLeads();
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -474,7 +478,7 @@ async function loadLeads() {
       
       if (error) throw error;
       
-      if (data && data.length > 0) {
+      if (data) {
         leads = data.map(item => ({
           id: item.id,
           name: item.name,
@@ -495,13 +499,39 @@ async function loadLeads() {
     }
   }
 
-  // 2. Fallback to LocalStorage
-  if (!loadedFromSupabase) {
-    leads = JSON.parse(localStorage.getItem('ewk_leads'));
-    if (!leads || leads.length === 0) {
-      leads = mockLeads;
-      localStorage.setItem('ewk_leads', JSON.stringify(leads));
-    }
+  // 2. Sync & Merge with LocalStorage
+  const localLeads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
+  if (loadedFromSupabase) {
+    // If local storage has proposals not yet in Supabase, preserve and merge them
+    const existingIds = new Set(leads.map(l => l.id));
+    localLeads.forEach(l => {
+      if (l && l.id && !existingIds.has(l.id)) {
+        leads.unshift(l);
+        existingIds.add(l.id);
+        // Sync local lead to Supabase in background
+        if (supabaseClient && l.name) {
+          supabaseClient.from('leads').insert([{
+            id: l.id,
+            name: l.name,
+            email: l.email,
+            phone: l.phone || 'N/A',
+            company: l.company || 'N/A',
+            category: l.category || 'Web Development',
+            budget: l.budget || '₹25,000 - ₹50,000',
+            timeline: l.timeline || 'Standard (2-4 Weeks)',
+            message: l.message || '',
+            status: l.status || 'new',
+            created_at: new Date().toISOString()
+          }]).then(({ error }) => {
+            if (!error) console.log('Synced local lead to Supabase:', l.id);
+          }).catch(e => console.warn('Sync lead error:', e));
+        }
+      }
+    });
+    localStorage.setItem('ewk_leads', JSON.stringify(leads));
+  } else {
+    leads = localLeads.length > 0 ? localLeads : mockLeads;
+    localStorage.setItem('ewk_leads', JSON.stringify(leads));
   }
 
   // Cache current leads list globally for row index references
@@ -569,7 +599,17 @@ async function loadLeads() {
   if (leadsTbody) {
     leadsTbody.innerHTML = '';
     const proposals = leads.filter(l => l.status === 'new' || l.status === 'under-review' || l.status === 'archived' || l.status === 'denied');
-    proposals.forEach((l) => {
+    if (proposals.length === 0) {
+      leadsTbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+            <div style="font-size: 1.05rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">No incoming proposals found yet.</div>
+            <div style="font-size: 0.82rem;">When clients submit proposals on the website, they will immediately appear here.</div>
+          </td>
+        </tr>
+      `;
+    } else {
+      proposals.forEach((l) => {
       const tr = document.createElement('tr');
       const companyLabel = l.company && l.company !== 'N/A' ? `<span style="font-size:0.75rem; color: var(--accent-cyan); display:block;">${l.company}</span>` : '';
       const origIndex = leads.findIndex(item => item.id === l.id);
@@ -616,6 +656,7 @@ async function loadLeads() {
       `;
       leadsTbody.appendChild(tr);
     });
+    }
   }
 
   // Populate Taken Projects Table (accepted, in-progress, completed)
@@ -737,13 +778,15 @@ window.changeLeadStatus = async function(index, dbId, newStatus) {
     }
   }
 
-  if (!loadedFromSupabase) {
-    let leads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
-    if (leads[index]) {
-      leads[index].status = newStatus;
-      localStorage.setItem('ewk_leads', JSON.stringify(leads));
-    }
+  // Update in LocalStorage as well
+  let leads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
+  const foundIdx = dbId ? leads.findIndex(l => l.id === dbId) : -1;
+  if (foundIdx !== -1) {
+    leads[foundIdx].status = newStatus;
+  } else if (leads[index]) {
+    leads[index].status = newStatus;
   }
+  localStorage.setItem('ewk_leads', JSON.stringify(leads));
   
   loadLeads();
 };
@@ -767,13 +810,14 @@ window.deleteLead = async function(index, dbId) {
       }
     }
     
-    if (!updatedInSupabase) {
-      let leads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
-      if (leads[index]) {
-        leads[index].status = 'denied';
-        localStorage.setItem('ewk_leads', JSON.stringify(leads));
-      }
+    let leads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
+    const foundIdx = dbId ? leads.findIndex(l => l.id === dbId) : -1;
+    if (foundIdx !== -1) {
+      leads[foundIdx].status = 'denied';
+    } else if (leads[index]) {
+      leads[index].status = 'denied';
     }
+    localStorage.setItem('ewk_leads', JSON.stringify(leads));
     
     loadLeads();
   }

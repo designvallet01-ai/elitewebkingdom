@@ -384,14 +384,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check Supabase first if available
     if (supabase) {
       try {
-        const { data, error } = await supabase.from('proposals').select('*').eq('project_id', cleanId).single();
+        const { data, error } = await supabase.from('leads').select('*').eq('id', cleanId).single();
         if (data && !error) {
           updateTrackerUI({
             client: data.name || data.company || 'Client Project',
             type: data.category || 'Software Solution',
             status: data.status || 'new',
-            statusLabel: (data.status || 'Received').replace('_', ' ').toUpperCase(),
-            memo: data.memo || `Project proposal logged on ${new Date(data.created_at).toLocaleDateString()}.`
+            statusLabel: (data.status || 'Received').replace('_', ' ').replace('-', ' ').toUpperCase(),
+            memo: data.message ? `Requirements: "${data.message.substring(0, 80)}..."` : `Project proposal logged on ${new Date(data.created_at).toLocaleDateString()}.`
           });
           return;
         }
@@ -399,6 +399,22 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Supabase lookup note:', err);
       }
     }
+
+    // Check LocalStorage cache
+    try {
+      const localLeads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
+      const foundLead = localLeads.find(l => l.id && l.id.toUpperCase() === cleanId);
+      if (foundLead) {
+        updateTrackerUI({
+          client: foundLead.name || foundLead.company || 'Client Project',
+          type: foundLead.category || 'Software Solution',
+          status: foundLead.status || 'new',
+          statusLabel: (foundLead.status || 'Received').replace('_', ' ').replace('-', ' ').toUpperCase(),
+          memo: foundLead.message ? `Requirements: "${foundLead.message.substring(0, 80)}..."` : `Project proposal logged.`
+        });
+        return;
+      }
+    } catch (e) {}
 
     // Fallback to mock DB
     if (mockTrackerDb[cleanId]) {
@@ -438,13 +454,14 @@ document.addEventListener('DOMContentLoaded', () => {
     contactForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const name = document.getElementById('name').value;
-      const email = document.getElementById('email').value;
-      const phone = document.getElementById('phone').value;
-      const company = document.getElementById('company').value;
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const company = document.getElementById('company')?.value?.trim() || 'N/A';
       const category = document.getElementById('category').value;
       const budget = document.getElementById('budget').value;
-      const message = document.getElementById('message').value;
+      const timeline = document.getElementById('timeline')?.value || 'Standard (2-4 Weeks)';
+      const message = document.getElementById('message').value.trim();
 
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -452,27 +469,56 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const generatedId = 'EWK' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      let success = false;
+      const nowIso = new Date().toISOString();
+      const leadPayload = {
+        id: generatedId,
+        name,
+        email,
+        phone: phone || 'N/A',
+        company: company || 'N/A',
+        category,
+        budget,
+        timeline,
+        message,
+        status: 'new',
+        created_at: nowIso
+      };
 
+      let savedToSupabase = false;
+
+      // 1. Insert into Supabase table 'leads'
       if (supabase) {
         try {
-          const { error } = await supabase.from('proposals').insert([{
-            project_id: generatedId,
-            name,
-            email,
-            phone,
-            company,
-            category,
-            budget,
-            message,
-            status: 'new',
-            created_at: new Date().toISOString()
-          }]);
-
-          if (!error) success = true;
+          const { error } = await supabase.from('leads').insert([leadPayload]);
+          if (!error) {
+            savedToSupabase = true;
+          } else {
+            console.error('Supabase lead insertion error:', error);
+          }
         } catch (err) {
           console.error('Supabase proposal insertion error:', err);
         }
+      }
+
+      // 2. LocalStorage backup (ewk_leads) so Admin can immediately view proposal
+      try {
+        let localLeads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
+        localLeads.unshift({
+          id: generatedId,
+          name,
+          email,
+          phone: phone || 'N/A',
+          company: company || 'N/A',
+          category,
+          budget,
+          timeline,
+          message,
+          date: new Date().toLocaleDateString(),
+          status: 'new'
+        });
+        localStorage.setItem('ewk_leads', JSON.stringify(localLeads));
+      } catch (lsErr) {
+        console.warn('LocalStorage lead backup error:', lsErr);
       }
 
       // Always display success alert with project ID & WhatsApp direct handoff

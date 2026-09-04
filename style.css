@@ -1292,6 +1292,13 @@ textarea.form-control {
   color: var(--india-green);
 }
 
+.form-status.error {
+  display: block;
+  background: #FEF2F2;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #DC2626;
+}
+
 /* ==========================================
    FOOTER (INDIA GREEN ZONE)
    ========================================== */
