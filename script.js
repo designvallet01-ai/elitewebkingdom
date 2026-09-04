@@ -19,21 +19,6 @@ const SafeStorage = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  // --- IMMEDIATE FAILSAFE REVEAL FOR IOS / SLOW CONNECTIONS ---
-  function activateReveals() {
-    const revealElements = document.querySelectorAll('.reveal');
-    revealElements.forEach(el => {
-      // If element is already in viewport or above fold, activate immediately
-      const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight + 50) {
-        el.classList.add('active');
-      }
-    });
-  }
-  activateReveals();
-  setTimeout(activateReveals, 100);
-  setTimeout(activateReveals, 500);
-
   // --- SUPABASE CLIENT INITIALIZATION ---
   const SUPABASE_URL = "https://jgvgqgbhzadxvcolgvly.supabase.co";
   const SUPABASE_KEY = "sb_publishable_5ToLoZzsP_B3FQoYBzTnEA_re1QwPPv";
@@ -47,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Failed to initialize Supabase client:', err);
   }
 
-  // --- REAL VISITORS TRACKER (STRICTLY ON elitewebkingdom.in) ---
+  // --- REAL VISITORS TRACKER (DEFERRED FOR INSTANT PAGE LOAD) ---
   async function trackRealVisitor() {
     try {
       const hostname = window.location.hostname.toLowerCase();
@@ -94,54 +79,58 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('Visitor tracking error:', e);
     }
   }
-  trackRealVisitor();
+  // Run visitor tracking during idle time after paint
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => trackRealVisitor());
+  } else {
+    setTimeout(trackRealVisitor, 1200);
+  }
 
   // --- CURSOR SPOTLIGHT & CARD MOUSE TRACKING ---
   const spotlight = document.getElementById('spotlight');
   if (spotlight && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    let mouseTicking = false;
     document.addEventListener('mousemove', (e) => {
-      spotlight.style.left = `${e.clientX}px`;
-      spotlight.style.top = `${e.clientY}px`;
-      
-      const cards = document.querySelectorAll('.glass-card');
-      cards.forEach(card => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        card.style.setProperty('--mouse-x', `${x}px`);
-        card.style.setProperty('--mouse-y', `${y}px`);
-      });
+      if (!mouseTicking) {
+        window.requestAnimationFrame(() => {
+          spotlight.style.left = `${e.clientX}px`;
+          spotlight.style.top = `${e.clientY}px`;
+          
+          const cards = document.querySelectorAll('.glass-card');
+          cards.forEach(card => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--mouse-x', `${x}px`);
+            card.style.setProperty('--mouse-y', `${y}px`);
+          });
+          mouseTicking = false;
+        });
+        mouseTicking = true;
+      }
     }, { passive: true });
   }
 
-  // --- HEADER SCROLL & BACK TO TOP ---
+  // --- HEADER SCROLL & BACK TO TOP (THROTTLED WITH RAF) ---
   const header = document.getElementById('header');
   const backToTopBtn = document.getElementById('back-to-top');
+  let scrollTicking = false;
 
   window.addEventListener('scroll', () => {
-    const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-    if (scrollY > 50) {
-      header?.classList.add('scrolled');
-      if (backToTopBtn) backToTopBtn.style.opacity = '1';
-    } else {
-      header?.classList.remove('scrolled');
-      if (backToTopBtn) backToTopBtn.style.opacity = '0';
+    if (!scrollTicking) {
+      window.requestAnimationFrame(() => {
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        if (scrollY > 50) {
+          header?.classList.add('scrolled');
+          if (backToTopBtn) backToTopBtn.style.opacity = '1';
+        } else {
+          header?.classList.remove('scrolled');
+          if (backToTopBtn) backToTopBtn.style.opacity = '0';
+        }
+        scrollTicking = false;
+      });
+      scrollTicking = true;
     }
-    
-    // Active navigation highlight on scroll
-    const sections = document.querySelectorAll('section[id]');
-    sections.forEach(current => {
-      const sectionHeight = current.offsetHeight;
-      const sectionTop = current.offsetTop - 140;
-      const sectionId = current.getAttribute('id');
-      const navItem = document.querySelector(`.nav-menu a[href*="${sectionId}"]`);
-
-      if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
-        navItem?.classList.add('active');
-      } else {
-        navItem?.classList.remove('active');
-      }
-    });
   }, { passive: true });
 
   if (backToTopBtn) {

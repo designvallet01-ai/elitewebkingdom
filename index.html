@@ -39,8 +39,17 @@
   <link rel="icon" type="image/jpeg" href="logo.jpeg">
   <link rel="apple-touch-icon" href="logo.jpeg">
   
+  <!-- Preconnect & Non-Blocking Google Fonts for Mobile Performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  </noscript>
+
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=19.0">
+  <link rel="stylesheet" href="style.css?v=20.0">
 
   <!-- Structured Data / Schema.org JSON-LD for Google Knowledge Graph & Rich Snippets -->
   <script type="application/ld+json">
@@ -154,7 +163,7 @@
     <div class="container navbar">
       <a href="#home" class="logo-container">
         <div class="logo-img-wrapper">
-          <img src="logo.jpeg" alt="Elite Web Kingdom Logo" class="logo-img">
+          <img src="logo.jpeg" alt="Elite Web Kingdom Logo" class="logo-img" width="36" height="36" fetchpriority="high" decoding="async">
         </div>
         <span class="logo-text">ELITE WEB KINGDOM</span>
       </a>
@@ -455,7 +464,7 @@
       <div class="about-grid">
         <div class="about-img-container reveal">
           <div class="about-img-frame">
-            <img src="developer.jpeg" alt="Gowri Narayana Guduru - Founder & Lead System Architect of Elite Web Kingdom" class="about-img">
+            <img src="developer.jpeg" alt="Gowri Narayana Guduru - Founder & Lead System Architect of Elite Web Kingdom" class="about-img" width="480" height="560" loading="lazy" decoding="async">
             <div class="about-img-overlay">
               <h3 class="about-caption-title founder-tiranga-name">Gowri Narayana Guduru</h3>
               <p class="about-caption-subtitle">🇮🇳 Founder & Lead System Architect</p>
@@ -926,7 +935,7 @@
       <div>
         <a href="#home" class="logo-container">
           <div class="logo-img-wrapper">
-            <img src="logo.jpeg" alt="Elite Web Kingdom Logo" class="logo-img">
+            <img src="logo.jpeg" alt="Elite Web Kingdom Logo" class="logo-img" width="36" height="36" loading="lazy" decoding="async">
           </div>
           <span class="logo-text">ELITE WEB KINGDOM</span>
         </a>
@@ -987,9 +996,8 @@
     </button>
   </div>
 
-  <!-- Supabase JS Client SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- JavaScript Logic -->
-  <script src="script.js?v=19.0"></script>
+  <!-- Supabase JS Client SDK & JavaScript Logic (Deferred for Instant First Paint & 0ms TBT) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="script.js?v=20.0"></script>
 </body>
 </html>
