@@ -47,12 +47,32 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Failed to initialize Supabase client:', err);
   }
 
-  // --- REAL VISITORS TRACKER (SAFE FOR IOS PRIVATE MODE) ---
+  // --- REAL VISITORS TRACKER (STRICTLY ON elitewebkingdom.in) ---
   async function trackRealVisitor() {
     try {
-      let count = parseInt(SafeStorage.get('localStorage', 'ewk_real_visitors', '0') || '0');
-      if (!SafeStorage.get('sessionStorage', 'ewk_session_logged')) {
-        SafeStorage.set('sessionStorage', 'ewk_session_logged', 'true');
+      const hostname = window.location.hostname.toLowerCase();
+      const pathname = window.location.pathname.toLowerCase();
+
+      // STRICT DOMAIN CHECK: Only count real visitors on elitewebkingdom.in
+      const isProduction = hostname === 'elitewebkingdom.in' || 
+                           hostname === 'www.elitewebkingdom.in' || 
+                           hostname.endsWith('.elitewebkingdom.in');
+
+      if (!isProduction) {
+        // Exclude localhost, 127.0.0.1, or non-production previews
+        return;
+      }
+
+      // Exclude Admin portal or Team management internal views
+      if (pathname.includes('/admin') || pathname.includes('/team')) {
+        return;
+      }
+
+      // Count each unique visitor session once
+      if (!SafeStorage.get('sessionStorage', 'ewk_session_counted')) {
+        SafeStorage.set('sessionStorage', 'ewk_session_counted', 'true');
+
+        let count = parseInt(SafeStorage.get('localStorage', 'ewk_real_visitors', '0') || '0');
         count += 1;
         SafeStorage.set('localStorage', 'ewk_real_visitors', count.toString());
 
@@ -60,11 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
           try {
             await supabase.from('pageviews').insert([{
               url: window.location.pathname || '/',
-              user_agent: (navigator.userAgent || '').substring(0, 100),
+              hostname: hostname,
+              user_agent: (navigator.userAgent || '').substring(0, 150),
+              referrer: document.referrer ? document.referrer.substring(0, 150) : 'direct',
               created_at: new Date().toISOString()
             }]);
           } catch (err) {
-            console.log('Supabase pageview insertion log:', err);
+            console.warn('Pageview tracking log:', err);
           }
         }
       }

@@ -104,3 +104,21 @@ CREATE POLICY "Allow public insert published_store_items" ON public.published_st
 CREATE POLICY "Allow public update published_store_items" ON public.published_store_items FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete published_store_items" ON public.published_store_items FOR DELETE USING (true);
 
+-- 6. REAL-TIME PAGEVIEWS & VISITOR TRACKING TABLE
+CREATE TABLE IF NOT EXISTS public.pageviews (
+    id BIGSERIAL PRIMARY KEY,
+    url TEXT NOT NULL DEFAULT '/',
+    hostname TEXT NOT NULL DEFAULT 'elitewebkingdom.in',
+    user_agent TEXT,
+    referrer TEXT DEFAULT 'direct',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.pageviews ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public insert pageviews" ON public.pageviews FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select pageviews" ON public.pageviews FOR SELECT USING (true);
+
+-- Enable Supabase Realtime for pageviews
+ALTER PUBLICATION supabase_realtime ADD TABLE public.pageviews;
+
+

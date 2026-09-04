@@ -126,10 +126,16 @@
           
           <!-- Quick Stats Grid -->
           <div class="admin-stats-grid">
-            <div class="admin-stat-card glass-card">
+            <div class="admin-stat-card glass-card" id="stat-card-visitors">
               <div>
-                <span class="stat-card-lbl">Total Visitors</span>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span class="stat-card-lbl" style="margin-bottom: 0;">Total Visitors</span>
+                  <span id="visitor-live-badge" class="visitor-live-indicator" title="Live Realtime Visitor Tracking">
+                    <span class="live-dot"></span> LIVE
+                  </span>
+                </div>
                 <span class="stat-card-val" id="total-visitors-val">0</span>
+                <span id="visitor-live-sub" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Real-time on elitewebkingdom.in</span>
               </div>
               <div class="stat-card-icon">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>

@@ -180,6 +180,7 @@ function initDashboard() {
   loadLeads();
   loadSettingsState();
   loadRealVisitorCount();
+  setupRealtimeVisitorTracker();
   loadTeamMembersDropdown();
   renderAdminTeamMembers();
   renderAdminAssignedTasks();
@@ -441,11 +442,39 @@ window.uploadAllTeamDataToSupabase = async function() {
   }
 };
 
+function updateVisitorLiveIndicator(isLive, customText = null) {
+  const badge = document.getElementById('visitor-live-badge');
+  const sub = document.getElementById('visitor-live-sub');
+  if (!badge) return;
+
+  if (isLive) {
+    badge.className = 'visitor-live-indicator';
+    badge.innerHTML = '<span class="live-dot"></span> LIVE';
+    badge.title = 'Real-time WebSocket connection to elitewebkingdom.in visitor stream';
+    if (sub) sub.textContent = 'Real-time on elitewebkingdom.in';
+  } else {
+    badge.className = 'visitor-live-indicator offline';
+    badge.innerHTML = '<span class="live-dot"></span> ' + (customText || 'SETUP NEEDED');
+    badge.title = 'Please run create_pageviews_table.sql in Supabase SQL Editor to activate live counts.';
+    if (sub) sub.textContent = 'Run SQL in Supabase to start live tracking';
+  }
+}
+
+function flashVisitorCard() {
+  const card = document.getElementById('stat-card-visitors');
+  if (card) {
+    card.classList.remove('stat-card-flash');
+    void card.offsetWidth;
+    card.classList.add('stat-card-flash');
+  }
+}
+
 async function loadRealVisitorCount() {
   const totalVisitorsVal = document.getElementById('total-visitors-val');
   if (!totalVisitorsVal) return;
 
-  let realCount = parseInt(localStorage.getItem('ewk_real_visitors') || '0');
+  let realCount = 0;
+  let loadedFromSupabase = false;
 
   if (supabaseClient) {
     try {
@@ -453,15 +482,54 @@ async function loadRealVisitorCount() {
         .from('pageviews')
         .select('*', { count: 'exact', head: true });
 
-      if (!error && count !== null && count > 0) {
+      if (!error && count !== null) {
         realCount = count;
+        loadedFromSupabase = true;
+        updateVisitorLiveIndicator(true);
+      } else if (error && error.code === 'PGRST205') {
+        updateVisitorLiveIndicator(false, 'SETUP NEEDED');
       }
     } catch (err) {
       console.warn('Pageviews fetch log:', err);
     }
   }
 
-  totalVisitorsVal.textContent = realCount > 0 ? realCount.toLocaleString('en-IN') : '1';
+  if (!loadedFromSupabase) {
+    const localCount = parseInt(localStorage.getItem('ewk_real_visitors') || '0');
+    realCount = localCount;
+  }
+
+  totalVisitorsVal.textContent = realCount.toLocaleString('en-IN');
+}
+
+let realtimeVisitorChannel = null;
+function setupRealtimeVisitorTracker() {
+  if (!supabaseClient) return;
+  if (realtimeVisitorChannel) return;
+
+  try {
+    realtimeVisitorChannel = supabaseClient
+      .channel('realtime-pageviews-stream')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pageviews' }, (payload) => {
+        console.log('[EWK Realtime] New visitor detected on site:', payload.new);
+        loadRealVisitorCount();
+        flashVisitorCard();
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[EWK Realtime] Connected to live pageviews channel.');
+          updateVisitorLiveIndicator(true);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.warn('[EWK Realtime] Realtime channel offline.');
+          updateVisitorLiveIndicator(false);
+        }
+      });
+  } catch (err) {
+    console.warn('Realtime channel error:', err);
+  }
+
+  // Poll every 15 seconds to ensure live synchronization across all admin tabs
+  setInterval(loadRealVisitorCount, 15000);
 }
 
 async function loadLeads() {
