@@ -1,27 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- 1. Home / Core Platform -->
   <url>
     <loc>https://www.elitewebkingdom.in/</loc>
-    <lastmod>2026-08-12</lastmod>
+    <lastmod>2026-09-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://www.elitewebkingdom.in/developer.jpeg</image:loc>
+      <image:title>Gowri Narayana Guduru - Founder and Lead System Architect</image:title>
+      <image:caption>Founder &amp; Principal Software Engineer at Elite Web Kingdom</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.elitewebkingdom.in/logo.jpeg</image:loc>
+      <image:title>Elite Web Kingdom Official Logo</image:title>
+      <image:caption>Enterprise IT Solutions and Custom Web Engineering</image:caption>
+    </image:image>
   </url>
+
+  <!-- 2. Work Showcase & Software Downloads Store -->
   <url>
-    <loc>https://www.elitewebkingdom.in/#about</loc>
-    <lastmod>2026-08-12</lastmod>
+    <loc>https://www.elitewebkingdom.in/store/</loc>
+    <lastmod>2026-09-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://www.elitewebkingdom.in/logo.jpeg</image:loc>
+      <image:title>Elite Web Kingdom Work Showcase and Downloads</image:title>
+    </image:image>
   </url>
+
+  <!-- 3. Team Portal -->
   <url>
     <loc>https://www.elitewebkingdom.in/team</loc>
-    <lastmod>2026-08-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
-  <url>
-    <loc>https://www.elitewebkingdom.in/admin</loc>
-    <lastmod>2026-08-12</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
+
 </urlset>

@@ -1,8 +1,21 @@
-# Robots.txt for Elite Web Kingdom
+# =================================================================
+# Robots.txt for Elite Web Kingdom (https://www.elitewebkingdom.in/)
+# Principal Architect: Gowri Narayana Guduru
+# =================================================================
+
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /api/
 
-# Disallow admin folder from indexing
+User-agent: Googlebot
+Allow: /
 Disallow: /admin/
 
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+
+# XML Sitemap Location
 Sitemap: https://www.elitewebkingdom.in/sitemap.xml
