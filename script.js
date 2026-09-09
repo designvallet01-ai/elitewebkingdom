@@ -32,28 +32,45 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Failed to initialize Supabase client:', err);
   }
 
-  // --- REAL VISITORS TRACKER (DEFERRED FOR INSTANT PAGE LOAD) ---
+  // --- REAL VISITORS TRACKER (TELEMETRY & REAL-TIME LOGS) ---
+  function detectVisitorDevice() {
+    const ua = navigator.userAgent || '';
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return 'Tablet';
+    if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/i.test(ua)) return 'Mobile';
+    return 'Desktop';
+  }
+
+  function detectVisitorBrowser() {
+    const ua = navigator.userAgent || '';
+    if (/edg\//i.test(ua)) return 'Edge';
+    if (/opr\/|opera/i.test(ua)) return 'Opera';
+    if (/chrome|crios/i.test(ua)) return 'Chrome';
+    if (/firefox|fxios/i.test(ua)) return 'Firefox';
+    if (/safari/i.test(ua) && !/chrome/i.test(ua)) return 'Safari';
+    return 'Browser';
+  }
+
+  function detectVisitorOS() {
+    const ua = navigator.userAgent || '';
+    if (/windows nt/i.test(ua)) return 'Windows';
+    if (/android/i.test(ua)) return 'Android';
+    if (/iphone|ipad|ipod/i.test(ua)) return 'iOS';
+    if (/macintosh|mac os x/i.test(ua)) return 'macOS';
+    if (/linux/i.test(ua)) return 'Linux';
+    return 'Other OS';
+  }
+
   async function trackRealVisitor() {
     try {
       const hostname = window.location.hostname.toLowerCase();
       const pathname = window.location.pathname.toLowerCase();
 
-      // STRICT DOMAIN CHECK: Only count real visitors on elitewebkingdom.in
-      const isProduction = hostname === 'elitewebkingdom.in' || 
-                           hostname === 'www.elitewebkingdom.in' || 
-                           hostname.endsWith('.elitewebkingdom.in');
-
-      if (!isProduction) {
-        // Exclude localhost, 127.0.0.1, or non-production previews
-        return;
-      }
-
-      // Exclude Admin portal or Team management internal views
+      // Exclude internal Admin portal or Team management views
       if (pathname.includes('/admin') || pathname.includes('/team')) {
         return;
       }
 
-      // Count each unique visitor session once
+      // Count each unique visitor session once per browser tab/session
       if (!SafeStorage.get('sessionStorage', 'ewk_session_counted')) {
         SafeStorage.set('sessionStorage', 'ewk_session_counted', 'true');
 
@@ -61,15 +78,54 @@ document.addEventListener('DOMContentLoaded', () => {
         count += 1;
         SafeStorage.set('localStorage', 'ewk_real_visitors', count.toString());
 
+        const device = detectVisitorDevice();
+        const browser = detectVisitorBrowser();
+        const os = detectVisitorOS();
+        const pageUrl = window.location.pathname || '/';
+        const referrer = document.referrer ? document.referrer.substring(0, 200) : 'direct';
+        const timestamp = new Date().toISOString();
+
+        // Local cache for instant admin offline preview
+        try {
+          const cachedLogs = JSON.parse(localStorage.getItem('ewk_visitor_cache') || '[]');
+          cachedLogs.unshift({
+            url: pageUrl,
+            hostname: hostname || 'elitewebkingdom.in',
+            user_agent: (navigator.userAgent || '').substring(0, 250),
+            referrer: referrer,
+            device: device,
+            browser: browser,
+            os: os,
+            created_at: timestamp
+          });
+          if (cachedLogs.length > 50) cachedLogs.pop();
+          localStorage.setItem('ewk_visitor_cache', JSON.stringify(cachedLogs));
+        } catch (e) {}
+
         if (supabase) {
           try {
-            await supabase.from('pageviews').insert([{
-              url: window.location.pathname || '/',
-              hostname: hostname,
-              user_agent: (navigator.userAgent || '').substring(0, 150),
-              referrer: document.referrer ? document.referrer.substring(0, 150) : 'direct',
-              created_at: new Date().toISOString()
+            // First attempt with extended telemetry columns
+            const { error } = await supabase.from('pageviews').insert([{
+              url: pageUrl,
+              hostname: hostname || 'elitewebkingdom.in',
+              user_agent: (navigator.userAgent || '').substring(0, 250),
+              referrer: referrer,
+              device: device,
+              browser: browser,
+              os: os,
+              created_at: timestamp
             }]);
+            
+            if (error) {
+              // Fallback to basic schema columns if custom columns do not exist yet
+              await supabase.from('pageviews').insert([{
+                url: pageUrl,
+                hostname: hostname || 'elitewebkingdom.in',
+                user_agent: (navigator.userAgent || '').substring(0, 250),
+                referrer: referrer,
+                created_at: timestamp
+              }]);
+            }
           } catch (err) {
             console.warn('Pageview tracking log:', err);
           }

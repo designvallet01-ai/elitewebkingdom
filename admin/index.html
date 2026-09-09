@@ -72,6 +72,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
           Dashboard Overview
         </a>
+        <a href="#visitors" class="sidebar-link" onclick="switchTab('visitors')" id="sidebar-link-visitors">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Site Visitors (<span id="sidebar-visitors-count">0</span>)
+        </a>
         <a href="#leads" class="sidebar-link" onclick="switchTab('leads')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           Incoming Proposals (<span id="sidebar-leads-count">0</span>)
@@ -126,7 +130,7 @@
           
           <!-- Quick Stats Grid -->
           <div class="admin-stats-grid">
-            <div class="admin-stat-card glass-card" id="stat-card-visitors">
+            <div class="admin-stat-card glass-card" id="stat-card-visitors" onclick="switchTab('visitors')" style="cursor: pointer; transition: transform var(--transition-fast), border-color var(--transition-fast);" title="Click to view detailed visitor logs & telemetry">
               <div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                   <span class="stat-card-lbl" style="margin-bottom: 0;">Total Visitors</span>
@@ -135,7 +139,7 @@
                   </span>
                 </div>
                 <span class="stat-card-val" id="total-visitors-val">0</span>
-                <span id="visitor-live-sub" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Real-time on elitewebkingdom.in</span>
+                <span id="visitor-live-sub" style="font-size: 0.72rem; color: var(--cyan-primary); display: block; margin-top: 2px;">Click to view live visitor details →</span>
               </div>
               <div class="stat-card-icon">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -173,23 +177,178 @@
             </div>
           </div>
 
-          <!-- Section Table -->
-          <div class="admin-card glass-card" style="margin-top: 32px; padding: 24px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
-              <h3 style="font-size: 1.2rem;">Recent Client Proposals</h3>
-              <a href="#leads" class="btn btn-secondary" style="padding: 6px 16px; font-size: 0.8rem;" onclick="switchTab('leads')">View All</a>
+          <!-- Section Tables: Recent Live Visitors & Recent Proposals -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px; margin-top: 32px;">
+            <!-- Live Visitors Widget -->
+            <div class="admin-card glass-card" style="padding: 24px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div>
+                  <h3 style="font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                    <span class="live-dot" style="background: #10B981;"></span>
+                    Recent Site Visitors
+                  </h3>
+                  <p style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">సైట్‌లోకి వచ్చిన తాజా విజిటర్లు</p>
+                </div>
+                <a href="#visitors" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.8rem; border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary);" onclick="switchTab('visitors')">
+                  View All Visitors →
+                </a>
+              </div>
+              <div class="table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Visited Page</th>
+                      <th>Device &amp; OS</th>
+                      <th>Source</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-visitors-tbody">
+                    <!-- Dynamic Insertion -->
+                  </tbody>
+                </table>
+              </div>
             </div>
+
+            <!-- Recent Proposals Widget -->
+            <div class="admin-card glass-card" style="padding: 24px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                <div>
+                  <h3 style="font-size: 1.15rem;">Recent Client Proposals</h3>
+                  <p style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">క్లయింట్స్ పంపిన ప్రాజెక్ట్ ప్రతిపాదనలు</p>
+                </div>
+                <a href="#leads" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;" onclick="switchTab('leads')">View All →</a>
+              </div>
+              <div class="table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Category</th>
+                      <th>Budget</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-leads-tbody">
+                    <!-- Dynamic Insertion -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL: SITE VISITORS & LIVE TRAFFIC -->
+        <div id="tab-visitors" class="tab-panel" style="display: none;">
+          <div class="admin-section-header">
+            <div>
+              <h2 class="admin-section-title">Website Visitors &amp; Live Traffic</h2>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">సైట్ లోకి వచ్చిన సందర్శకుల పూర్తి వివరాలు (Real-time Live Telemetry &amp; Device Details)</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <span id="visitor-panel-live-pill" class="visitor-live-indicator">
+                <span class="live-dot"></span> LIVE REALTIME
+              </span>
+              <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.82rem; border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary);" onclick="loadVisitorLogs(true)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Refresh Visitors
+              </button>
+              <button class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.82rem;" onclick="simulateTestVisitor()" title="Simulate a real-time visit to test tracking">
+                ⚡ Test Live Ping
+              </button>
+              <button class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.82rem;" onclick="exportVisitorLogsCSV()">
+                📥 Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Stats Grid for Visitors -->
+          <div class="admin-stats-grid" style="margin-bottom: 24px;">
+            <div class="admin-stat-card glass-card">
+              <div>
+                <span class="stat-card-lbl">Total Visits Logged</span>
+                <span class="stat-card-val" id="vis-kpi-total">0</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">All-time recorded visits</span>
+              </div>
+              <div class="stat-card-icon" style="color: var(--cyan-primary);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div>
+                <span class="stat-card-lbl">Today's Visits</span>
+                <span class="stat-card-val" id="vis-kpi-today">0</span>
+                <span id="vis-kpi-today-trend" style="font-size: 0.72rem; color: var(--emerald-accent); display: block; margin-top: 2px;">Active today</span>
+              </div>
+              <div class="stat-card-icon" style="color: var(--emerald-accent);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div>
+                <span class="stat-card-lbl">Mobile vs Desktop</span>
+                <span class="stat-card-val" id="vis-kpi-devices" style="font-size: 1.35rem;">--</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Device traffic ratio</span>
+              </div>
+              <div class="stat-card-icon" style="color: var(--amber-accent);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-card">
+              <div>
+                <span class="stat-card-lbl">Top Visited Route</span>
+                <span class="stat-card-val" id="vis-kpi-toppage" style="font-size: 1.2rem; word-break: break-all;">/</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 2px;">Most visited page</span>
+              </div>
+              <div class="stat-card-icon" style="color: var(--violet-primary);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Toolbar -->
+          <div class="admin-card glass-card" style="padding: 16px 20px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 10px; align-items: center; flex: 1; min-width: 260px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="visitor-search-input" class="form-control" placeholder="Search by Page, Device, OS, Browser, or Referrer..." oninput="filterVisitorsTable()" style="background: rgba(15, 23, 42, 0.6); border-color: rgba(255,255,255,0.1); font-size: 0.85rem; padding: 8px 14px;">
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <select id="visitor-device-filter" class="form-control" onchange="filterVisitorsTable()" style="background: #0f172a; color: #fff; width: auto; font-size: 0.82rem; padding: 7px 12px;">
+                <option value="all">All Devices</option>
+                <option value="Mobile">Mobile Only 📱</option>
+                <option value="Desktop">Desktop Only 💻</option>
+                <option value="Tablet">Tablet Only 📟</option>
+              </select>
+
+              <select id="visitor-time-filter" class="form-control" onchange="filterVisitorsTable()" style="background: #0f172a; color: #fff; width: auto; font-size: 0.82rem; padding: 7px 12px;">
+                <option value="all">All Time</option>
+                <option value="today">Today Only</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="7days">Last 7 Days</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Main Visitors Table -->
+          <div class="admin-card glass-card" style="padding: 24px;">
             <div class="table-wrapper">
               <table class="admin-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Project Category</th>
-                    <th>Budget</th>
+                    <th>Visit Time</th>
+                    <th>Visited Page</th>
+                    <th>Device &amp; OS</th>
+                    <th>Browser</th>
+                    <th>Traffic Source / Referrer</th>
+                    <th>Domain</th>
                     <th>Status</th>
                   </tr>
                 </thead>
-                <tbody id="overview-leads-tbody">
+                <tbody id="visitors-tbody">
                   <!-- Dynamic Insertion -->
                 </tbody>
               </table>

@@ -169,6 +169,9 @@ window.switchTab = function(tabId) {
   if (tabId === 'leads' || tabId === 'overview' || tabId === 'taken') {
     loadLeads();
   }
+  if (tabId === 'visitors' || tabId === 'overview') {
+    loadVisitorLogs();
+  }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -180,6 +183,7 @@ function initDashboard() {
   loadLeads();
   loadSettingsState();
   loadRealVisitorCount();
+  loadVisitorLogs();
   setupRealtimeVisitorTracker();
   loadTeamMembersDropdown();
   renderAdminTeamMembers();
@@ -502,6 +506,462 @@ async function loadRealVisitorCount() {
   totalVisitorsVal.textContent = realCount.toLocaleString('en-IN');
 }
 
+// Global storage for parsed visitor logs
+window.allVisitorLogs = [];
+
+function parseVisitorInfo(v) {
+  const ua = v.user_agent || '';
+  
+  // 1. Device Type
+  let device = v.device;
+  if (!device) {
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) device = 'Tablet';
+    else if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/i.test(ua)) device = 'Mobile';
+    else device = 'Desktop';
+  }
+
+  // 2. Operating System
+  let os = v.os;
+  if (!os) {
+    if (/windows nt 10/i.test(ua)) os = 'Windows 10/11';
+    else if (/windows nt/i.test(ua)) os = 'Windows';
+    else if (/android/i.test(ua)) os = 'Android';
+    else if (/iphone/i.test(ua)) os = 'iOS (iPhone)';
+    else if (/ipad/i.test(ua)) os = 'iPadOS';
+    else if (/macintosh|mac os x/i.test(ua)) os = 'macOS';
+    else if (/linux/i.test(ua)) os = 'Linux';
+    else os = 'Other OS';
+  }
+
+  // 3. Browser
+  let browser = v.browser;
+  if (!browser) {
+    if (/edg\//i.test(ua)) browser = 'Edge';
+    else if (/opr\/|opera/i.test(ua)) browser = 'Opera';
+    else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
+    else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+    else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Safari';
+    else browser = 'Browser';
+  }
+
+  // 4. Clean Page Title / URL
+  let pageName = 'Home Page';
+  let route = v.url || '/';
+  if (route === '/' || route === '/index.html') pageName = 'Home Page (/)';
+  else if (route.includes('web-development')) pageName = 'Web Development';
+  else if (route.includes('mobile-app')) pageName = 'Mobile Apps';
+  else if (route.includes('software-development')) pageName = 'Software Development';
+  else if (route.includes('ecommerce')) pageName = 'E-Commerce';
+  else if (route.includes('store')) pageName = 'Software Store';
+  else if (route.includes('team')) pageName = 'Team Portal';
+  else pageName = route;
+
+  // 5. Clean Referrer
+  let referrer = v.referrer || 'Direct';
+  if (referrer.includes('google')) referrer = 'Google Search 🔍';
+  else if (referrer.includes('instagram')) referrer = 'Instagram 📷';
+  else if (referrer.includes('facebook')) referrer = 'Facebook 👥';
+  else if (referrer.includes('linkedin')) referrer = 'LinkedIn 💼';
+  else if (referrer.includes('whatsapp') || referrer.includes('wa.me')) referrer = 'WhatsApp 💬';
+  else if (referrer.includes('t.co') || referrer.includes('twitter') || referrer.includes('x.com')) referrer = 'X / Twitter 🐦';
+  else if (referrer.toLowerCase() === 'direct' || !referrer) referrer = 'Direct Traffic 🌐';
+
+  // 6. Format Time (Indian Standard Time)
+  let timeStr = 'Just now';
+  let isLiveNow = false;
+  let fullDateStr = '';
+  if (v.created_at) {
+    const d = new Date(v.created_at);
+    if (!isNaN(d.getTime())) {
+      fullDateStr = d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) + ' IST';
+      const diffMs = Date.now() - d.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 5) {
+        timeStr = 'Just now';
+        isLiveNow = true;
+      } else if (diffMins < 60) {
+        timeStr = `${diffMins}m ago`;
+        if (diffMins <= 15) isLiveNow = true;
+      } else if (diffHours < 24) {
+        timeStr = `${diffHours}h ago`;
+      } else {
+        timeStr = `${diffDays}d ago`;
+      }
+    }
+  }
+
+  return {
+    ...v,
+    device,
+    os,
+    browser,
+    pageName,
+    route,
+    referrer,
+    timeStr,
+    fullDateStr,
+    isLiveNow
+  };
+}
+
+async function loadVisitorLogs(isManualRefresh = false) {
+  let list = [];
+  let loadedFromDb = false;
+
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('pageviews')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (!error && Array.isArray(data)) {
+        list = data;
+        loadedFromDb = true;
+        updateVisitorLiveIndicator(true);
+      }
+    } catch (err) {
+      console.warn('Visitor logs fetch error:', err);
+    }
+  }
+
+  // Merge with local storage cache
+  try {
+    const localLogs = JSON.parse(localStorage.getItem('ewk_visitor_cache') || '[]');
+    if (localLogs.length > 0) {
+      if (loadedFromDb) {
+        const existingTimes = new Set(list.map(x => x.created_at));
+        localLogs.forEach(item => {
+          if (item.created_at && !existingTimes.has(item.created_at)) {
+            list.push(item);
+          }
+        });
+        list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      } else {
+        list = localLogs;
+      }
+    }
+  } catch (e) {}
+
+  window.allVisitorLogs = list.map(parseVisitorInfo);
+
+  // Update counters
+  const totalCount = window.allVisitorLogs.length;
+  const sidebarCount = document.getElementById('sidebar-visitors-count');
+  if (sidebarCount) sidebarCount.textContent = totalCount;
+
+  const visKpiTotal = document.getElementById('vis-kpi-total');
+  if (visKpiTotal) visKpiTotal.textContent = totalCount.toLocaleString('en-IN');
+
+  const totalVisitorsVal = document.getElementById('total-visitors-val');
+  if (totalVisitorsVal && totalCount > 0) totalVisitorsVal.textContent = totalCount.toLocaleString('en-IN');
+
+  // Today's visits
+  const todayStr = new Date().toDateString();
+  const todayVisits = window.allVisitorLogs.filter(v => {
+    if (!v.created_at) return false;
+    return new Date(v.created_at).toDateString() === todayStr;
+  }).length;
+  const visKpiToday = document.getElementById('vis-kpi-today');
+  if (visKpiToday) visKpiToday.textContent = todayVisits.toLocaleString('en-IN');
+
+  // Mobile vs Desktop ratio
+  const mobileCount = window.allVisitorLogs.filter(v => v.device === 'Mobile').length;
+  const desktopCount = window.allVisitorLogs.filter(v => v.device === 'Desktop').length;
+  const visKpiDevices = document.getElementById('vis-kpi-devices');
+  if (visKpiDevices) {
+    if (totalCount > 0) {
+      const mobPct = Math.round((mobileCount / totalCount) * 100);
+      const deskPct = 100 - mobPct;
+      visKpiDevices.textContent = `${mobPct}% / ${deskPct}%`;
+    } else {
+      visKpiDevices.textContent = '100% Mobile';
+    }
+  }
+
+  // Top Visited Route
+  const routeMap = {};
+  window.allVisitorLogs.forEach(v => {
+    const r = v.pageName || v.route || '/';
+    routeMap[r] = (routeMap[r] || 0) + 1;
+  });
+  let topRoute = 'Home Page';
+  let maxCount = 0;
+  Object.keys(routeMap).forEach(r => {
+    if (routeMap[r] > maxCount) {
+      maxCount = routeMap[r];
+      topRoute = r;
+    }
+  });
+  const visKpiToppage = document.getElementById('vis-kpi-toppage');
+  if (visKpiToppage) visKpiToppage.textContent = topRoute;
+
+  // Render overview recent 5
+  renderOverviewVisitors(window.allVisitorLogs.slice(0, 5));
+
+  // Render main visitors table with filters
+  filterVisitorsTable();
+
+  if (isManualRefresh) {
+    const toast = document.createElement('div');
+    toast.textContent = `✓ Refreshed ${totalCount} Visitor Records`;
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10B981;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;font-size:0.85rem;z-index:9999;box-shadow:0 10px 25px rgba(0,0,0,0.5);';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2200);
+  }
+}
+
+function renderOverviewVisitors(items) {
+  const tbody = document.getElementById('overview-visitors-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!items || items.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem;">
+          No visitor hits recorded yet. Real visits will appear live.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  items.forEach(v => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <span style="font-size: 0.82rem; font-weight: 600; color: ${v.isLiveNow ? '#10B981' : 'var(--text-main)'};" title="${v.fullDateStr}">
+          ${v.isLiveNow ? '<span class="live-dot" style="display:inline-block; margin-right:4px;"></span>' : ''}${v.timeStr}
+        </span>
+      </td>
+      <td>
+        <a href="${v.route}" target="_blank" class="route-badge" title="Open page in new tab">
+          ${v.pageName}
+        </a>
+      </td>
+      <td>
+        <span class="device-badge ${v.device.toLowerCase()}">
+          ${v.device === 'Mobile' ? '📱' : v.device === 'Tablet' ? '📟' : '💻'} ${v.device}
+        </span>
+        <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 4px;">${v.os}</span>
+      </td>
+      <td>
+        <span class="referrer-badge">${v.referrer}</span>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.filterVisitorsTable = function() {
+  const search = (document.getElementById('visitor-search-input')?.value || '').toLowerCase();
+  const deviceFilter = document.getElementById('visitor-device-filter')?.value || 'all';
+  const timeFilter = document.getElementById('visitor-time-filter')?.value || 'all';
+
+  const tbody = document.getElementById('visitors-tbody');
+  if (!tbody) return;
+
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toDateString();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const filtered = (window.allVisitorLogs || []).filter(v => {
+    // Device filter
+    if (deviceFilter !== 'all' && v.device !== deviceFilter) return false;
+
+    // Time filter
+    if (v.created_at) {
+      const vDate = new Date(v.created_at);
+      if (timeFilter === 'today' && vDate.toDateString() !== todayStr) return false;
+      if (timeFilter === 'yesterday' && vDate.toDateString() !== yesterdayStr) return false;
+      if (timeFilter === '7days' && vDate < sevenDaysAgo) return false;
+    }
+
+    // Search query
+    if (search) {
+      const haystack = `${v.pageName} ${v.route} ${v.device} ${v.os} ${v.browser} ${v.referrer} ${v.hostname}`.toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+
+    return true;
+  });
+
+  tbody.innerHTML = '';
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+          <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--text-bright);">No matching visitors found</div>
+          <div style="font-size: 0.85rem; margin-bottom: 16px;">Try clearing filters or click below to simulate a real-time visit to verify tracking.</div>
+          <button class="btn btn-secondary" onclick="simulateTestVisitor()" style="font-size: 0.82rem; padding: 8px 16px; border-color: rgba(0,242,254,0.4); color: var(--cyan-primary);">
+            ⚡ Test Live Visitor Ping
+          </button>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  filtered.forEach(v => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <div style="font-weight: 600; color: ${v.isLiveNow ? '#10B981' : 'var(--text-bright)'}; font-size: 0.85rem;">
+          ${v.isLiveNow ? '<span class="live-dot" style="display:inline-block; margin-right:4px;"></span>' : ''}${v.timeStr}
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;" title="${v.fullDateStr}">
+          ${v.fullDateStr || 'N/A'}
+        </div>
+      </td>
+      <td>
+        <div>
+          <a href="${v.route}" target="_blank" class="route-badge" title="Open ${v.route}">
+            ${v.pageName}
+          </a>
+        </div>
+        <div style="font-size: 0.72rem; font-family: var(--font-mono); color: var(--text-subtle); margin-top: 3px;">
+          ${v.route}
+        </div>
+      </td>
+      <td>
+        <div>
+          <span class="device-badge ${v.device.toLowerCase()}">
+            ${v.device === 'Mobile' ? '📱' : v.device === 'Tablet' ? '📟' : '💻'} ${v.device}
+          </span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">
+          ${v.os}
+        </div>
+      </td>
+      <td>
+        <span class="browser-tag">${v.browser}</span>
+      </td>
+      <td>
+        <span class="referrer-badge">${v.referrer}</span>
+      </td>
+      <td>
+        <span class="badge" style="background: rgba(255,255,255,0.04); font-size: 0.72rem; color: #cbd5e1; font-family: var(--font-mono);">
+          ${v.hostname || 'elitewebkingdom.in'}
+        </span>
+      </td>
+      <td>
+        ${v.isLiveNow ? '<span class="live-now-badge"><span class="live-dot"></span> ACTIVE NOW</span>' : '<span style="font-size: 0.75rem; color: var(--text-muted);">Recorded</span>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+};
+
+window.simulateTestVisitor = async function() {
+  const samplePages = [
+    { url: '/', title: 'Home Page' },
+    { url: '/web-development.html', title: 'Web Development' },
+    { url: '/software-development.html', title: 'Software Development' },
+    { url: '/mobile-app-development.html', title: 'Mobile Apps' },
+    { url: '/store/', title: 'Software Store' }
+  ];
+  const sampleDevices = [
+    { device: 'Mobile', os: 'Android 14', browser: 'Chrome Mobile' },
+    { device: 'Desktop', os: 'Windows 11', browser: 'Chrome 122' },
+    { device: 'Mobile', os: 'iOS 17 (iPhone)', browser: 'Mobile Safari' },
+    { device: 'Desktop', os: 'macOS Sonoma', browser: 'Safari 17' }
+  ];
+  const sampleReferrers = ['Google Search 🔍', 'Direct Traffic 🌐', 'Instagram 📷', 'LinkedIn 💼', 'WhatsApp 💬'];
+
+  const randPage = samplePages[Math.floor(Math.random() * samplePages.length)];
+  const randDev = sampleDevices[Math.floor(Math.random() * sampleDevices.length)];
+  const randRef = sampleReferrers[Math.floor(Math.random() * sampleReferrers.length)];
+  const timestamp = new Date().toISOString();
+
+  const newLog = {
+    url: randPage.url,
+    hostname: 'elitewebkingdom.in',
+    user_agent: `Mozilla/5.0 (${randDev.os}) ${randDev.browser}`,
+    referrer: randRef,
+    device: randDev.device,
+    browser: randDev.browser,
+    os: randDev.os,
+    created_at: timestamp
+  };
+
+  // Try insert into Supabase
+  if (supabaseClient) {
+    try {
+      const { error } = await supabaseClient.from('pageviews').insert([newLog]);
+      if (error) {
+        // Fallback to basic schema columns
+        await supabaseClient.from('pageviews').insert([{
+          url: randPage.url,
+          hostname: 'elitewebkingdom.in',
+          user_agent: newLog.user_agent,
+          referrer: randRef,
+          created_at: timestamp
+        }]);
+      }
+    } catch (e) {
+      console.warn('Simulated visitor insert error:', e);
+    }
+  }
+
+  // Update local cache
+  try {
+    const cached = JSON.parse(localStorage.getItem('ewk_visitor_cache') || '[]');
+    cached.unshift(newLog);
+    if (cached.length > 50) cached.pop();
+    localStorage.setItem('ewk_visitor_cache', JSON.stringify(cached));
+  } catch (e) {}
+
+  await loadVisitorLogs();
+  flashVisitorCard();
+
+  // Trigger visual highlight on first table row
+  const firstRow = document.querySelector('#visitors-tbody tr');
+  if (firstRow) firstRow.classList.add('visitor-row-highlight');
+
+  const toast = document.createElement('div');
+  toast.innerHTML = `⚡ <strong>Live Visitor Simulated:</strong> ${randDev.device} on ${randPage.title}`;
+  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#00F2FE;color:#020617;padding:12px 20px;border-radius:8px;font-weight:700;font-size:0.85rem;z-index:9999;box-shadow:0 10px 30px rgba(0,242,254,0.4);';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2800);
+};
+
+window.exportVisitorLogsCSV = function() {
+  if (!window.allVisitorLogs || window.allVisitorLogs.length === 0) {
+    alert('No visitor logs available to export.');
+    return;
+  }
+  const headers = ['Time', 'Page Title', 'URL', 'Device', 'OS', 'Browser', 'Referrer', 'Hostname', 'ISO Timestamp'];
+  const rows = window.allVisitorLogs.map(v => [
+    `"${v.timeStr || ''}"`,
+    `"${(v.pageName || '').replace(/"/g, '""')}"`,
+    `"${(v.route || '').replace(/"/g, '""')}"`,
+    `"${v.device || ''}"`,
+    `"${v.os || ''}"`,
+    `"${v.browser || ''}"`,
+    `"${(v.referrer || '').replace(/"/g, '""')}"`,
+    `"${v.hostname || ''}"`,
+    `"${v.created_at || ''}"`
+  ]);
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `elitewebkingdom_visitors_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
 let realtimeVisitorChannel = null;
 function setupRealtimeVisitorTracker() {
   if (!supabaseClient) return;
@@ -514,6 +974,15 @@ function setupRealtimeVisitorTracker() {
         console.log('[EWK Realtime] New visitor detected on site:', payload.new);
         loadRealVisitorCount();
         flashVisitorCard();
+
+        if (payload.new) {
+          const parsed = parseVisitorInfo(payload.new);
+          window.allVisitorLogs.unshift(parsed);
+          renderOverviewVisitors(window.allVisitorLogs.slice(0, 5));
+          filterVisitorsTable();
+          const firstRow = document.querySelector('#visitors-tbody tr');
+          if (firstRow) firstRow.classList.add('visitor-row-highlight');
+        }
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {

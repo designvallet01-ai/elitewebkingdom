@@ -43,15 +43,10 @@ body {
   min-height: 100vh;
 }
 
-/* TOP TRICOLOR BAR */
+/* TOP TRICOLOR BAR (HIDDEN FOR SAAS LOOK) */
 .tiranga-top-bar {
-  height: 4px;
-  width: 100%;
-  background: linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #128807 100%);
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1010;
+  display: none !important;
+  height: 0;
 }
 
 /* AMBIENT GLOW BACKGROUND */

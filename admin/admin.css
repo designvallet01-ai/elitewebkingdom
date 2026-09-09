@@ -614,4 +614,102 @@ select.form-control option,
   }
 }
 
+/* VISITOR TELEMETRY & DEVICE BADGES */
+#stat-card-visitors:hover {
+  border-color: var(--cyan-primary);
+  box-shadow: 0 10px 30px rgba(0, 242, 254, 0.2);
+  transform: translateY(-3px);
+}
 
+.device-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.device-badge.mobile {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.device-badge.desktop {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.device-badge.tablet {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.browser-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.route-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  color: var(--cyan-primary);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+.route-badge:hover {
+  background: rgba(0, 242, 254, 0.18);
+  border-color: var(--cyan-primary);
+  color: #fff;
+}
+
+.referrer-badge {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.live-now-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.visitor-row-highlight {
+  animation: new-visitor-glow 2.5s ease-out;
+}
+
+@keyframes new-visitor-glow {
+  0% {
+    background-color: rgba(0, 242, 254, 0.25);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
