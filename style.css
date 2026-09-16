@@ -72,6 +72,9 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 body {
@@ -80,6 +83,10 @@ body {
   font-family: var(--font-body);
   line-height: 1.6;
   overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
   position: relative;
   min-height: 100vh;
   min-height: -webkit-fill-available;
@@ -140,9 +147,10 @@ button, input, select, textarea {
 
 .container {
   width: 100%;
-  max-width: 1280px;
+  max-width: 100%;
+  padding: 0 clamp(24px, 4vw, 64px);
   margin: 0 auto;
-  padding: 0 32px;
+  box-sizing: border-box;
 }
 
 .section {
@@ -398,9 +406,15 @@ header {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 40px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 48px;
   align-items: center;
+  width: 100%;
+}
+
+.hero-content, .hero-preview-card {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .hero-badge {
@@ -686,8 +700,9 @@ header {
 /* SERVICES */
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 28px;
+  width: 100%;
 }
 
 .service-card {
@@ -942,8 +957,9 @@ header {
 
 .portfolio-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 28px;
+  width: 100%;
 }
 
 .portfolio-card {
@@ -1034,8 +1050,9 @@ header {
 /* PROCESS */
 .process-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
+  width: 100%;
 }
 
 .process-card {
@@ -1206,8 +1223,9 @@ header {
 /* CONTACT */
 .contact-grid {
   display: grid;
-  grid-template-columns: 0.85fr 1.15fr;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
   gap: 40px;
+  width: 100%;
 }
 
 .contact-info-card {
@@ -1348,9 +1366,10 @@ footer {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 0.8fr 0.8fr 1fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 1fr);
   gap: 40px;
   margin-bottom: 50px;
+  width: 100%;
 }
 
 .footer-desc {
@@ -1560,25 +1579,6 @@ footer {
 
 .menu-toggle.open span:nth-child(3) {
   transform: translateY(-7.5px) rotate(-45deg);
-}
-
-@media (max-width: 1024px) {
-  .hero-grid, .about-grid, .contact-grid {
-    grid-template-columns: 1fr;
-    gap: 40px;
-  }
-  .estimator-grid, .portfolio-grid, .process-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .footer-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .hero-title {
-    font-size: 2.8rem;
-  }
-  .section-title {
-    font-size: 2.2rem;
-  }
 }
 
 @media (max-width: 991px) {
