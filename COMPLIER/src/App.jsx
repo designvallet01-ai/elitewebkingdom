@@ -413,23 +413,117 @@ export default function App() {
     setLastStats(null);
   }, []);
 
-  // Fallback to HTTP runner if WebSocket fails
+  // Robust Cloud & Local Code Runner
   const runHttpFallback = useCallback(async (codeToRun, lang) => {
+    setIsRunning(true);
+    setRightPaneView('console');
+    setLastStats(null);
+    setTerminalEntries([
+      { type: 'system', text: `[Elite Engine]: Compiling & executing ${lang.toUpperCase()} code in cloud sandbox...\n` }
+    ]);
+
     try {
-      const response = await fetch('/api/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: lang, code: codeToRun })
+      // 1. If HTML / Web sandbox, switch to preview
+      if (lang === 'html') {
+        setRightPaneView('preview');
+        setTerminalEntries([
+          { type: 'system', text: '[Web Preview]: Rendering HTML, CSS & JavaScript in live browser canvas...\n' }
+        ]);
+        setLastStats({ code: 0, executionTime: 5, status: 'SUCCESS', runner: 'Browser DOM Sandbox' });
+        setIsRunning(false);
+        return;
+      }
+
+      let data;
+      try {
+        const response = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language: lang, code: codeToRun })
+        });
+        if (!response.ok) {
+          throw new Error(`Server status ${response.status}`);
+        }
+        data = await response.json();
+      } catch (apiErr) {
+        console.warn('Local /api/run unavailable, engaging direct Cloud Judge0 fallback:', apiErr);
+        // Direct Judge0 CE fallback
+        const JUDGE0_MAP = {
+          cpp: { id: 105, name: 'C++ (GCC 14.1)' },
+          c: { id: 50, name: 'C (GCC 9.2)' },
+          python: { id: 92, name: 'Python (3.11.2)' },
+          java: { id: 91, name: 'Java (OpenJDK 17)' },
+          javascript: { id: 102, name: 'JavaScript (Node.js 22)' },
+          typescript: { id: 101, name: 'TypeScript (5.6.2)' }
+        };
+        const target = JUDGE0_MAP[lang] || JUDGE0_MAP['python'];
+        let src = codeToRun;
+        if (lang === 'java' && !src.includes('class ')) {
+          src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+        }
+        const directRes = await fetch('https://ce.judge0.com/submissions?wait=true', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language_id: target.id, source_code: src })
+        });
+        const judgeData = await directRes.json();
+        const isSuccess = judgeData.status?.id === 3;
+        data = {
+          stdout: judgeData.stdout || '',
+          stderr: judgeData.compile_output || judgeData.stderr || (isSuccess ? '' : judgeData.status?.description || ''),
+          code: isSuccess ? 0 : 1,
+          executionTime: judgeData.time ? Math.round(parseFloat(judgeData.time) * 1000) : 15,
+          status: isSuccess ? 'SUCCESS' : (judgeData.status?.id === 6 ? 'COMPILE_ERROR' : 'RUNTIME_ERROR'),
+          runner: `Elite Cloud (${target.name})`
+        };
+      }
+
+      const entries = [];
+      if (data.stdout) {
+        entries.push({ type: 'stdout', text: data.stdout });
+      }
+      if (data.stderr) {
+        entries.push({ type: 'stderr', text: data.stderr });
+      }
+      if (!data.stdout && !data.stderr) {
+        entries.push({ type: 'system', text: '[Execution completed with no console output]\n' });
+      }
+      entries.push({
+        type: 'system',
+        text: `\r\n[Process completed in ${data.executionTime || 0}ms with exit code ${data.code || 0}]\r\n`
       });
-      const data = await response.json();
-      setTerminalEntries([
-        { type: 'stdout', text: data.stdout || '' },
-        ...(data.stderr ? [{ type: 'stderr', text: data.stderr }] : [])
-      ]);
+
+      setTerminalEntries(entries);
       setLastStats(data);
     } catch (err) {
+      // In-browser JavaScript execution fallback if offline
+      if (lang === 'javascript') {
+        try {
+          const logs = [];
+          const customConsole = {
+            log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
+            error: (...args) => logs.push('[ERROR] ' + args.join(' ')),
+            warn: (...args) => logs.push('[WARN] ' + args.join(' '))
+          };
+          const fn = new Function('console', codeToRun);
+          fn(customConsole);
+          setTerminalEntries([
+            { type: 'stdout', text: (logs.join('\n') || '[Finished without output]') + '\n' },
+            { type: 'system', text: '\r\n[Executed in Browser JavaScript Engine]\r\n' }
+          ]);
+          setLastStats({ code: 0, executionTime: 3, status: 'SUCCESS', runner: 'Browser V8 Engine' });
+          return;
+        } catch (jsErr) {
+          setTerminalEntries([
+            { type: 'stderr', text: `[JavaScript Error]: ${jsErr.message}\n` }
+          ]);
+          setLastStats({ code: 1, executionTime: 0, status: 'ERROR', runner: 'Browser V8 Engine' });
+          return;
+        }
+      }
+
       setTerminalEntries([
-        { type: 'stderr', text: `[Execution failed]: ${err.message}\n` }
+        { type: 'stderr', text: `[Execution failed]: ${err.message}\nPlease check your network connection or try again.\n` }
       ]);
       setLastStats({ code: 1, executionTime: 0, status: 'ERROR', runner: 'Network' });
     } finally {
@@ -437,7 +531,7 @@ export default function App() {
     }
   }, []);
 
-  // Run Code with auto-detected language via live interactive WebSocket
+  // Run Code with auto-detected language
   const handleRun = useCallback(() => {
     if (isRunning) return;
 
@@ -456,78 +550,88 @@ export default function App() {
       return;
     }
 
-    // Close any previous socket
-    if (wsRef.current) {
-      try { wsRef.current.close(); } catch (e) {}
-    }
-
-    setIsRunning(true);
-    setRightPaneView('console');
-    setLastStats(null);
-    setTerminalEntries([]);
-
-    // Determine WebSocket endpoint
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const isDev = window.location.port === '5173';
-    const wsUrl = isDev 
-      ? `${protocol}//${window.location.hostname}:3001/api/terminal`
-      : `${protocol}//${window.location.host}/api/terminal`;
-
-    let socket;
-    try {
-      socket = new WebSocket(wsUrl);
-      wsRef.current = socket;
-    } catch (e) {
-      console.warn('WebSocket failed, using HTTP fallback:', e);
-      runHttpFallback(currentCode, activeLanguage);
+    // If language is HTML, render live WebPreview immediately
+    if (activeLanguage === 'html') {
+      setRightPaneView('preview');
+      setTerminalEntries([
+        { type: 'system', text: '[Web Preview]: Rendering HTML & CSS in live browser canvas...\n' }
+      ]);
+      setLastStats({ code: 0, executionTime: 5, status: 'SUCCESS', runner: 'Browser DOM Sandbox' });
       return;
     }
 
-    socket.onopen = () => {
-      socket.send(JSON.stringify({
-        type: 'run',
-        language: activeLanguage,
-        code: currentCode
-      }));
-    };
+    // Check if running in local dev with dev server
+    const isLocalDev = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5173';
 
-    socket.onmessage = (event) => {
+    if (isLocalDev) {
+      // In local dev, try local WebSocket first
+      if (wsRef.current) {
+        try { wsRef.current.close(); } catch (e) {}
+      }
+
+      setIsRunning(true);
+      setRightPaneView('console');
+      setLastStats(null);
+      setTerminalEntries([]);
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.hostname}:3001/api/terminal`;
+
+      let socket;
       try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'system') {
-          setTerminalEntries(prev => [...prev, { type: msg.type, text: msg.data }]);
-        } else if (msg.type === 'exit') {
-          setLastStats({
-            code: msg.code,
-            executionTime: msg.executionTime,
-            status: msg.status || (msg.code === 0 ? 'SUCCESS' : 'ERROR'),
-            runner: msg.runner || detectedLangInfo.name
-          });
-          setTerminalEntries(prev => [
-            ...prev,
-            {
-              type: 'system',
-              text: `\r\n[Process completed in ${msg.executionTime}ms with exit code ${msg.code}]\r\n`
-            }
-          ]);
-          setIsRunning(false);
-          try { socket.close(); } catch (e) {}
-        }
-      } catch (err) {
-        console.error('Error handling terminal message:', err);
-      }
-    };
-
-    socket.onerror = (err) => {
-      console.warn('WebSocket encountered error, trying HTTP fallback', err);
-      if (isRunning) {
+        socket = new WebSocket(wsUrl);
+        wsRef.current = socket;
+      } catch (e) {
         runHttpFallback(currentCode, activeLanguage);
+        return;
       }
-    };
 
-    socket.onclose = () => {
-      setIsRunning(false);
-    };
+      socket.onopen = () => {
+        socket.send(JSON.stringify({
+          type: 'run',
+          language: activeLanguage,
+          code: currentCode
+        }));
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'system') {
+            setTerminalEntries(prev => [...prev, { type: msg.type, text: msg.data }]);
+          } else if (msg.type === 'exit') {
+            setLastStats({
+              code: msg.code,
+              executionTime: msg.executionTime,
+              status: msg.status || (msg.code === 0 ? 'SUCCESS' : 'ERROR'),
+              runner: msg.runner || detectedLangInfo.name
+            });
+            setTerminalEntries(prev => [
+              ...prev,
+              {
+                type: 'system',
+                text: `\r\n[Process completed in ${msg.executionTime}ms with exit code ${msg.code}]\r\n`
+              }
+            ]);
+            setIsRunning(false);
+            try { socket.close(); } catch (e) {}
+          }
+        } catch (err) {
+          console.error('Error handling terminal message:', err);
+        }
+      };
+
+      socket.onerror = () => {
+        runHttpFallback(currentCode, activeLanguage);
+      };
+
+      socket.onclose = () => {
+        setIsRunning(false);
+      };
+    } else {
+      // In production / Web, directly invoke the Cloud HTTP execution pipeline
+      runHttpFallback(currentCode, activeLanguage);
+    }
   }, [isRunning, activeFile.code, activeLanguage, detectedLangInfo, runHttpFallback]);
 
   // Keyboard shortcut Ctrl + Enter
