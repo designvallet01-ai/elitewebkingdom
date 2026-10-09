@@ -1381,7 +1381,10 @@ export default function App() {
         onClose={() => setCollegeModalState({ isOpen: false, mode: 'setup' })}
         onActivateCollegeMode={handleActivateCollegeMode}
         onDeactivateCollegeMode={handleDeactivateCollegeMode}
-        onOpenAdminPortal={() => setIsCollegeAdminPortalOpen(true)}
+        onOpenAdminPortal={() => {
+          setCollegeModalState({ isOpen: false, mode: 'setup' });
+          setIsCollegeAdminPortalOpen(true);
+        }}
         currentPin={collegePin}
         violationsCount={collegeViolations}
         studentInfo={collegeStudentInfo}

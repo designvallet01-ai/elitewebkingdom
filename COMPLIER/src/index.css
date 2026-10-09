@@ -4044,6 +4044,30 @@ html, body, #root {
   align-items: center;
   gap: 6px;
   font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.portal-quick-launch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.25));
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.portal-quick-launch-pill:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000000;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  transform: translateY(-1px);
 }
 
 /* ==========================================================================
@@ -4053,7 +4077,7 @@ html, body, #root {
   position: fixed;
   inset: 0;
   background: #080a0f;
-  z-index: 99999;
+  z-index: 1000000;
   display: flex;
   flex-direction: column;
   overflow: hidden;

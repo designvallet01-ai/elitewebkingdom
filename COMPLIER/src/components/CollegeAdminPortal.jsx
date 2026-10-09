@@ -114,7 +114,7 @@ export default function CollegeAdminPortal({
         }
       }
     } catch (e) {}
-  }, []);
+  }, [isOpen]);
 
   // Load systems for active college and sync with Supabase Cloud
   const refreshSystems = () => {
@@ -165,8 +165,6 @@ export default function CollegeAdminPortal({
 
     return () => unsubscribe();
   }, [activeCollege]);
-
-  if (!isOpen) return null;
 
   // Handle Admin Login
   const handleLogin = (e) => {
@@ -408,6 +406,8 @@ export default function CollegeAdminPortal({
   // Quick stats
   const activeExamCount = systems.filter(s => s.status === 'locked').length;
   const violationCount = systems.reduce((acc, s) => acc + (s.violationsCount || 0), 0);
+
+  if (!isOpen) return null;
 
   return (
     <div className="college-portal-fullscreen-backdrop">

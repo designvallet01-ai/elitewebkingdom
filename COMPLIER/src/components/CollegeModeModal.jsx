@@ -214,11 +214,26 @@ export default function CollegeModeModal({
             </div>
           </div>
 
-          {mode !== 'locked_screen' && (
-            <button className="college-close-btn" onClick={onClose} aria-label="Close modal">
-              <X size={18} />
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {mode === 'setup' && onOpenAdminPortal && (
+              <button
+                type="button"
+                className="portal-quick-launch-pill"
+                onClick={() => onOpenAdminPortal()}
+                title="Launch College Admin Portal"
+                id="btn-header-admin-portal"
+              >
+                <Building2 size={13} />
+                <span>Admin Portal</span>
+                <ExternalLink size={11} />
+              </button>
+            )}
+            {mode !== 'locked_screen' && (
+              <button className="college-close-btn" onClick={onClose} aria-label="Close modal">
+                <X size={18} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Global Error Banner */}
@@ -297,11 +312,22 @@ export default function CollegeModeModal({
 
                     {clgRegSuccess && (
                       <div className="college-success-card">
-                        <CheckCircle2 size={16} className="text-emerald-400" />
-                        <div>
+                        <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
+                        <div style={{ flex: 1 }}>
                           <div className="success-title">{clgRegSuccess}</div>
                           <div className="success-note">Now you can register lab computers or launch the Admin Portal.</div>
                         </div>
+                        {onOpenAdminPortal && (
+                          <button
+                            type="button"
+                            className="portal-quick-launch-pill"
+                            onClick={() => onOpenAdminPortal()}
+                            title="Open College Admin Portal"
+                          >
+                            <Building2 size={13} />
+                            <span>Open Portal ➔</span>
+                          </button>
+                        )}
                       </div>
                     )}
 
@@ -558,11 +584,9 @@ export default function CollegeModeModal({
                     <button
                       type="button"
                       className="college-btn secondary portal-launch-btn"
-                      onClick={() => {
-                        onClose();
-                        onOpenAdminPortal();
-                      }}
+                      onClick={() => onOpenAdminPortal()}
                       title="Open full separate College Admin Portal"
+                      id="btn-launch-college-portal"
                     >
                       <Building2 size={15} />
                       <span>Launch College Admin Portal</span>
