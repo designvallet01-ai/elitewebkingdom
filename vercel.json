@@ -1,3 +1,7 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/compiler", "destination": "/compiler/index.html" },
+    { "source": "/compiler/", "destination": "/compiler/index.html" }
+  ]
 }
