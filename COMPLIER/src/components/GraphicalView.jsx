@@ -69,14 +69,25 @@ export default function GraphicalView({
   const handleFitView = useCallback(() => {
     if (!containerRef.current) return;
     const { clientWidth, clientHeight } = containerRef.current;
-    const scaleX = (clientWidth - 60) / svgWidth;
-    const scaleY = (clientHeight - 80) / totalHeight;
+    if (clientWidth === 0 || clientHeight === 0) return;
+    const paddingX = clientWidth < 600 ? 30 : 60;
+    const paddingY = clientWidth < 600 ? 40 : 80;
+    const scaleX = (clientWidth - paddingX) / svgWidth;
+    const scaleY = (clientHeight - paddingY) / totalHeight;
     const fitScale = Math.min(scaleX, scaleY, 1.2);
     const safeScale = Math.max(Number(fitScale.toFixed(2)), 0.15);
     setZoom(safeScale);
     const offsetX = (clientWidth - svgWidth * safeScale) / 2;
-    setPan({ x: Math.round(offsetX), y: 30 });
+    setPan({ x: Math.round(offsetX), y: clientWidth < 600 ? 15 : 30 });
   }, [totalHeight, svgWidth]);
+
+  // Auto-fit on mount and when graph changes
+  useEffect(() => {
+    const t = setTimeout(() => {
+      handleFitView();
+    }, 120);
+    return () => clearTimeout(t);
+  }, [tab, graph.nodes.length, handleFitView]);
 
   // Mouse drag panning
   const handleMouseDown = (e) => {
@@ -94,6 +105,121 @@ export default function GraphicalView({
   };
 
   const handleMouseUp = () => setIsDragging(false);
+
+  // Touch panning & pinch-to-zoom state tracking
+  const touchStateRef = useRef({
+    isInteracting: false,
+    startPan: { x: 0, y: 0 },
+    startTouches: [],
+    initialPinchDist: 0,
+    initialZoom: 1,
+    zoomCenter: { x: 0, y: 0 },
+    touchStartTime: 0,
+    hasMoved: false,
+    lastTapTime: 0
+  });
+
+  // Touch Start Handler
+  const handleTouchStart = (e) => {
+    if (e.target.closest('.canvas-floating-toolbar') || e.target.closest('.canvas-status-tag')) {
+      return;
+    }
+
+    const state = touchStateRef.current;
+    state.isInteracting = true;
+    state.startPan = { ...pan };
+    state.touchStartTime = Date.now();
+    state.hasMoved = false;
+
+    if (e.touches.length === 1) {
+      // 1-finger pan
+      state.startTouches = [{ x: e.touches[0].clientX, y: e.touches[0].clientY }];
+      setIsDragging(true);
+
+      // Check double tap to auto-fit view
+      const now = Date.now();
+      if (now - state.lastTapTime < 320) {
+        handleFitView();
+        state.lastTapTime = 0;
+      } else {
+        state.lastTapTime = now;
+      }
+    } else if (e.touches.length >= 2) {
+      // 2-finger pinch-to-zoom
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      state.initialPinchDist = dist;
+      state.initialZoom = zoomRef.current;
+
+      const rect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
+      state.zoomCenter = {
+        x: (t1.clientX + t2.clientX) / 2 - rect.left,
+        y: (t1.clientY + t2.clientY) / 2 - rect.top
+      };
+      setIsDragging(true);
+    }
+  };
+
+  // Touch Move Handler
+  const handleTouchMove = (e) => {
+    const state = touchStateRef.current;
+    if (!state.isInteracting) return;
+
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
+    if (e.touches.length === 1 && state.startTouches.length >= 1) {
+      const curX = e.touches[0].clientX;
+      const curY = e.touches[0].clientY;
+      const deltaX = curX - state.startTouches[0].x;
+      const deltaY = curY - state.startTouches[0].y;
+
+      if (Math.hypot(deltaX, deltaY) > 5) {
+        state.hasMoved = true;
+      }
+
+      setPan({
+        x: Math.round(state.startPan.x + deltaX),
+        y: Math.round(state.startPan.y + deltaY)
+      });
+    } else if (e.touches.length >= 2 && state.initialPinchDist > 0) {
+      state.hasMoved = true;
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const scale = currentDist / state.initialPinchDist;
+
+      const targetZoom = Math.min(Math.max(state.initialZoom * scale, 0.05), 20.0);
+      const roundedZoom = Number(targetZoom.toFixed(2));
+
+      const zCenter = state.zoomCenter;
+      const curZoom = state.initialZoom;
+      const nextPanX = zCenter.x - (zCenter.x - state.startPan.x) * (roundedZoom / curZoom);
+      const nextPanY = zCenter.y - (zCenter.y - state.startPan.y) * (roundedZoom / curZoom);
+
+      setZoom(roundedZoom);
+      setPan({
+        x: Math.round(nextPanX),
+        y: Math.round(nextPanY)
+      });
+    }
+  };
+
+  // Touch End Handler
+  const handleTouchEnd = (e) => {
+    const state = touchStateRef.current;
+    if (e.touches.length === 0) {
+      state.isInteracting = false;
+      setIsDragging(false);
+      state.initialPinchDist = 0;
+    } else if (e.touches.length === 1) {
+      state.startTouches = [{ x: e.touches[0].clientX, y: e.touches[0].clientY }];
+      state.startPan = { ...pan };
+      state.initialPinchDist = 0;
+    }
+  };
 
   // Smooth Unlimited Mouse Wheel Zoom (5% to 2000%)
   useEffect(() => {
@@ -180,7 +306,7 @@ export default function GraphicalView({
 
   return (
     <div className="graphical-container">
-      {/* Graphical Sub-header */}
+      {/* Graphical Sub-header with Responsive Tabs */}
       <div className="graphical-header">
         <div className="graphical-tabs">
           <button 
@@ -189,7 +315,8 @@ export default function GraphicalView({
             id="tab-flowchart"
           >
             <GitFork size={14} />
-            <span>Interactive Flowchart</span>
+            <span className="tab-full-label">Interactive Flowchart</span>
+            <span className="tab-short-label">Flow</span>
             <span className="badge-count">{graph.nodes.length}</span>
           </button>
 
@@ -199,7 +326,8 @@ export default function GraphicalView({
             id="tab-ast"
           >
             <Layers size={14} />
-            <span>AST Structure</span>
+            <span className="tab-full-label">AST Structure</span>
+            <span className="tab-short-label">AST</span>
           </button>
 
           <button 
@@ -208,7 +336,8 @@ export default function GraphicalView({
             id="tab-variables"
           >
             <Variable size={14} />
-            <span>Memory & State</span>
+            <span className="tab-full-label">Memory & State</span>
+            <span className="tab-short-label">State</span>
             {variables.length > 0 && <span className="badge-count">{variables.length}</span>}
           </button>
         </div>
@@ -221,7 +350,8 @@ export default function GraphicalView({
               title={isSimulating ? 'Pause Flow Simulation' : 'Follow execution flow down node by node'}
             >
               {isSimulating ? <Pause size={13} /> : <Play size={13} fill="currentColor" />}
-              <span>{isSimulating ? 'Following Flow...' : 'Simulate & Follow Flow'}</span>
+              <span className="sim-btn-full">{isSimulating ? 'Following Flow...' : 'Simulate Flow'}</span>
+              <span className="sim-btn-short">{isSimulating ? 'Pause' : 'Simulate'}</span>
             </button>
           </div>
         )}
@@ -238,15 +368,22 @@ export default function GraphicalView({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+            style={{ cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
           >
             {/* Top Status & Instructions Badge */}
             <div className="canvas-status-tag">
               <Sparkles size={12} className="sparkle-cyan" />
-              <span>
+              <span className="status-tag-desktop">
                 {isSimulating 
                   ? 'Auto-following flow down node-by-node...' 
-                  : 'Unlimited Zoom (Wheel / Pinch) • Auto-scrolls on simulate'}
+                  : 'Pinch / Drag to pan & zoom • Tap node to focus line'}
+              </span>
+              <span className="status-tag-mobile">
+                {isSimulating ? 'Following flow...' : 'Pinch / Drag to explore'}
               </span>
             </div>
 
@@ -465,6 +602,12 @@ export default function GraphicalView({
                       key={node.id} 
                       className="flow-node-group"
                       onClick={() => focusNode(i)}
+                      onTouchEnd={(e) => {
+                        if (!touchStateRef.current?.hasMoved) {
+                          e.stopPropagation();
+                          focusNode(i);
+                        }
+                      }}
                       style={{ cursor: 'pointer' }}
                     >
                       {/* Active glowing ring during execution / selection */}

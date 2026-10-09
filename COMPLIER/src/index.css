@@ -1330,6 +1330,13 @@ html, body, #root {
   gap: 0.25rem;
 }
 
+.tab-full-label { display: inline; }
+.tab-short-label { display: none; }
+.sim-btn-full { display: inline; }
+.sim-btn-short { display: none; }
+.status-tag-desktop { display: inline; }
+.status-tag-mobile { display: none; }
+
 .graph-tab-btn {
   display: flex;
   align-items: center;
@@ -3041,6 +3048,110 @@ html, body, #root {
     flex: 1 !important;
     min-width: 0 !important;
     height: auto !important;
+  }
+
+  /* ==========================================================================
+     MOBILE GRAPHICAL FLOWCHART OPTIMIZATIONS
+     ========================================================================== */
+  .tab-full-label { display: none !important; }
+  .tab-short-label { display: inline !important; }
+  .sim-btn-full { display: none !important; }
+  .sim-btn-short { display: inline !important; }
+  .status-tag-desktop { display: none !important; }
+  .status-tag-mobile { display: inline !important; }
+
+  .graphical-container {
+    height: 100% !important;
+    width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .graphical-header {
+    height: 40px !important;
+    padding: 0 8px !important;
+    gap: 6px !important;
+    background: #0b0e14 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .graphical-tabs {
+    flex: 1 !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 4px !important;
+  }
+
+  .graphical-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .graph-tab-btn {
+    padding: 4px 8px !important;
+    font-size: 0.72rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .simulate-btn {
+    padding: 4px 8px !important;
+    font-size: 0.72rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .svg-viewport-wrapper {
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+  }
+
+  .canvas-floating-toolbar {
+    bottom: 14px !important;
+    right: 12px !important;
+    padding: 4px 6px !important;
+    gap: 4px !important;
+    border-radius: 10px !important;
+    background-color: rgba(15, 23, 42, 0.94) !important;
+    border: 1px solid rgba(56, 189, 248, 0.25) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65) !important;
+    z-index: 50 !important;
+  }
+
+  .canvas-tool-btn {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 6px !important;
+    color: #e2e8f0 !important;
+  }
+
+  .canvas-tool-btn:active {
+    background-color: rgba(56, 189, 248, 0.25) !important;
+    color: #38bdf8 !important;
+  }
+
+  .zoom-slider-container {
+    display: none !important; /* Hide range slider on mobile to save space */
+  }
+
+  .canvas-status-tag {
+    top: 8px !important;
+    left: 8px !important;
+    padding: 3px 8px !important;
+    font-size: 0.68rem !important;
+    max-width: calc(100% - 16px) !important;
+  }
+
+  .ast-container {
+    padding: 0.6rem !important;
+  }
+
+  .variables-container {
+    padding: 0.6rem !important;
+  }
+
+  .vars-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
