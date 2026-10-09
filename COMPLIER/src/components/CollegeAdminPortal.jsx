@@ -34,7 +34,8 @@ import {
   unregisterSystem, 
   updateSystemStatus, 
   broadcastMessage, 
-  subscribeToCollegeEvents 
+  subscribeToCollegeEvents,
+  getCurrentMachineSystem 
 } from '../services/collegeService';
 
 export default function CollegeAdminPortal({
@@ -232,6 +233,75 @@ export default function CollegeAdminPortal({
     }
   };
 
+  // Handle Single System Lockdown with Direct Fullscreen
+  const handleLockSingleSystem = (sys) => {
+    const pin = activeCollege?.defaultPin || '1234';
+    const examName = sys.currentExamName || `${activeCollege?.collegeName || 'College'} Lab Practical Exam`;
+
+    // 1. Broadcast targeted lock message to this system
+    broadcastMessage({
+      type: 'TARGET_LOCKDOWN',
+      targetSystemId: sys.systemId,
+      collegeId: activeCollege.collegeId,
+      systemName: sys.systemName,
+      examName: examName,
+      pin: pin,
+      forceFullscreen: true
+    });
+
+    // 2. Update status in local storage
+    updateSystemStatus(sys.systemId, {
+      status: 'locked',
+      currentExamName: examName,
+      examStartTime: Date.now()
+    });
+
+    refreshSystems();
+    setBroadcastAlert(`🔒 Fullscreen Lockdown signal sent to ${sys.systemName}!`);
+    setTimeout(() => setBroadcastAlert(''), 3500);
+
+    // 3. If current machine is this system, enter lockdown & fullscreen immediately!
+    const bound = getCurrentMachineSystem();
+    if (bound && (bound.systemId === sys.systemId || bound.systemName === sys.systemName)) {
+      onClose();
+      if (onLockSystemFromPortal) {
+        onLockSystemFromPortal({
+          pin: pin,
+          examName: examName,
+          studentRoll: sys.currentStudentRoll || 'LAB-STUDENT',
+          studentName: sys.currentStudentName || 'Student'
+        });
+      }
+    }
+  };
+
+  // Handle Single System Unlock
+  const handleUnlockSingleSystem = (sys) => {
+    broadcastMessage({
+      type: 'TARGET_UNLOCK',
+      targetSystemId: sys.systemId,
+      collegeId: activeCollege.collegeId,
+      systemName: sys.systemName
+    });
+
+    updateSystemStatus(sys.systemId, {
+      status: 'idle',
+      currentExamName: '',
+      examStartTime: null
+    });
+
+    refreshSystems();
+    setBroadcastAlert(`🔓 Unlock command sent to ${sys.systemName}.`);
+    setTimeout(() => setBroadcastAlert(''), 3000);
+
+    const bound = getCurrentMachineSystem();
+    if (bound && (bound.systemId === sys.systemId || bound.systemName === sys.systemName)) {
+      if (onUnlockSystemFromPortal) {
+        onUnlockSystemFromPortal();
+      }
+    }
+  };
+
   // Handle Broadcast Lockdown
   const handleBroadcastLock = () => {
     if (!broadcastPin || broadcastPin.length < 4) {
@@ -239,13 +309,14 @@ export default function CollegeAdminPortal({
       return;
     }
 
-    if (window.confirm(`BROADCAST LOCKDOWN: Are you sure you want to lock all ${systems.length} registered lab machines into Exam Kiosk Mode with PIN ${broadcastPin}?`)) {
+    if (window.confirm(`BROADCAST LOCKDOWN: Are you sure you want to lock all ${systems.length} registered lab machines into Exam Kiosk Mode with PIN ${broadcastPin}? Direct fullscreen will be activated on all systems.`)) {
       broadcastMessage({
         type: 'BROADCAST_LOCKDOWN',
         collegeId: activeCollege.collegeId,
         examName: broadcastExamName.trim(),
         pin: broadcastPin.trim(),
-        durationMins: Number(broadcastDuration) || 90
+        durationMins: Number(broadcastDuration) || 90,
+        forceFullscreen: true
       });
 
       // Update all systems in local storage
@@ -258,14 +329,21 @@ export default function CollegeAdminPortal({
       });
 
       refreshSystems();
-      setBroadcastAlert(`✅ Lockdown signal broadcasted to all ${systems.length} registered PCs!`);
+      setBroadcastAlert(`✅ Direct Fullscreen Lockdown signal broadcasted to all ${systems.length} registered PCs!`);
       setTimeout(() => setBroadcastAlert(''), 4000);
 
-      if (onLockSystemFromPortal) {
-        onLockSystemFromPortal({
-          pin: broadcastPin.trim(),
-          examName: broadcastExamName.trim()
-        });
+      // If current machine belongs to this college, activate lockdown & fullscreen immediately
+      const bound = getCurrentMachineSystem();
+      if (!bound || bound.collegeId === activeCollege.collegeId) {
+        onClose();
+        if (onLockSystemFromPortal) {
+          onLockSystemFromPortal({
+            pin: broadcastPin.trim(),
+            examName: broadcastExamName.trim(),
+            studentRoll: bound?.currentStudentRoll || 'LAB-STUDENT',
+            studentName: bound?.currentStudentName || 'Student'
+          });
+        }
       }
     }
   };
@@ -744,10 +822,8 @@ export default function CollegeAdminPortal({
                               <button
                                 type="button"
                                 className="sys-btn unlock-btn"
-                                onClick={() => {
-                                  updateSystemStatus(sys.systemId, { status: 'idle', currentExamName: '' });
-                                  refreshSystems();
-                                }}
+                                onClick={() => handleUnlockSingleSystem(sys)}
+                                title="Unlock this computer"
                               >
                                 <Unlock size={13} />
                                 <span>Unlock</span>
@@ -756,17 +832,11 @@ export default function CollegeAdminPortal({
                               <button
                                 type="button"
                                 className="sys-btn lock-btn"
-                                onClick={() => {
-                                  updateSystemStatus(sys.systemId, {
-                                    status: 'locked',
-                                    currentExamName: 'Lab Exam Session',
-                                    examStartTime: Date.now()
-                                  });
-                                  refreshSystems();
-                                }}
+                                onClick={() => handleLockSingleSystem(sys)}
+                                title="Lock this system into Direct Fullscreen Exam Mode"
                               >
                                 <Lock size={13} />
-                                <span>Lock PC</span>
+                                <span>Lock & Fullscreen</span>
                               </button>
                             )}
 

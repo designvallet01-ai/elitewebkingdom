@@ -17,7 +17,7 @@ import {
   getCurrentMachineSystem 
 } from './services/collegeService';
 import { detectLanguage } from './services/languageDetector';
-import { Terminal, GitFork, Globe, Code2, FolderTree } from 'lucide-react';
+import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock } from 'lucide-react';
 
 const STORAGE_FILES_KEY = 'elite_ide_workspace_files_v2';
 const STORAGE_ACTIVE_KEY = 'elite_ide_active_file_id_v2';
@@ -146,6 +146,9 @@ export default function App() {
       }
     } catch (e) {}
     return false;
+  });
+  const [isFullscreenActive, setIsFullscreenActive] = useState(() => {
+    return typeof document !== 'undefined' ? !!document.fullscreenElement : false;
   });
   
   // Stdin & Inline Terminal Interactive Input State
@@ -785,24 +788,74 @@ export default function App() {
 
     // 2. Fullscreen change detection (Esc or exiting fullscreen)
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
-        setCollegeViolations(v => v + 1);
+      const isNowFs = !!(
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement
+      );
+      setIsFullscreenActive(isNowFs);
+
+      if (!isNowFs) {
+        setCollegeViolations(v => {
+          const next = v + 1;
+          const bound = getCurrentMachineSystem();
+          if (bound) {
+            updateSystemStatus(bound.systemId, { violationsCount: next });
+            broadcastMessage({
+              type: 'VIOLATION_REPORTED',
+              systemName: bound.systemName,
+              studentRoll: bound.currentStudentRoll,
+              reason: 'Exited Fullscreen Kiosk Mode'
+            });
+          }
+          return next;
+        });
         setCollegeModalState({ isOpen: true, mode: 'locked_screen' });
       }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
     // 3. Tab switch / Window blur detection
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        setCollegeViolations(v => v + 1);
+        setCollegeViolations(v => {
+          const next = v + 1;
+          const bound = getCurrentMachineSystem();
+          if (bound) {
+            updateSystemStatus(bound.systemId, { violationsCount: next });
+            broadcastMessage({
+              type: 'VIOLATION_REPORTED',
+              systemName: bound.systemName,
+              studentRoll: bound.currentStudentRoll,
+              reason: 'Switched Browser Tab or Minimized'
+            });
+          }
+          return next;
+        });
         setCollegeModalState({ isOpen: true, mode: 'locked_screen' });
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const handleWindowBlur = () => {
-      setCollegeViolations(v => v + 1);
+      setCollegeViolations(v => {
+        const next = v + 1;
+        const bound = getCurrentMachineSystem();
+        if (bound) {
+          updateSystemStatus(bound.systemId, { violationsCount: next });
+          broadcastMessage({
+            type: 'VIOLATION_REPORTED',
+            systemName: bound.systemName,
+            studentRoll: bound.currentStudentRoll,
+            reason: 'Lost Window Focus / Switched Application'
+          });
+        }
+        return next;
+      });
       setCollegeModalState({ isOpen: true, mode: 'locked_screen' });
     };
     window.addEventListener('blur', handleWindowBlur);
@@ -837,6 +890,9 @@ export default function App() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('keydown', handleSecurityKeyDown, true);
@@ -844,13 +900,54 @@ export default function App() {
     };
   }, [isCollegeMode, isMobile]);
 
+  // Helper function to trigger Direct Fullscreen with vendor fallbacks
+  const requestSystemFullscreen = useCallback(() => {
+    try {
+      const el = document.documentElement;
+      const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+      if (rfs) {
+        const p = rfs.call(el);
+        if (p && typeof p.then === 'function') {
+          p.then(() => setIsFullscreenActive(true)).catch((err) => {
+            console.warn('Direct Fullscreen deferred for user click:', err);
+          });
+        } else {
+          setIsFullscreenActive(true);
+        }
+      }
+    } catch (e) {
+      console.warn('Fullscreen request failed:', e);
+    }
+  }, []);
+
+  // When college mode is active but browser hasn't entered fullscreen, listen for any interaction to enter fullscreen immediately
+  useEffect(() => {
+    if (!isCollegeMode || isFullscreenActive || isMobile) return;
+
+    const enforceFullscreen = () => {
+      if (!document.fullscreenElement) {
+        requestSystemFullscreen();
+      }
+    };
+
+    window.addEventListener('click', enforceFullscreen, true);
+    window.addEventListener('pointerdown', enforceFullscreen, true);
+    window.addEventListener('keydown', enforceFullscreen, true);
+
+    return () => {
+      window.removeEventListener('click', enforceFullscreen, true);
+      window.removeEventListener('pointerdown', enforceFullscreen, true);
+      window.removeEventListener('keydown', enforceFullscreen, true);
+    };
+  }, [isCollegeMode, isFullscreenActive, isMobile, requestSystemFullscreen]);
+
   // College Mode Activation Handler
   const handleActivateCollegeMode = useCallback((config) => {
     setCollegePin(config.pin);
     const info = {
-      examName: config.examName,
-      studentRoll: config.studentRoll,
-      studentName: config.studentName
+      examName: config.examName || 'University Lab Practical Examination',
+      studentRoll: config.studentRoll || 'LAB-STUDENT',
+      studentName: config.studentName || 'Student'
     };
     setCollegeStudentInfo(info);
     setCollegeViolations(0);
@@ -858,6 +955,7 @@ export default function App() {
     setCollegeStartTime(now);
     setIsCollegeMode(true);
     setCollegeModalState({ isOpen: false, mode: 'setup' });
+    setIsCollegeAdminPortalOpen(false);
 
     try {
       localStorage.setItem('elite_college_exam_active', 'true');
@@ -870,25 +968,22 @@ export default function App() {
     if (bound) {
       updateSystemStatus(bound.systemId, {
         status: 'locked',
-        currentStudentRoll: config.studentRoll,
-        currentStudentName: config.studentName,
-        currentExamName: config.examName,
+        currentStudentRoll: info.studentRoll,
+        currentStudentName: info.studentName,
+        currentExamName: info.examName,
         examStartTime: now,
         violationsCount: 0
       });
     }
 
-    // Enter Browser Fullscreen
-    try {
-      if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-    } catch (e) {}
-  }, []);
+    // DIRECT FULLSCREEN TRIGGER
+    requestSystemFullscreen();
+  }, [requestSystemFullscreen]);
 
   // College Mode Deactivation Handler
   const handleDeactivateCollegeMode = useCallback(() => {
     setIsCollegeMode(false);
+    setIsFullscreenActive(false);
     setCollegeModalState({ isOpen: true, mode: 'summary' });
 
     try {
@@ -919,23 +1014,50 @@ export default function App() {
     const unsubscribe = subscribeToCollegeEvents((msg) => {
       if (!msg) return;
 
-      if (msg.type === 'BROADCAST_LOCKDOWN') {
+      if (msg.type === 'TARGET_LOCKDOWN' || msg.type === 'BROADCAST_LOCKDOWN') {
         const bound = getCurrentMachineSystem();
-        if (!bound || bound.collegeId === msg.collegeId) {
-          handleActivateCollegeMode({
-            pin: msg.pin || '1234',
-            examName: msg.examName || 'University Lab Practical Examination',
-            studentRoll: bound?.currentStudentRoll || 'LAB-STUDENT',
-            studentName: bound?.currentStudentName || 'Student'
-          });
+
+        if (msg.type === 'TARGET_LOCKDOWN') {
+          if (!bound || (bound.systemId !== msg.targetSystemId && bound.systemName !== msg.targetSystemId)) {
+            return;
+          }
         }
+
+        if (msg.type === 'BROADCAST_LOCKDOWN') {
+          if (bound && bound.collegeId !== msg.collegeId) {
+            return;
+          }
+        }
+
+        // Close Admin Portal & setup modal on this machine
+        setIsCollegeAdminPortalOpen(false);
+        setCollegeModalState({ isOpen: false, mode: 'setup' });
+
+        // Activate College Mode & Direct Fullscreen
+        handleActivateCollegeMode({
+          pin: msg.pin || '1234',
+          examName: msg.examName || 'University Lab Practical Examination',
+          studentRoll: bound?.currentStudentRoll || 'LAB-STUDENT',
+          studentName: bound?.currentStudentName || 'Student'
+        });
       }
 
-      if (msg.type === 'BROADCAST_UNLOCK') {
+      if (msg.type === 'TARGET_UNLOCK' || msg.type === 'BROADCAST_UNLOCK') {
         const bound = getCurrentMachineSystem();
-        if (!bound || bound.collegeId === msg.collegeId) {
-          handleDeactivateCollegeMode();
+
+        if (msg.type === 'TARGET_UNLOCK') {
+          if (!bound || (bound.systemId !== msg.targetSystemId && bound.systemName !== msg.targetSystemId)) {
+            return;
+          }
         }
+
+        if (msg.type === 'BROADCAST_UNLOCK') {
+          if (bound && bound.collegeId !== msg.collegeId) {
+            return;
+          }
+        }
+
+        handleDeactivateCollegeMode();
       }
     });
 
@@ -1274,6 +1396,42 @@ export default function App() {
         onLockSystemFromPortal={(config) => handleActivateCollegeMode(config)}
         onUnlockSystemFromPortal={() => handleDeactivateCollegeMode()}
       />
+
+      {/* Direct Fullscreen Enforcer Takeover Screen (Desktop Only) */}
+      {isCollegeMode && !isMobile && !isFullscreenActive && (
+        <div 
+          className="college-fullscreen-takeover"
+          onClick={requestSystemFullscreen}
+          onPointerDown={requestSystemFullscreen}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="takeover-box">
+            <div className="takeover-radar">
+              <ShieldAlert size={52} className="takeover-icon" />
+            </div>
+            <h2 className="takeover-title">🔒 COLLEGE EXAM LOCKDOWN ACTIVATED</h2>
+            <p className="takeover-desc">
+              The College Administrator has placed this lab terminal into strict Exam Kiosk Mode.
+            </p>
+            <div className="takeover-action-prompt">
+              <span className="takeover-pulse-circle"></span>
+              <span>CLICK ANYWHERE ON SCREEN TO ENTER FULLSCREEN MODE</span>
+            </div>
+            <button 
+              type="button" 
+              className="takeover-launch-btn"
+              onClick={requestSystemFullscreen}
+              id="btn-takeover-fullscreen"
+            >
+              Enter Fullscreen Exam Now ➔
+            </button>
+            <p className="takeover-fineprint">
+              ⚠️ Note: Exiting fullscreen, switching tabs (Alt+Tab), or inspecting code will be reported to the College Admin Portal as a cheating violation.
+            </p>
+          </div>
+        </div>
+      )}
 
     </div>
   );
