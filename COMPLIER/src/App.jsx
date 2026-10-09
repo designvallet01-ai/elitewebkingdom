@@ -7,6 +7,8 @@ import WebPreview from './components/WebPreview';
 import FileSidebar from './components/FileSidebar';
 import AlgorithmModal from './components/AlgorithmModal';
 import MobileAccessoryBar from './components/MobileAccessoryBar';
+import CollegeModeModal from './components/CollegeModeModal';
+import CollegeExamBanner from './components/CollegeExamBanner';
 import { detectLanguage } from './services/languageDetector';
 import { Terminal, GitFork, Globe, Code2, FolderTree } from 'lucide-react';
 
@@ -68,6 +70,42 @@ export default function App() {
   const [rightPaneView, setRightPaneView] = useState('console'); // 'console' | 'graphical' | 'preview'
   const [selectedLine, setSelectedLine] = useState(null);
   const [manualLanguage, setManualLanguage] = useState('auto'); // 'auto' | 'python' | 'cpp' | 'c' | 'java' | 'javascript' | 'html'
+  
+  // College Exam Lockdown Mode State (Desktop Only)
+  const [isCollegeMode, setIsCollegeMode] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.innerWidth <= 768) return false;
+      return localStorage.getItem('elite_college_exam_active') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  const [collegePin, setCollegePin] = useState(() => {
+    try {
+      return localStorage.getItem('elite_college_exam_pin') || '1234';
+    } catch (e) {
+      return '1234';
+    }
+  });
+  const [collegeStudentInfo, setCollegeStudentInfo] = useState(() => {
+    try {
+      const saved = localStorage.getItem('elite_college_exam_info');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return { examName: 'College Lab Exam', studentRoll: '', studentName: '' };
+  });
+  const [collegeViolations, setCollegeViolations] = useState(0);
+  const [collegeStartTime, setCollegeStartTime] = useState(() => {
+    try {
+      const saved = localStorage.getItem('elite_college_exam_info');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.startTime) return parsed.startTime;
+      }
+    } catch (e) {}
+    return null;
+  });
+  const [collegeModalState, setCollegeModalState] = useState({ isOpen: false, mode: 'setup' });
 
   const editorInstanceRef = useRef(null);
   const wsRef = useRef(null);
@@ -445,8 +483,8 @@ export default function App() {
     setLastStats(null);
   }, []);
 
-  // Robust Cloud & Local Code Runner
-  const runHttpFallback = useCallback(async (codeToRun, lang) => {
+  // Robust Cloud & Local Code Runner with Stdin Support
+  const runHttpFallback = useCallback(async (codeToRun, lang, customStdin = '') => {
     setIsRunning(true);
     setRightPaneView('console');
     setLastStats(null);
@@ -471,7 +509,7 @@ export default function App() {
         const response = await fetch('/api/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language: lang, code: codeToRun })
+          body: JSON.stringify({ language: lang, code: codeToRun, stdin: customStdin || '' })
         });
         if (!response.ok) {
           throw new Error(`Server status ${response.status}`);
@@ -496,7 +534,7 @@ export default function App() {
         const directRes = await fetch('https://ce.judge0.com/submissions?wait=true', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language_id: target.id, source_code: src })
+          body: JSON.stringify({ language_id: target.id, source_code: src, stdin: customStdin || '' })
         });
         const judgeData = await directRes.json();
         const isSuccess = judgeData.status?.id === 3;
@@ -563,11 +601,13 @@ export default function App() {
     }
   }, []);
 
-  // Run Code with auto-detected language
-  const handleRun = useCallback(() => {
+  // Run Code with auto-detected language & optional custom standard input (stdin)
+  const handleRun = useCallback((customStdin) => {
     if (isRunning) return;
 
     const currentCode = activeFile.code;
+    const stdinToUse = typeof customStdin === 'string' ? customStdin : '';
+
     if (!currentCode || !currentCode.trim()) {
       setTerminalEntries([
         { type: 'stderr', text: 'Please enter code in the editor before running.\n' }
@@ -601,7 +641,6 @@ export default function App() {
     const isLocalDev = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5173';
 
     if (isLocalDev) {
-      // In local dev, try local WebSocket first
       if (wsRef.current) {
         try { wsRef.current.close(); } catch (e) {}
       }
@@ -619,7 +658,7 @@ export default function App() {
         socket = new WebSocket(wsUrl);
         wsRef.current = socket;
       } catch (e) {
-        runHttpFallback(currentCode, activeLanguage);
+        runHttpFallback(currentCode, activeLanguage, stdinToUse);
         return;
       }
 
@@ -659,17 +698,138 @@ export default function App() {
       };
 
       socket.onerror = () => {
-        runHttpFallback(currentCode, activeLanguage);
+        runHttpFallback(currentCode, activeLanguage, stdinToUse);
       };
 
       socket.onclose = () => {
         setIsRunning(false);
       };
     } else {
-      // In production / Web, directly invoke the Cloud HTTP execution pipeline
-      runHttpFallback(currentCode, activeLanguage);
+      // In production / Web, directly invoke the Cloud HTTP execution pipeline with stdin
+      runHttpFallback(currentCode, activeLanguage, stdinToUse);
     }
-  }, [isRunning, activeFile.code, activeLanguage, detectedLangInfo, runHttpFallback]);
+  }, [isRunning, activeFile.code, activeLanguage, detectedLangInfo, runHttpFallback, isMobile]);
+
+  // College Exam Mode Anti-Cheating & Lockdown Event Listeners (Desktop Only)
+  useEffect(() => {
+    if (!isCollegeMode || isMobile) return;
+
+    // 1. Prevent leaving / reloading page
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'College Exam Session is active! Are you sure you want to leave?';
+      return e.returnValue;
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // 2. Fullscreen change detection (Esc or exiting fullscreen)
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setCollegeViolations(v => v + 1);
+        setCollegeModalState({ isOpen: true, mode: 'locked_screen' });
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    // 3. Tab switch / Window blur detection
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setCollegeViolations(v => v + 1);
+        setCollegeModalState({ isOpen: true, mode: 'locked_screen' });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const handleWindowBlur = () => {
+      setCollegeViolations(v => v + 1);
+      setCollegeModalState({ isOpen: true, mode: 'locked_screen' });
+    };
+    window.addEventListener('blur', handleWindowBlur);
+
+    // 4. Block Developer Tools & Bypass shortcuts
+    const handleSecurityKeyDown = (e) => {
+      if (e.key === 'F12') {
+        e.preventDefault();
+        return false;
+      }
+      if (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) {
+        e.preventDefault();
+        return false;
+      }
+      if (e.ctrlKey && ['u', 'U'].includes(e.key)) {
+        e.preventDefault();
+        return false;
+      }
+      if (e.key === 'F5' || (e.ctrlKey && ['r', 'R'].includes(e.key))) {
+        e.preventDefault();
+        return false;
+      }
+    };
+    window.addEventListener('keydown', handleSecurityKeyDown, true);
+
+    // 5. Disable context menu during College Exam
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+    };
+    window.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('keydown', handleSecurityKeyDown, true);
+      window.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [isCollegeMode, isMobile]);
+
+  // College Mode Activation Handler
+  const handleActivateCollegeMode = useCallback((config) => {
+    setCollegePin(config.pin);
+    const info = {
+      examName: config.examName,
+      studentRoll: config.studentRoll,
+      studentName: config.studentName
+    };
+    setCollegeStudentInfo(info);
+    setCollegeViolations(0);
+    const now = Date.now();
+    setCollegeStartTime(now);
+    setIsCollegeMode(true);
+    setCollegeModalState({ isOpen: false, mode: 'setup' });
+
+    try {
+      localStorage.setItem('elite_college_exam_active', 'true');
+      localStorage.setItem('elite_college_exam_pin', config.pin);
+      localStorage.setItem('elite_college_exam_info', JSON.stringify({ ...info, startTime: now }));
+    } catch (e) {}
+
+    // Enter Browser Fullscreen
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch (e) {}
+  }, []);
+
+  // College Mode Deactivation Handler
+  const handleDeactivateCollegeMode = useCallback(() => {
+    setIsCollegeMode(false);
+    setCollegeModalState({ isOpen: true, mode: 'summary' });
+
+    try {
+      localStorage.removeItem('elite_college_exam_active');
+      localStorage.removeItem('elite_college_exam_pin');
+      localStorage.removeItem('elite_college_exam_info');
+    } catch (e) {}
+
+    // Exit Browser Fullscreen
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch (e) {}
+  }, []);
 
   // Keyboard shortcut Ctrl + Enter
   useEffect(() => {
@@ -770,7 +930,20 @@ export default function App() {
         selectedLanguage={manualLanguage}
         onSelectLanguage={handleLanguageChange}
         isMobile={isMobile}
+        isCollegeMode={isCollegeMode}
+        onOpenCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'setup' })}
+        onExitCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'unlock' })}
       />
+
+      {/* College Exam Active Banner (Desktop Only) */}
+      {isCollegeMode && !isMobile && (
+        <CollegeExamBanner
+          studentInfo={collegeStudentInfo}
+          violationsCount={collegeViolations}
+          startTime={collegeStartTime}
+          onOpenExitModal={() => setCollegeModalState({ isOpen: true, mode: 'unlock' })}
+        />
+      )}
 
       {/* Main Workspace: Split Pane on Desktop, Tabbed Switcher on Mobile */}
       <main className="ide-workspace">
@@ -964,6 +1137,20 @@ export default function App() {
         onOpenInNewTab={handleOpenAlgorithmInNewTab}
         onLoadIntoCurrent={handleLoadAlgorithmIntoCurrent}
         currentLanguage={activeLanguage}
+      />
+
+      {/* College Exam Mode Setup / PIN Exit / Security Lockdown Modal */}
+      <CollegeModeModal
+        isOpen={collegeModalState.isOpen}
+        mode={collegeModalState.mode}
+        onClose={() => setCollegeModalState({ isOpen: false, mode: 'setup' })}
+        onActivateCollegeMode={handleActivateCollegeMode}
+        onDeactivateCollegeMode={handleDeactivateCollegeMode}
+        currentPin={collegePin}
+        violationsCount={collegeViolations}
+        studentInfo={collegeStudentInfo}
+        examDuration={collegeStartTime ? Math.floor((Date.now() - collegeStartTime) / 1000) : 0}
+        code={activeFile.code}
       />
     </div>
   );

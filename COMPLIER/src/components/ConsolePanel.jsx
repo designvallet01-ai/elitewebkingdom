@@ -23,10 +23,12 @@ export default function ConsolePanel({
   onClearConsole,
   onRun,
   lastStats = null,
-  activeLanguage = 'python'
+  activeLanguage = 'python',
+  isMobile = false
 }) {
   const [copied, setCopied] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
+  const [showStdinDrawer, setShowStdinDrawer] = useState(false);
   const inputRef = useRef(null);
   const scrollRef = useRef(null);
 
@@ -37,10 +39,12 @@ export default function ConsolePanel({
     }
   }, [terminalEntries]);
 
-  // Auto-focus input when process starts running
+  // Focus input when process starts running or when requested
   useEffect(() => {
     if (isRunning && inputRef.current) {
-      inputRef.current.focus();
+      try {
+        inputRef.current.focus();
+      } catch (e) {}
     }
   }, [isRunning]);
 
@@ -66,8 +70,8 @@ export default function ConsolePanel({
   const handleSend = (e) => {
     if (e) e.preventDefault();
     if (!isRunning) {
-      // If not running, pressing Enter can trigger run if there's no process
-      if (onRun) onRun();
+      // If not running, pass currentInput as custom standard input to onRun!
+      if (onRun) onRun(currentInput);
       return;
     }
 
@@ -88,9 +92,12 @@ export default function ConsolePanel({
     }
   };
 
-  // Clicking on console body focuses input if running
-  const handleBodyClick = () => {
-    if (isRunning && inputRef.current) {
+  // Touching or clicking on terminal body immediately focuses the input!
+  const handleBodyClick = (e) => {
+    if (e.target && (e.target.closest('button') || e.target.closest('a') || e.target.closest('input'))) {
+      return;
+    }
+    if (inputRef.current) {
       inputRef.current.focus();
     }
   };
@@ -140,6 +147,15 @@ export default function ConsolePanel({
           )}
 
           <button
+            className={`console-action-btn ${showStdinDrawer ? 'active' : ''}`}
+            onClick={() => setShowStdinDrawer(prev => !prev)}
+            title="Custom Multi-line Stdin Input"
+            id="toggle-stdin-drawer-btn"
+          >
+            <span>Stdin</span>
+          </button>
+
+          <button
             className="console-action-btn"
             onClick={onClearConsole}
             title="Clear Terminal Output"
@@ -151,11 +167,29 @@ export default function ConsolePanel({
         </div>
       </div>
 
+      {/* Optional Multi-line Stdin Box */}
+      {showStdinDrawer && (
+        <div className="terminal-multiline-stdin-box">
+          <div className="multiline-header">
+            <span>Standard Input (stdin for cin / scanf / input())</span>
+            <button className="multiline-close-btn" onClick={() => setShowStdinDrawer(false)}>✕</button>
+          </div>
+          <textarea
+            className="multiline-stdin-textarea"
+            rows={3}
+            placeholder="Enter standard input lines here (e.g. 10 20)..."
+            value={currentInput}
+            onChange={(e) => setCurrentInput(e.target.value)}
+          />
+        </div>
+      )}
+
       {/* Terminal Stream Body */}
       <div 
         className="console-body idle-terminal-body" 
         ref={scrollRef}
         onClick={handleBodyClick}
+        onTouchEnd={handleBodyClick}
       >
         {terminalEntries.length === 0 && !isRunning && (
           <div className="console-empty">
@@ -194,7 +228,11 @@ export default function ConsolePanel({
       </div>
 
       {/* Real-time Interactive IDLE Input Bar */}
-      <div className={`terminal-input-bar ${isRunning ? 'active-input-bar' : ''}`}>
+      <div 
+        className={`terminal-input-bar ${isRunning ? 'active-input-bar' : ''}`}
+        onClick={() => inputRef.current?.focus()}
+        onTouchEnd={() => inputRef.current?.focus()}
+      >
         <div className="input-prompt-label">
           <span className="prompt-symbol">❯</span>
           <span className="prompt-text">
@@ -208,8 +246,8 @@ export default function ConsolePanel({
           className="terminal-inline-input"
           placeholder={
             isRunning 
-              ? "Type input for program and press Enter ↵..." 
-              : "Terminal ready. Run code to execute interactively..."
+              ? (isMobile ? "Type stdin & press Send..." : "Type input for program and press Enter ↵...") 
+              : (isMobile ? "Type custom input / stdin..." : "Type custom stdin or press Run (Enter ↵)...")
           }
           value={currentInput}
           onChange={(e) => setCurrentInput(e.target.value)}
@@ -235,7 +273,7 @@ export default function ConsolePanel({
         <button 
           className={`send-stdin-btn ${isRunning ? 'active' : ''}`}
           onClick={handleSend}
-          title={isRunning ? "Send input to running program (Enter)" : "Run program (Enter)"}
+          title={isRunning ? "Send input to running program (Enter)" : "Run program with input (Enter)"}
           id="send-stdin-btn"
         >
           <CornerDownLeft size={13} />

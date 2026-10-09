@@ -17,7 +17,9 @@ import {
   MoreVertical,
   X,
   Type,
-  ExternalLink
+  ExternalLink,
+  GraduationCap,
+  Lock
 } from 'lucide-react';
 
 export default function Navbar({
@@ -37,7 +39,10 @@ export default function Navbar({
   onToggleSidebar,
   selectedLanguage = 'auto',
   onSelectLanguage,
-  isMobile = false
+  isMobile = false,
+  isCollegeMode = false,
+  onOpenCollegeMode,
+  onExitCollegeMode
 }) {
   const fileInputRef = useRef(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -138,8 +143,22 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* Algorithm & Template Library Nav Button (Desktop) */}
+          {/* College Exam Mode Button (Desktop Only) */}
           {!isMobile && (
+            <button
+              className={`nav-college-mode-btn ${isCollegeMode ? 'active-exam' : ''}`}
+              onClick={isCollegeMode ? onExitCollegeMode : onOpenCollegeMode}
+              title={isCollegeMode ? "College Exam Active - Click to Exit (PIN Required)" : "Activate College Exam Lockdown Mode with Admin PIN"}
+              id="nav-college-mode-btn"
+            >
+              <GraduationCap size={15} />
+              <span>{isCollegeMode ? 'Exam Active' : 'College Mode'}</span>
+              {isCollegeMode ? <span className="exam-status-dot" /> : <span className="clg-pin-badge">PIN</span>}
+            </button>
+          )}
+
+          {/* Algorithm & Template Library Nav Button (Desktop - hidden during College Exam) */}
+          {!isMobile && !isCollegeMode && (
             <button
               className="nav-library-btn"
               onClick={onOpenTemplates}
@@ -241,16 +260,29 @@ export default function Navbar({
 
               <div className="nav-divider" />
 
-              {/* Return to Elite Web Kingdom Main Website */}
-              <a 
-                href="/" 
-                className="nav-icon-btn" 
-                title="Return to Elite Web Kingdom Main Website"
-                style={{ textDecoration: 'none', color: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-              >
-                <ArrowLeft size={16} />
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, paddingRight: '4px' }}>Main Site</span>
-              </a>
+              {/* Return to Elite Web Kingdom Main Website (Locked during College Exam) */}
+              {isCollegeMode ? (
+                <button
+                  type="button"
+                  className="nav-icon-btn clg-locked-btn"
+                  onClick={onExitCollegeMode}
+                  title="College Exam Active: Admin PIN required to leave"
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: 0.7 }}
+                >
+                  <Lock size={15} className="text-warning" />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, paddingRight: '4px', color: '#fbbf24' }}>Locked</span>
+                </button>
+              ) : (
+                <a 
+                  href="/" 
+                  className="nav-icon-btn" 
+                  title="Return to Elite Web Kingdom Main Website"
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                >
+                  <ArrowLeft size={16} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, paddingRight: '4px' }}>Main Site</span>
+                </a>
+              )}
             </>
           ) : (
             /* Mobile More Action Menu Button */
