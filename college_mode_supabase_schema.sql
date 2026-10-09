@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.college_accounts (
     college_name TEXT NOT NULL,
     department TEXT DEFAULT 'Engineering & Technology',
     admin_email TEXT,
-    password TEXT NOT NULL,
+    password TEXT DEFAULT '',
     default_pin TEXT DEFAULT '1234',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -100,5 +100,5 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.college_incident_logs;
 
 -- Pre-seed demo college account
 INSERT INTO public.college_accounts (college_id, college_name, department, admin_email, password, default_pin)
-VALUES ('EWK-COLLEGE-01', 'Elite Engineering College', 'Computer Science & Engineering', 'admin@elitecollege.edu.in', 'admin123', '1234')
+VALUES ('EWK-COLLEGE-01', 'Elite Engineering College', 'Computer Science & Engineering', 'admin@elitecollege.edu.in', '', '1234')
 ON CONFLICT (college_id) DO NOTHING;

@@ -498,14 +498,13 @@ export default function CollegeAdminPortal({
                 </div>
 
                 <div className="portal-input-group">
-                  <label>Admin Password</label>
+                  <label>Admin Password (Optional / Leave Empty)</label>
                   <input
                     type="password"
                     className="portal-text-input"
-                    placeholder="Enter College Admin Password"
+                    placeholder="Leave empty if not set"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    required
                   />
                 </div>
 
@@ -621,14 +620,13 @@ export default function CollegeAdminPortal({
 
                     <div className="portal-grid-two">
                       <div className="portal-input-group">
-                        <label>Create Admin Password <span className="req">*</span></label>
+                        <label>Admin Password (Optional / Empty)</label>
                         <input
                           type="password"
                           className="portal-text-input"
-                          placeholder="Create strong password"
+                          placeholder="Leave empty or set password"
                           value={regPassword}
                           onChange={(e) => setRegPassword(e.target.value)}
-                          required
                         />
                       </div>
 

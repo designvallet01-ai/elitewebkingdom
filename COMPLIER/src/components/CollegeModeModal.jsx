@@ -355,14 +355,13 @@ export default function CollegeModeModal({
                       </div>
 
                       <div className="college-input-group">
-                        <label className="college-label">Create Admin Password <span className="req-star">*</span></label>
+                        <label className="college-label">Create Admin Password (Optional)</label>
                         <input
                           type="password"
                           className="college-input font-mono"
-                          placeholder="Create password"
+                          placeholder="Leave empty or set password"
                           value={clgPassword}
                           onChange={(e) => setClgPassword(e.target.value)}
-                          required
                         />
                       </div>
                     </div>
@@ -382,7 +381,7 @@ export default function CollegeModeModal({
                     <div className="clg-info-banner">
                       <Laptop size={15} className="text-blue-400 flex-shrink-0" />
                       <span>
-                        <strong>Lab PC Registration:</strong> For already registered colleges. Enter College ID, Password, and this System Name to register this PC.
+                        <strong>Lab PC Registration:</strong> For already registered colleges. Enter College ID and this System Name to register this PC.
                       </span>
                     </div>
 
@@ -416,14 +415,13 @@ export default function CollegeModeModal({
                       </div>
 
                       <div className="college-input-group">
-                        <label className="college-label">College Admin Password <span className="req-star">*</span></label>
+                        <label className="college-label">College Admin Password (Optional)</label>
                         <input
                           type="password"
                           className="college-input font-mono"
-                          placeholder="Enter password"
+                          placeholder="Leave empty if not set"
                           value={sysClgPassword}
                           onChange={(e) => setSysClgPassword(e.target.value)}
-                          required
                         />
                       </div>
                     </div>

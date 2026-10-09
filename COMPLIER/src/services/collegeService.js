@@ -13,7 +13,7 @@ const DEFAULT_COLLEGES = [
     collegeName: 'Elite Engineering College',
     department: 'Computer Science & Engineering',
     adminEmail: 'admin@elitecollege.edu.in',
-    password: 'admin123',
+    password: '',
     defaultPin: '1234',
     createdAt: new Date().toISOString()
   }
@@ -74,7 +74,7 @@ export async function syncCollegesFromSupabase() {
         collegeName: c.college_name,
         department: c.department,
         adminEmail: c.admin_email,
-        password: c.password,
+        password: c.password || '',
         defaultPin: c.default_pin || '1234',
         createdAt: c.created_at
       }));
@@ -99,9 +99,9 @@ export async function syncCollegesFromSupabase() {
 }
 
 // 2. Register a new College Account (Saves to LocalStorage AND Supabase Cloud)
-export function registerCollege({ collegeName, collegeId, department, adminEmail, password, defaultPin = '1234' }) {
-  if (!collegeName || !collegeId || !password) {
-    throw new Error('College Name, College ID, and Password are required.');
+export function registerCollege({ collegeName, collegeId, department, adminEmail, password = '', defaultPin = '1234' }) {
+  if (!collegeName || !collegeId) {
+    throw new Error('College Name and College ID are required.');
   }
 
   const cleanId = collegeId.trim().toUpperCase();
@@ -118,7 +118,7 @@ export function registerCollege({ collegeName, collegeId, department, adminEmail
     collegeName: collegeName.trim(),
     department: department?.trim() || 'Engineering & Technology',
     adminEmail: adminEmail?.trim() || '',
-    password: password.trim(),
+    password: (password || '').trim(),
     defaultPin: (defaultPin || '1234').trim(),
     createdAt: new Date().toISOString()
   };
@@ -137,7 +137,7 @@ export function registerCollege({ collegeName, collegeId, department, adminEmail
       college_name: newCollege.collegeName,
       department: newCollege.department,
       admin_email: newCollege.adminEmail,
-      password: newCollege.password,
+      password: newCollege.password || '',
       default_pin: newCollege.defaultPin
     }).then(({ error }) => {
       if (error) console.warn('Supabase cloud insert notice (college_accounts):', error.message);
@@ -150,14 +150,18 @@ export function registerCollege({ collegeName, collegeId, department, adminEmail
   return newCollege;
 }
 
-// 3. Verify College Login Credentials
-export function verifyCollegeLogin(collegeId, password) {
-  if (!collegeId || !password) return null;
+// 3. Verify College Login Credentials (No password required)
+export function verifyCollegeLogin(collegeId, password = '') {
+  if (!collegeId) return null;
   const cleanId = collegeId.trim().toUpperCase();
-  const cleanPass = password.trim();
+  const cleanPass = (password || '').trim();
 
   const colleges = getRegisteredColleges();
-  const college = colleges.find(c => c.collegeId === cleanId && c.password === cleanPass);
+  const college = colleges.find(c => {
+    if (c.collegeId !== cleanId) return false;
+    if (!c.password || !cleanPass) return true;
+    return c.password === cleanPass;
+  });
   return college || null;
 }
 
@@ -242,15 +246,15 @@ export async function syncSystemsFromSupabase(collegeId = null) {
   return getRegisteredSystems(collegeId);
 }
 
-// 6. Register & Bind this Computer Machine (System Register - Saves to Local + Supabase)
-export function registerSystem({ collegeId, password, systemName, labRoom = 'Computer Lab 1' }) {
-  if (!collegeId || !password || !systemName) {
-    throw new Error('College ID, Password, and System Name are required.');
+// 6. Register & Bind this Computer Machine (System Register - No password required)
+export function registerSystem({ collegeId, password = '', systemName, labRoom = 'Computer Lab 1' }) {
+  if (!collegeId || !systemName) {
+    throw new Error('College ID and System Name are required.');
   }
 
   const college = verifyCollegeLogin(collegeId, password);
   if (!college) {
-    throw new Error('Invalid College ID or Password. Please register the college first.');
+    throw new Error('Invalid College ID. Please register the college first.');
   }
 
   const cleanSystemName = systemName.trim().toUpperCase();
