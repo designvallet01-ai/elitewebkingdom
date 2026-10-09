@@ -1,12 +1,12 @@
-// College & Lab Computer Management Service with LocalStorage & BroadcastChannel Sync
-// Supports Supabase Cloud Sync and offline standalone execution
+// College & Lab Computer Management Service with Supabase Cloud Database & Realtime Network
+import { supabase } from '../supabase';
 
 const STORAGE_COLLEGES_KEY = 'elite_college_registered_accounts_v1';
 const STORAGE_SYSTEMS_KEY = 'elite_college_registered_systems_v1';
 const STORAGE_LOCAL_SYSTEM_KEY = 'elite_current_machine_system_info_v1';
 const BROADCAST_CHANNEL_NAME = 'elite_college_lab_network_v1';
 
-// Initial pre-registered demo college so the user can test immediately if desired
+// Initial pre-registered demo college
 const DEFAULT_COLLEGES = [
   {
     collegeId: 'EWK-COLLEGE-01',
@@ -19,7 +19,7 @@ const DEFAULT_COLLEGES = [
   }
 ];
 
-// Initialize Broadcast Channel if supported
+// Initialize Local Broadcast Channel if supported
 let broadcastChannel = null;
 try {
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
@@ -29,7 +29,22 @@ try {
   console.warn('BroadcastChannel initialization error:', e);
 }
 
-// 1. Get all registered colleges
+// Initialize Supabase Global Realtime Broadcast Channel
+let supabaseRealtimeChannel = null;
+try {
+  if (supabase) {
+    supabaseRealtimeChannel = supabase.channel('college_lab_network_channel');
+    supabaseRealtimeChannel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('⚡ Supabase Worldwide Realtime Lab Channel Connected!');
+      }
+    });
+  }
+} catch (e) {
+  console.warn('Supabase Realtime Channel error:', e);
+}
+
+// 1. Get all registered colleges (LocalStorage cache + background Supabase fetch)
 export function getRegisteredColleges() {
   try {
     const saved = localStorage.getItem(STORAGE_COLLEGES_KEY);
@@ -38,12 +53,52 @@ export function getRegisteredColleges() {
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch (e) {
-    console.warn('Error reading colleges:', e);
+    console.warn('Error reading colleges from storage:', e);
   }
   return DEFAULT_COLLEGES;
 }
 
-// 2. Register a new College Account (College Register)
+// Asynchronously fetch and sync colleges from Supabase Cloud
+export async function syncCollegesFromSupabase() {
+  try {
+    if (!supabase) return getRegisteredColleges();
+    const { data, error } = await supabase.from('college_accounts').select('*');
+    if (error) {
+      console.warn('Supabase colleges fetch notice:', error.message);
+      return getRegisteredColleges();
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const formatted = data.map(c => ({
+        collegeId: c.college_id,
+        collegeName: c.college_name,
+        department: c.department,
+        adminEmail: c.admin_email,
+        password: c.password,
+        defaultPin: c.default_pin || '1234',
+        createdAt: c.created_at
+      }));
+
+      // Merge with default and cached
+      const current = getRegisteredColleges();
+      const mergedMap = new Map();
+      current.forEach(c => mergedMap.set(c.collegeId, c));
+      formatted.forEach(c => mergedMap.set(c.collegeId, c));
+      const mergedList = Array.from(mergedMap.values());
+
+      try {
+        localStorage.setItem(STORAGE_COLLEGES_KEY, JSON.stringify(mergedList));
+      } catch (e) {}
+
+      return mergedList;
+    }
+  } catch (e) {
+    console.warn('syncCollegesFromSupabase error:', e);
+  }
+  return getRegisteredColleges();
+}
+
+// 2. Register a new College Account (Saves to LocalStorage AND Supabase Cloud)
 export function registerCollege({ collegeName, collegeId, department, adminEmail, password, defaultPin = '1234' }) {
   if (!collegeName || !collegeId || !password) {
     throw new Error('College Name, College ID, and Password are required.');
@@ -75,7 +130,21 @@ export function registerCollege({ collegeName, collegeId, department, adminEmail
     console.warn('LocalStorage save error:', e);
   }
 
-  // Also broadcast registration
+  // Save to Supabase Cloud Database (Asynchronous Background Sync)
+  if (supabase) {
+    supabase.from('college_accounts').upsert({
+      college_id: cleanId,
+      college_name: newCollege.collegeName,
+      department: newCollege.department,
+      admin_email: newCollege.adminEmail,
+      password: newCollege.password,
+      default_pin: newCollege.defaultPin
+    }).then(({ error }) => {
+      if (error) console.warn('Supabase cloud insert notice (college_accounts):', error.message);
+    }).catch(err => console.warn('Supabase cloud college error:', err));
+  }
+
+  // Broadcast registration across local network and Supabase Realtime
   broadcastMessage({ type: 'COLLEGE_REGISTERED', college: newCollege });
 
   return newCollege;
@@ -103,7 +172,7 @@ export function getCurrentMachineSystem() {
   return null;
 }
 
-// 5. Get all registered systems under a college (or all systems)
+// 5. Get all registered systems under a college
 export function getRegisteredSystems(collegeId = null) {
   try {
     const saved = localStorage.getItem(STORAGE_SYSTEMS_KEY);
@@ -119,7 +188,61 @@ export function getRegisteredSystems(collegeId = null) {
   return [];
 }
 
-// 6. Register & Bind this Computer Machine (System Register)
+// Asynchronously fetch and sync systems from Supabase Cloud
+export async function syncSystemsFromSupabase(collegeId = null) {
+  try {
+    if (!supabase) return getRegisteredSystems(collegeId);
+    let query = supabase.from('college_systems').select('*');
+    if (collegeId) {
+      query = query.eq('college_id', collegeId.trim().toUpperCase());
+    }
+    const { data, error } = await query;
+    if (error) {
+      console.warn('Supabase systems fetch notice:', error.message);
+      return getRegisteredSystems(collegeId);
+    }
+
+    if (Array.isArray(data)) {
+      const formatted = data.map(s => ({
+        systemId: s.system_id,
+        machineId: s.machine_id,
+        collegeId: s.college_id,
+        collegeName: s.college_name,
+        systemName: s.system_name,
+        labRoom: s.lab_room,
+        status: s.status || 'idle',
+        currentStudentRoll: s.current_student_roll || '',
+        currentStudentName: s.current_student_name || '',
+        currentExamName: s.current_exam_name || '',
+        violationsCount: s.violations_count || 0,
+        examStartTime: s.exam_start_time,
+        registeredAt: s.registered_at,
+        lastPing: s.last_ping
+      }));
+
+      // Merge with local storage
+      const currentAll = getRegisteredSystems();
+      const map = new Map();
+      currentAll.forEach(s => map.set(s.systemId, s));
+      formatted.forEach(s => map.set(s.systemId, s));
+      const merged = Array.from(map.values());
+
+      try {
+        localStorage.setItem(STORAGE_SYSTEMS_KEY, JSON.stringify(merged));
+      } catch (e) {}
+
+      if (collegeId) {
+        return merged.filter(s => s.collegeId === collegeId.trim().toUpperCase());
+      }
+      return merged;
+    }
+  } catch (e) {
+    console.warn('syncSystemsFromSupabase error:', e);
+  }
+  return getRegisteredSystems(collegeId);
+}
+
+// 6. Register & Bind this Computer Machine (System Register - Saves to Local + Supabase)
 export function registerSystem({ collegeId, password, systemName, labRoom = 'Computer Lab 1' }) {
   if (!collegeId || !password || !systemName) {
     throw new Error('College ID, Password, and System Name are required.');
@@ -133,7 +256,7 @@ export function registerSystem({ collegeId, password, systemName, labRoom = 'Com
   const cleanSystemName = systemName.trim().toUpperCase();
   const allSystems = getRegisteredSystems();
 
-  // Generate or retrieve unique Machine ID
+  // Generate or retrieve unique Machine Hardware ID
   let machineId = '';
   try {
     machineId = localStorage.getItem('elite_unique_machine_hardware_id');
@@ -145,7 +268,6 @@ export function registerSystem({ collegeId, password, systemName, labRoom = 'Com
     machineId = 'MC-' + Date.now().toString(36).toUpperCase();
   }
 
-  // Check if system with this name already exists under this college
   const existingIndex = allSystems.findIndex(
     s => s.collegeId === college.collegeId && (s.systemName === cleanSystemName || s.machineId === machineId)
   );
@@ -157,7 +279,7 @@ export function registerSystem({ collegeId, password, systemName, labRoom = 'Com
     collegeName: college.collegeName,
     systemName: cleanSystemName,
     labRoom: labRoom.trim() || 'Computer Lab',
-    status: 'idle', // 'idle' | 'locked' | 'violation'
+    status: 'idle',
     currentStudentRoll: '',
     currentStudentName: '',
     currentExamName: '',
@@ -181,13 +303,32 @@ export function registerSystem({ collegeId, password, systemName, labRoom = 'Com
     console.warn('System save error:', e);
   }
 
+  // Save to Supabase Cloud Database (Asynchronous Background Sync)
+  if (supabase) {
+    supabase.from('college_systems').upsert({
+      system_id: systemRecord.systemId,
+      college_id: systemRecord.collegeId,
+      college_name: systemRecord.collegeName,
+      system_name: systemRecord.systemName,
+      lab_room: systemRecord.labRoom,
+      machine_id: systemRecord.machineId,
+      status: 'idle',
+      current_student_roll: '',
+      current_student_name: '',
+      current_exam_name: '',
+      violations_count: 0
+    }).then(({ error }) => {
+      if (error) console.warn('Supabase cloud insert notice (college_systems):', error.message);
+    }).catch(err => console.warn('Supabase cloud system error:', err));
+  }
+
   // Broadcast system registration to college portal
   broadcastMessage({ type: 'SYSTEM_REGISTERED', system: systemRecord });
 
   return { system: systemRecord, college };
 }
 
-// 7. Update System Exam / Lockdown Status
+// 7. Update System Exam / Lockdown Status (Syncs Local + Supabase)
 export function updateSystemStatus(systemNameOrId, updates = {}) {
   const allSystems = getRegisteredSystems();
   const updated = allSystems.map(s => {
@@ -209,6 +350,26 @@ export function updateSystemStatus(systemNameOrId, updates = {}) {
     }
   } catch (e) {}
 
+  // Update in Supabase Cloud
+  if (supabase) {
+    const updatePayload = {};
+    if (updates.status !== undefined) updatePayload.status = updates.status;
+    if (updates.currentStudentRoll !== undefined) updatePayload.current_student_roll = updates.currentStudentRoll;
+    if (updates.currentStudentName !== undefined) updatePayload.current_student_name = updates.currentStudentName;
+    if (updates.currentExamName !== undefined) updatePayload.current_exam_name = updates.currentExamName;
+    if (updates.violationsCount !== undefined) updatePayload.violations_count = updates.violationsCount;
+    if (updates.examStartTime !== undefined) updatePayload.exam_start_time = updates.examStartTime;
+    updatePayload.last_ping = new Date().toISOString();
+
+    supabase.from('college_systems')
+      .update(updatePayload)
+      .or(`system_id.eq.${systemNameOrId},system_name.eq.${systemNameOrId}`)
+      .then(({ error }) => {
+        if (error) console.warn('Supabase system update notice:', error.message);
+      })
+      .catch(err => console.warn('Supabase update error:', err));
+  }
+
   broadcastMessage({ type: 'SYSTEM_STATUS_UPDATED', systemId: systemNameOrId, updates });
 }
 
@@ -225,21 +386,53 @@ export function unregisterSystem(systemId) {
     }
   } catch (e) {}
 
+  // Delete from Supabase Cloud
+  if (supabase) {
+    supabase.from('college_systems').delete().eq('system_id', systemId).then(() => {}).catch(() => {});
+  }
+
   broadcastMessage({ type: 'SYSTEM_DELETED', systemId });
 }
 
-// 9. Broadcast Command across network/tabs
+// 9. Report Cheating Incident to Supabase Logs
+export function reportIncidentLog(log) {
+  if (!log) return;
+  if (supabase) {
+    supabase.from('college_incident_logs').insert([{
+      id: log.id || 'log-' + Date.now(),
+      college_id: log.collegeId || '',
+      system_id: log.systemId || '',
+      system_name: log.systemName || 'Lab PC',
+      student_roll: log.studentRoll || 'Unknown',
+      student_name: log.studentName || 'Student',
+      reason: log.reason || 'Security Violation'
+    }]).then(() => {}).catch(err => console.warn('Supabase log error:', err));
+  }
+}
+
+// 10. Broadcast Command across Local Network AND Worldwide Supabase Realtime
 export function broadcastMessage(msg) {
   try {
+    // 1. Local Browser BroadcastChannel (Instant tabs on same device)
     if (broadcastChannel) {
       broadcastChannel.postMessage(msg);
     }
-    // Storage event trigger for browsers without BroadcastChannel
+
+    // 2. Storage Event (Fallback for tabs)
     localStorage.setItem('elite_college_broadcast_event', JSON.stringify({ ...msg, _t: Date.now() }));
+
+    // 3. Supabase Cloud Worldwide Realtime (Instant across entire Internet / all networks)
+    if (supabaseRealtimeChannel) {
+      supabaseRealtimeChannel.send({
+        type: 'broadcast',
+        event: 'college_lab_event',
+        payload: msg
+      }).catch(err => console.warn('Supabase realtime broadcast error:', err));
+    }
   } catch (e) {}
 }
 
-// 10. Listen to Incoming Messages / Broadcasts
+// 11. Listen to Incoming Messages / Broadcasts (Local + Supabase Cloud)
 export function subscribeToCollegeEvents(callback) {
   const handleBcMessage = (event) => {
     if (event && event.data) {
@@ -260,6 +453,13 @@ export function subscribeToCollegeEvents(callback) {
     broadcastChannel.addEventListener('message', handleBcMessage);
   }
   window.addEventListener('storage', handleStorageEvent);
+
+  // Subscribe to Supabase Realtime Broadcast events
+  if (supabaseRealtimeChannel) {
+    supabaseRealtimeChannel.on('broadcast', { event: 'college_lab_event' }, ({ payload }) => {
+      if (payload) callback(payload);
+    });
+  }
 
   return () => {
     if (broadcastChannel) {

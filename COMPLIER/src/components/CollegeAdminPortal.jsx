@@ -35,7 +35,10 @@ import {
   updateSystemStatus, 
   broadcastMessage, 
   subscribeToCollegeEvents,
-  getCurrentMachineSystem 
+  getCurrentMachineSystem,
+  syncCollegesFromSupabase,
+  syncSystemsFromSupabase,
+  reportIncidentLog
 } from '../services/collegeService';
 
 export default function CollegeAdminPortal({
@@ -89,10 +92,17 @@ export default function CollegeAdminPortal({
     }
   });
 
-  // Load registered colleges and check if already logged in
+  // Load registered colleges from local cache and sync with Supabase Cloud
   useEffect(() => {
     const list = getRegisteredColleges();
     setColleges(list);
+
+    // Background sync from Supabase Cloud
+    syncCollegesFromSupabase().then((cloudColleges) => {
+      if (cloudColleges && cloudColleges.length > 0) {
+        setColleges(cloudColleges);
+      }
+    });
 
     try {
       const savedSession = localStorage.getItem('elite_college_active_admin_session_v1');
@@ -106,11 +116,18 @@ export default function CollegeAdminPortal({
     } catch (e) {}
   }, []);
 
-  // Load systems for active college
+  // Load systems for active college and sync with Supabase Cloud
   const refreshSystems = () => {
     if (activeCollege) {
       const sysList = getRegisteredSystems(activeCollege.collegeId);
       setSystems(sysList);
+
+      // Background sync from Supabase
+      syncSystemsFromSupabase(activeCollege.collegeId).then((cloudSystems) => {
+        if (cloudSystems) {
+          setSystems(cloudSystems);
+        }
+      });
     }
   };
 
@@ -118,7 +135,7 @@ export default function CollegeAdminPortal({
     refreshSystems();
   }, [activeCollege]);
 
-  // Subscribe to realtime broadcast events across tabs/network
+  // Subscribe to realtime broadcast events across tabs/network and Supabase
   useEffect(() => {
     const unsubscribe = subscribeToCollegeEvents((msg) => {
       if (!msg) return;
@@ -130,11 +147,14 @@ export default function CollegeAdminPortal({
       if (msg.type === 'VIOLATION_REPORTED') {
         const newLog = {
           id: 'log-' + Date.now(),
+          collegeId: activeCollege?.collegeId || '',
+          systemId: msg.systemId || '',
           systemName: msg.systemName || 'Lab PC',
           studentRoll: msg.studentRoll || 'Unknown',
           reason: msg.reason || 'Security Violation',
           timestamp: new Date().toLocaleTimeString()
         };
+        reportIncidentLog(newLog);
         setIncidentLogs(prev => {
           const updated = [newLog, ...prev.slice(0, 49)];
           try { localStorage.setItem('elite_college_incident_logs_v1', JSON.stringify(updated)); } catch (e) {}
@@ -405,6 +425,11 @@ export default function CollegeAdminPortal({
           </div>
 
           <div className="portal-nav-actions">
+            <div className="portal-cloud-chip" title="Connected to Supabase Cloud Database for Worldwide Access">
+              <span className="cloud-dot-pulse"></span>
+              <span>⚡ SUPABASE CLOUD</span>
+            </div>
+
             {activeCollege && (
               <div className="portal-user-chip">
                 <Building2 size={15} className="text-amber-400" />

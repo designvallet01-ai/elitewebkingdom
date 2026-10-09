@@ -24,7 +24,8 @@ import {
   registerCollege, 
   verifyCollegeLogin, 
   registerSystem, 
-  getCurrentMachineSystem 
+  getCurrentMachineSystem,
+  syncCollegesFromSupabase 
 } from '../services/collegeService';
 
 export default function CollegeModeModal({
@@ -80,6 +81,7 @@ export default function CollegeModeModal({
       if (current) {
         setSysClgId(current.collegeId);
       }
+      syncCollegesFromSupabase();
     }
   }, [isOpen]);
 
