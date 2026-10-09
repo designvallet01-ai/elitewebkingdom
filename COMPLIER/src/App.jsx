@@ -9,6 +9,7 @@ import AlgorithmModal from './components/AlgorithmModal';
 import MobileAccessoryBar from './components/MobileAccessoryBar';
 import CollegeModeModal from './components/CollegeModeModal';
 import CollegeExamBanner from './components/CollegeExamBanner';
+import ProgramInputModal from './components/ProgramInputModal';
 import { detectLanguage } from './services/languageDetector';
 import { Terminal, GitFork, Globe, Code2, FolderTree } from 'lucide-react';
 
@@ -25,6 +26,26 @@ const DEFAULT_INITIAL_FILES = [
     isModified: false
   }
 ];
+
+// Detect if source code contains interactive input statements
+const codeNeedsInput = (code, lang) => {
+  if (!code) return false;
+  switch (lang) {
+    case 'python':
+    case 'py':
+      return /input\s*\(|sys\.stdin/m.test(code);
+    case 'cpp':
+    case 'c':
+      return /cin\s*>>|scanf\s*\(|getchar\s*\(|getline\s*\(|fgets\s*\(/m.test(code);
+    case 'java':
+      return /Scanner\s*|System\.in|readLine\s*\(/m.test(code);
+    case 'javascript':
+    case 'js':
+      return /prompt\s*\(|readline/m.test(code);
+    default:
+      return false;
+  }
+};
 
 export default function App() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
@@ -106,6 +127,16 @@ export default function App() {
     return null;
   });
   const [collegeModalState, setCollegeModalState] = useState({ isOpen: false, mode: 'setup' });
+  
+  // Stdin & Input Modal State
+  const [currentStdin, setCurrentStdin] = useState(() => {
+    try {
+      return localStorage.getItem('elite_ide_last_stdin_v1') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+  const [isInputModalOpen, setIsInputModalOpen] = useState(false);
 
   const editorInstanceRef = useRef(null);
   const wsRef = useRef(null);
@@ -637,6 +668,20 @@ export default function App() {
       setMobileActiveTab('terminal');
     }
 
+    // Determine stdin to pass to program
+    let finalStdin = '';
+    if (typeof customStdin === 'string') {
+      finalStdin = customStdin;
+      setCurrentStdin(customStdin);
+      try { localStorage.setItem('elite_ide_last_stdin_v1', customStdin); } catch (e) {}
+    } else if (currentStdin) {
+      finalStdin = currentStdin;
+    } else if (codeNeedsInput(currentCode, activeLanguage)) {
+      // Prompt user for input so program doesn't crash with EOFError
+      setIsInputModalOpen(true);
+      return;
+    }
+
     // Check if running in local dev with dev server
     const isLocalDev = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5173';
 
@@ -658,7 +703,7 @@ export default function App() {
         socket = new WebSocket(wsUrl);
         wsRef.current = socket;
       } catch (e) {
-        runHttpFallback(currentCode, activeLanguage, stdinToUse);
+        runHttpFallback(currentCode, activeLanguage, finalStdin);
         return;
       }
 
@@ -698,7 +743,7 @@ export default function App() {
       };
 
       socket.onerror = () => {
-        runHttpFallback(currentCode, activeLanguage, stdinToUse);
+        runHttpFallback(currentCode, activeLanguage, finalStdin);
       };
 
       socket.onclose = () => {
@@ -706,9 +751,24 @@ export default function App() {
       };
     } else {
       // In production / Web, directly invoke the Cloud HTTP execution pipeline with stdin
-      runHttpFallback(currentCode, activeLanguage, stdinToUse);
+      runHttpFallback(currentCode, activeLanguage, finalStdin);
     }
-  }, [isRunning, activeFile.code, activeLanguage, detectedLangInfo, runHttpFallback, isMobile]);
+  }, [isRunning, activeFile.code, activeLanguage, detectedLangInfo, runHttpFallback, isMobile, currentStdin]);
+
+  // Handle submitting input from ProgramInputModal
+  const handleInputModalSubmit = (inputVal) => {
+    setIsInputModalOpen(false);
+    setCurrentStdin(inputVal);
+    try {
+      localStorage.setItem('elite_ide_last_stdin_v1', inputVal);
+    } catch (e) {}
+    runHttpFallback(activeFile.code, activeLanguage, inputVal);
+  };
+
+  const handleInputModalSkip = () => {
+    setIsInputModalOpen(false);
+    runHttpFallback(activeFile.code, activeLanguage, '');
+  };
 
   // College Exam Mode Anti-Cheating & Lockdown Event Listeners (Desktop Only)
   useEffect(() => {
@@ -1151,6 +1211,17 @@ export default function App() {
         studentInfo={collegeStudentInfo}
         examDuration={collegeStartTime ? Math.floor((Date.now() - collegeStartTime) / 1000) : 0}
         code={activeFile.code}
+      />
+
+      {/* Program Input (Stdin) Modal */}
+      <ProgramInputModal
+        isOpen={isInputModalOpen}
+        onClose={() => setIsInputModalOpen(false)}
+        onSubmitInput={handleInputModalSubmit}
+        onSkip={handleInputModalSkip}
+        code={activeFile.code}
+        language={activeLanguage}
+        savedStdin={currentStdin}
       />
     </div>
   );

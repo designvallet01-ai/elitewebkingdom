@@ -94,13 +94,25 @@ export default function ConsolePanel({
 
   // Touching or clicking on terminal body immediately focuses the input!
   const handleBodyClick = (e) => {
-    if (e.target && (e.target.closest('button') || e.target.closest('a') || e.target.closest('input'))) {
+    if (e.target && (e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('textarea'))) {
       return;
     }
     if (inputRef.current) {
       inputRef.current.focus();
     }
   };
+
+  // Detect if the output failed due to missing stdin (EOFError in Python, NoSuchElementException in Java, etc.)
+  const hasEofError = React.useMemo(() => {
+    return terminalEntries.some(e => 
+      (e.type === 'stderr' || e.type === 'stdout') && (
+        e.text.includes('EOFError') || 
+        e.text.includes('EOF when reading a line') ||
+        e.text.includes('NoSuchElementException') ||
+        e.text.includes('Standard input is empty')
+      )
+    );
+  }, [terminalEntries]);
 
   const isSuccess = lastStats && lastStats.code === 0;
   const isError = lastStats && lastStats.code !== 0;
@@ -225,6 +237,48 @@ export default function ConsolePanel({
             <span className="terminal-live-cursor">▎</span>
           )}
         </div>
+
+        {/* Instant Fix Card when EOFError occurred */}
+        {hasEofError && !isRunning && (
+          <div className="terminal-eof-recovery-card">
+            <div className="eof-card-left">
+              <div className="eof-alert-icon">
+                <AlertCircle size={18} />
+              </div>
+              <div className="eof-text">
+                <div className="eof-title">User Input Missing (EOFError)</div>
+                <div className="eof-desc">
+                  Your program expected input from <code>input()</code> or <code>cin</code>. Enter your value below and run again:
+                </div>
+              </div>
+            </div>
+            <div className="eof-input-row">
+              <input
+                type="text"
+                className="eof-quick-input"
+                placeholder="Type your name or input here..."
+                value={currentInput}
+                onChange={(e) => setCurrentInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (onRun) onRun(currentInput);
+                  }
+                }}
+                autoFocus
+              />
+              <button 
+                type="button" 
+                className="eof-submit-btn"
+                onClick={() => onRun && onRun(currentInput)}
+                id="btn-eof-quick-run"
+              >
+                <Play size={13} fill="currentColor" />
+                <span>Submit & Run</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Real-time Interactive IDLE Input Bar */}
