@@ -9,6 +9,13 @@ import AlgorithmModal from './components/AlgorithmModal';
 import MobileAccessoryBar from './components/MobileAccessoryBar';
 import CollegeModeModal from './components/CollegeModeModal';
 import CollegeExamBanner from './components/CollegeExamBanner';
+import CollegeAdminPortal from './components/CollegeAdminPortal';
+import { 
+  subscribeToCollegeEvents, 
+  broadcastMessage, 
+  updateSystemStatus, 
+  getCurrentMachineSystem 
+} from './services/collegeService';
 import { detectLanguage } from './services/languageDetector';
 import { Terminal, GitFork, Globe, Code2, FolderTree } from 'lucide-react';
 
@@ -132,6 +139,14 @@ export default function App() {
     return null;
   });
   const [collegeModalState, setCollegeModalState] = useState({ isOpen: false, mode: 'setup' });
+  const [isCollegeAdminPortalOpen, setIsCollegeAdminPortalOpen] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location.search.includes('portal=college-admin')) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  });
   
   // Stdin & Inline Terminal Interactive Input State
   const [currentStdin, setCurrentStdin] = useState(() => {
@@ -850,6 +865,19 @@ export default function App() {
       localStorage.setItem('elite_college_exam_info', JSON.stringify({ ...info, startTime: now }));
     } catch (e) {}
 
+    // Update bound system status if registered
+    const bound = getCurrentMachineSystem();
+    if (bound) {
+      updateSystemStatus(bound.systemId, {
+        status: 'locked',
+        currentStudentRoll: config.studentRoll,
+        currentStudentName: config.studentName,
+        currentExamName: config.examName,
+        examStartTime: now,
+        violationsCount: 0
+      });
+    }
+
     // Enter Browser Fullscreen
     try {
       if (document.documentElement.requestFullscreen) {
@@ -869,6 +897,15 @@ export default function App() {
       localStorage.removeItem('elite_college_exam_info');
     } catch (e) {}
 
+    const bound = getCurrentMachineSystem();
+    if (bound) {
+      updateSystemStatus(bound.systemId, {
+        status: 'idle',
+        currentExamName: '',
+        examStartTime: null
+      });
+    }
+
     // Exit Browser Fullscreen
     try {
       if (document.fullscreenElement && document.exitFullscreen) {
@@ -876,6 +913,34 @@ export default function App() {
       }
     } catch (e) {}
   }, []);
+
+  // Listen to remote Broadcast Commands from College Admin Portal
+  useEffect(() => {
+    const unsubscribe = subscribeToCollegeEvents((msg) => {
+      if (!msg) return;
+
+      if (msg.type === 'BROADCAST_LOCKDOWN') {
+        const bound = getCurrentMachineSystem();
+        if (!bound || bound.collegeId === msg.collegeId) {
+          handleActivateCollegeMode({
+            pin: msg.pin || '1234',
+            examName: msg.examName || 'University Lab Practical Examination',
+            studentRoll: bound?.currentStudentRoll || 'LAB-STUDENT',
+            studentName: bound?.currentStudentName || 'Student'
+          });
+        }
+      }
+
+      if (msg.type === 'BROADCAST_UNLOCK') {
+        const bound = getCurrentMachineSystem();
+        if (!bound || bound.collegeId === msg.collegeId) {
+          handleDeactivateCollegeMode();
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [handleActivateCollegeMode, handleDeactivateCollegeMode]);
 
   // Keyboard shortcut Ctrl + Enter
   useEffect(() => {
@@ -1194,11 +1259,20 @@ export default function App() {
         onClose={() => setCollegeModalState({ isOpen: false, mode: 'setup' })}
         onActivateCollegeMode={handleActivateCollegeMode}
         onDeactivateCollegeMode={handleDeactivateCollegeMode}
+        onOpenAdminPortal={() => setIsCollegeAdminPortalOpen(true)}
         currentPin={collegePin}
         violationsCount={collegeViolations}
         studentInfo={collegeStudentInfo}
         examDuration={collegeStartTime ? Math.floor((Date.now() - collegeStartTime) / 1000) : 0}
         code={activeFile.code}
+      />
+
+      {/* Separate College Admin Portal */}
+      <CollegeAdminPortal
+        isOpen={isCollegeAdminPortalOpen}
+        onClose={() => setIsCollegeAdminPortalOpen(false)}
+        onLockSystemFromPortal={(config) => handleActivateCollegeMode(config)}
+        onUnlockSystemFromPortal={() => handleDeactivateCollegeMode()}
       />
 
     </div>
