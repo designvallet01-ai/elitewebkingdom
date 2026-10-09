@@ -6,6 +6,7 @@ import GraphicalView from './components/GraphicalView';
 import WebPreview from './components/WebPreview';
 import FileSidebar from './components/FileSidebar';
 import AlgorithmModal from './components/AlgorithmModal';
+import MobileAccessoryBar from './components/MobileAccessoryBar';
 import { detectLanguage } from './services/languageDetector';
 import { Terminal, GitFork, Globe, Code2, FolderTree } from 'lucide-react';
 
@@ -692,6 +693,62 @@ export default function App() {
     }
   };
 
+  // Mobile Code Accessory Bar Actions
+  const handleInsertText = useCallback((text) => {
+    if (!editorInstanceRef.current) return;
+    const editor = editorInstanceRef.current;
+    const selection = editor.getSelection();
+    if (!selection) return;
+
+    const isPair = ['()', '{}', '[]', '""', "''"].includes(text);
+
+    const op = {
+      identifier: { major: 1, minor: 1 },
+      range: selection,
+      text: text,
+      forceMoveMarkers: true
+    };
+    editor.executeEdits('mobile-accessory', [op]);
+
+    if (isPair) {
+      const pos = editor.getPosition();
+      if (pos) {
+        editor.setPosition({ lineNumber: pos.lineNumber, column: pos.column - 1 });
+      }
+    }
+    editor.focus();
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (editorInstanceRef.current) {
+      editorInstanceRef.current.trigger('mobile-accessory', 'undo');
+      editorInstanceRef.current.focus();
+    }
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    if (editorInstanceRef.current) {
+      editorInstanceRef.current.trigger('mobile-accessory', 'redo');
+      editorInstanceRef.current.focus();
+    }
+  }, []);
+
+  const handleEnter = useCallback(() => {
+    if (editorInstanceRef.current) {
+      const editor = editorInstanceRef.current;
+      const selection = editor.getSelection();
+      if (!selection) return;
+      const op = {
+        identifier: { major: 1, minor: 1 },
+        range: selection,
+        text: '\n',
+        forceMoveMarkers: true
+      };
+      editor.executeEdits('mobile-accessory', [op]);
+      editor.focus();
+    }
+  }, []);
+
   return (
     <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''}`}>
       {/* Top Professional IDE Header */}
@@ -834,6 +891,16 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {/* Mobile Code Typing Accessory Bar (Symbols, Tab, Undo/Redo) */}
+      {isMobile && mobileActiveTab === 'editor' && (
+        <MobileAccessoryBar
+          onInsertText={handleInsertText}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onEnter={handleEnter}
+        />
+      )}
 
       {/* Mobile Bottom Navigation Bar (Visible only on mobile devices) */}
       {isMobile && (

@@ -7,11 +7,12 @@ import {
   Clock, 
   Cpu, 
   AlertCircle, 
-  CheckCircle2,
-  Square,
-  CornerDownLeft,
-  Play,
-  Sparkles
+  CheckCircle2, 
+  Square, 
+  CornerDownLeft, 
+  Play, 
+  Sparkles,
+  ClipboardPaste
 } from 'lucide-react';
 
 export default function ConsolePanel({
@@ -48,6 +49,18 @@ export default function ConsolePanel({
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handlePasteInput = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setCurrentInput(prev => prev + text);
+        if (inputRef.current) inputRef.current.focus();
+      }
+    } catch (e) {
+      console.warn('Clipboard read error:', e);
+    }
   };
 
   const handleSend = (e) => {
@@ -205,6 +218,19 @@ export default function ConsolePanel({
           spellCheck="false"
           autoComplete="off"
         />
+
+        {navigator?.clipboard?.readText && (
+          <button
+            type="button"
+            className="paste-stdin-btn"
+            onClick={handlePasteInput}
+            title="Paste Clipboard into Input"
+            aria-label="Paste input"
+          >
+            <ClipboardPaste size={13} />
+            <span>Paste</span>
+          </button>
+        )}
 
         <button 
           className={`send-stdin-btn ${isRunning ? 'active' : ''}`}

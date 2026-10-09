@@ -183,10 +183,13 @@ export default function EditorPanel({
             smoothScrolling: true,
             bracketPairColorization: { enabled: true },
             guides: { bracketPairs: true, indentation: true },
-            padding: { top: isMobile ? 8 : 12, bottom: isMobile ? 8 : 12 },
+            padding: { top: isMobile ? 6 : 12, bottom: isMobile ? 6 : 12 },
+            glyphMargin: !isMobile,
+            folding: !isMobile,
+            contextmenu: !isMobile,
             scrollbar: {
-              verticalScrollbarSize: isMobile ? 6 : 10,
-              horizontalScrollbarSize: isMobile ? 6 : 10
+              verticalScrollbarSize: isMobile ? 4 : 10,
+              horizontalScrollbarSize: isMobile ? 4 : 10
             }
           }}
           loading={
