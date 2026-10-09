@@ -3667,5 +3667,93 @@ html, body, #root {
   color: #ffffff;
 }
 
+/* ==========================================================================
+   INLINE INTERACTIVE TERMINAL PROMPT (Python input() / C++ cin)
+   ========================================================================== */
+.terminal-inline-input-line {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+  padding: 3px 8px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 6px;
+  max-width: 100%;
+  animation: fadeInPrompt 0.15s ease-out;
+}
+
+@keyframes fadeInPrompt {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.terminal-inline-input-line.eof-inline-line {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(30, 10, 15, 0.7);
+}
+
+.terminal-inline-prompt-label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #38bdf8;
+  white-space: pre-wrap;
+  user-select: none;
+}
+
+.terminal-inline-input-line.eof-inline-line .terminal-inline-prompt-label {
+  color: #f87171;
+}
+
+.terminal-inline-input-field {
+  flex: 1;
+  min-width: 140px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 2px 4px;
+}
+
+.terminal-inline-input-field::placeholder {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.terminal-inline-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+  transition: all 0.15s ease;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.terminal-inline-submit-btn:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(2, 132, 199, 0.45);
+}
+
+.terminal-inline-submit-btn:active {
+  transform: translateY(0);
+}
+
+
 
 

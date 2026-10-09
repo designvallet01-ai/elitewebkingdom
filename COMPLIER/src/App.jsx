@@ -9,7 +9,6 @@ import AlgorithmModal from './components/AlgorithmModal';
 import MobileAccessoryBar from './components/MobileAccessoryBar';
 import CollegeModeModal from './components/CollegeModeModal';
 import CollegeExamBanner from './components/CollegeExamBanner';
-import ProgramInputModal from './components/ProgramInputModal';
 import { detectLanguage } from './services/languageDetector';
 import { Terminal, GitFork, Globe, Code2, FolderTree } from 'lucide-react';
 
@@ -27,24 +26,30 @@ const DEFAULT_INITIAL_FILES = [
   }
 ];
 
-// Detect if source code contains interactive input statements
-const codeNeedsInput = (code, lang) => {
-  if (!code) return false;
-  switch (lang) {
-    case 'python':
-    case 'py':
-      return /input\s*\(|sys\.stdin/m.test(code);
-    case 'cpp':
-    case 'c':
-      return /cin\s*>>|scanf\s*\(|getchar\s*\(|getline\s*\(|fgets\s*\(/m.test(code);
-    case 'java':
-      return /Scanner\s*|System\.in|readLine\s*\(/m.test(code);
-    case 'javascript':
-    case 'js':
-      return /prompt\s*\(|readline/m.test(code);
-    default:
-      return false;
+// Extract interactive input prompts (e.g. input("Enter your name: ")) from code
+export const extractPromptsFromCode = (code, lang) => {
+  if (!code) return [];
+  const prompts = [];
+  if (lang === 'python' || lang === 'py') {
+    const regex = /input\s*\(\s*(?:(['"])(.*?)\1)?\s*\)/g;
+    let match;
+    while ((match = regex.exec(code)) !== null) {
+      prompts.push(match[2] !== undefined ? match[2] : '');
+    }
+  } else if (lang === 'cpp' || lang === 'c') {
+    const cinCount = (code.match(/cin\s*>>/g) || []).length;
+    const scanfCount = (code.match(/scanf\s*\(/g) || []).length;
+    const total = cinCount + scanfCount;
+    for (let i = 0; i < total; i++) {
+      prompts.push('');
+    }
+  } else if (lang === 'java') {
+    const scCount = (code.match(/\.next(Line|Int|Double|Float)?\s*\(/g) || []).length;
+    for (let i = 0; i < scCount.length; i++) {
+      prompts.push('');
+    }
   }
+  return prompts;
 };
 
 export default function App() {
@@ -128,7 +133,7 @@ export default function App() {
   });
   const [collegeModalState, setCollegeModalState] = useState({ isOpen: false, mode: 'setup' });
   
-  // Stdin & Input Modal State
+  // Stdin & Inline Terminal Interactive Input State
   const [currentStdin, setCurrentStdin] = useState(() => {
     try {
       return localStorage.getItem('elite_ide_last_stdin_v1') || '';
@@ -136,7 +141,7 @@ export default function App() {
       return '';
     }
   });
-  const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+  const [awaitingPrompt, setAwaitingPrompt] = useState(null);
 
   const editorInstanceRef = useRef(null);
   const wsRef = useRef(null);
@@ -515,13 +520,15 @@ export default function App() {
   }, []);
 
   // Robust Cloud & Local Code Runner with Stdin Support
-  const runHttpFallback = useCallback(async (codeToRun, lang, customStdin = '') => {
+  const runHttpFallback = useCallback(async (codeToRun, lang, customStdin = '', inlineContext = null) => {
     setIsRunning(true);
     setRightPaneView('console');
     setLastStats(null);
-    setTerminalEntries([
-      { type: 'system', text: `[Elite Engine]: Compiling & executing ${lang.toUpperCase()} code in cloud sandbox...\n` }
-    ]);
+    if (!inlineContext) {
+      setTerminalEntries([
+        { type: 'system', text: `[Elite Engine]: Compiling & executing ${lang.toUpperCase()} code in cloud sandbox...\n` }
+      ]);
+    }
 
     try {
       // 1. If HTML / Web sandbox, switch to preview
@@ -580,9 +587,26 @@ export default function App() {
       }
 
       const entries = [];
-      if (data.stdout) {
-        entries.push({ type: 'stdout', text: data.stdout });
+      if (inlineContext && inlineContext.answeredPrompts?.length) {
+        // Authentically construct terminal stream: display prompt line + user response, then program output
+        let remainingStdout = data.stdout || '';
+        inlineContext.answeredPrompts.forEach((p, idx) => {
+          const userInp = inlineContext.answeredInputs?.[idx] || '';
+          entries.push({ type: 'stdout', text: `${p}${userInp}\n` });
+          if (p && remainingStdout.includes(p)) {
+            remainingStdout = remainingStdout.replace(p, '');
+          }
+        });
+        if (remainingStdout.trim()) {
+          const cleanRemaining = remainingStdout.startsWith('\n') ? remainingStdout.slice(1) : remainingStdout;
+          entries.push({ type: 'stdout', text: cleanRemaining });
+        }
+      } else {
+        if (data.stdout) {
+          entries.push({ type: 'stdout', text: data.stdout });
+        }
       }
+
       if (data.stderr) {
         entries.push({ type: 'stderr', text: data.stderr });
       }
@@ -668,107 +692,69 @@ export default function App() {
       setMobileActiveTab('terminal');
     }
 
-    // Determine stdin to pass to program
-    let finalStdin = '';
+    // If customStdin was passed explicitly as string, execute directly
     if (typeof customStdin === 'string') {
-      finalStdin = customStdin;
       setCurrentStdin(customStdin);
       try { localStorage.setItem('elite_ide_last_stdin_v1', customStdin); } catch (e) {}
-    } else if (currentStdin) {
-      finalStdin = currentStdin;
-    } else if (codeNeedsInput(currentCode, activeLanguage)) {
-      // Prompt user for input so program doesn't crash with EOFError
-      setIsInputModalOpen(true);
+      setAwaitingPrompt(null);
+      runHttpFallback(currentCode, activeLanguage, customStdin);
       return;
     }
 
-    // Check if running in local dev with dev server
-    const isLocalDev = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5173';
-
-    if (isLocalDev) {
-      if (wsRef.current) {
-        try { wsRef.current.close(); } catch (e) {}
-      }
-
-      setIsRunning(true);
+    // Check if code has input statements (e.g. input("Enter your name: "))
+    const prompts = extractPromptsFromCode(currentCode, activeLanguage);
+    if (prompts.length > 0) {
       setRightPaneView('console');
       setLastStats(null);
-      setTerminalEntries([]);
-
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.hostname}:3001/api/terminal`;
-
-      let socket;
-      try {
-        socket = new WebSocket(wsUrl);
-        wsRef.current = socket;
-      } catch (e) {
-        runHttpFallback(currentCode, activeLanguage, finalStdin);
-        return;
-      }
-
-      socket.onopen = () => {
-        socket.send(JSON.stringify({
-          type: 'run',
-          language: activeLanguage,
-          code: currentCode
-        }));
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'system') {
-            setTerminalEntries(prev => [...prev, { type: msg.type, text: msg.data }]);
-          } else if (msg.type === 'exit') {
-            setLastStats({
-              code: msg.code,
-              executionTime: msg.executionTime,
-              status: msg.status || (msg.code === 0 ? 'SUCCESS' : 'ERROR'),
-              runner: msg.runner || detectedLangInfo.name
-            });
-            setTerminalEntries(prev => [
-              ...prev,
-              {
-                type: 'system',
-                text: `\r\n[Process completed in ${msg.executionTime}ms with exit code ${msg.code}]\r\n`
-              }
-            ]);
-            setIsRunning(false);
-            try { socket.close(); } catch (e) {}
-          }
-        } catch (err) {
-          console.error('Error handling terminal message:', err);
-        }
-      };
-
-      socket.onerror = () => {
-        runHttpFallback(currentCode, activeLanguage, finalStdin);
-      };
-
-      socket.onclose = () => {
-        setIsRunning(false);
-      };
-    } else {
-      // In production / Web, directly invoke the Cloud HTTP execution pipeline with stdin
-      runHttpFallback(currentCode, activeLanguage, finalStdin);
+      setTerminalEntries([
+        { type: 'system', text: `[Elite Engine]: Compiling & executing ${activeLanguage.toUpperCase()} code...\n` }
+      ]);
+      setAwaitingPrompt({
+        prompts,
+        currentIndex: 0,
+        collected: [],
+        codeToRun: currentCode,
+        language: activeLanguage
+      });
+      return;
     }
-  }, [isRunning, activeFile.code, activeLanguage, detectedLangInfo, runHttpFallback, isMobile, currentStdin]);
 
-  // Handle submitting input from ProgramInputModal
-  const handleInputModalSubmit = (inputVal) => {
-    setIsInputModalOpen(false);
-    setCurrentStdin(inputVal);
-    try {
-      localStorage.setItem('elite_ide_last_stdin_v1', inputVal);
-    } catch (e) {}
-    runHttpFallback(activeFile.code, activeLanguage, inputVal);
-  };
+    // Otherwise run directly with empty stdin
+    setAwaitingPrompt(null);
+    runHttpFallback(currentCode, activeLanguage, '');
+  }, [isRunning, activeFile.code, activeLanguage, isMobile, runHttpFallback]);
 
-  const handleInputModalSkip = () => {
-    setIsInputModalOpen(false);
-    runHttpFallback(activeFile.code, activeLanguage, '');
-  };
+  // Handle submitting input from inline terminal input prompt
+  const handleInlinePromptSubmit = useCallback((userInput) => {
+    if (!awaitingPrompt) return;
+    const { prompts, currentIndex, collected, codeToRun, language } = awaitingPrompt;
+    const promptText = prompts[currentIndex] || '';
+
+    // Echo input into terminal stream
+    setTerminalEntries(prev => [
+      ...prev,
+      { type: 'stdout', text: `${promptText}${userInput}\n` }
+    ]);
+
+    const newCollected = [...collected, userInput];
+    if (currentIndex + 1 < prompts.length) {
+      setAwaitingPrompt(prev => ({
+        ...prev,
+        currentIndex: prev.currentIndex + 1,
+        collected: newCollected
+      }));
+    } else {
+      setAwaitingPrompt(null);
+      const fullStdin = newCollected.join('\n') + '\n';
+      setCurrentStdin(fullStdin);
+      try { localStorage.setItem('elite_ide_last_stdin_v1', fullStdin); } catch (e) {}
+
+      runHttpFallback(codeToRun, language, fullStdin, {
+        answeredPrompts: prompts,
+        answeredInputs: newCollected
+      });
+    }
+  }, [awaitingPrompt, runHttpFallback]);
 
   // College Exam Mode Anti-Cheating & Lockdown Event Listeners (Desktop Only)
   useEffect(() => {
@@ -1106,6 +1092,8 @@ export default function App() {
                 lastStats={lastStats}
                 activeLanguage={activeLanguage}
                 isMobile={isMobile}
+                awaitingPrompt={awaitingPrompt}
+                onInlinePromptSubmit={handleInlinePromptSubmit}
               />
             )}
 
@@ -1213,16 +1201,6 @@ export default function App() {
         code={activeFile.code}
       />
 
-      {/* Program Input (Stdin) Modal */}
-      <ProgramInputModal
-        isOpen={isInputModalOpen}
-        onClose={() => setIsInputModalOpen(false)}
-        onSubmitInput={handleInputModalSubmit}
-        onSkip={handleInputModalSkip}
-        code={activeFile.code}
-        language={activeLanguage}
-        savedStdin={currentStdin}
-      />
     </div>
   );
 }

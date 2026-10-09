@@ -24,12 +24,16 @@ export default function ConsolePanel({
   onRun,
   lastStats = null,
   activeLanguage = 'python',
-  isMobile = false
+  isMobile = false,
+  awaitingPrompt = null,
+  onInlinePromptSubmit = null
 }) {
   const [copied, setCopied] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
+  const [inlineValue, setInlineValue] = useState('');
   const [showStdinDrawer, setShowStdinDrawer] = useState(false);
   const inputRef = useRef(null);
+  const inlineInputRef = useRef(null);
   const scrollRef = useRef(null);
 
   // Auto-scroll to bottom as new terminal entries arrive
@@ -37,7 +41,19 @@ export default function ConsolePanel({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [terminalEntries]);
+  }, [terminalEntries, awaitingPrompt]);
+
+  // Focus inline input as soon as awaitingPrompt is active
+  useEffect(() => {
+    if (awaitingPrompt && inlineInputRef.current) {
+      setInlineValue('');
+      setTimeout(() => {
+        try {
+          inlineInputRef.current?.focus();
+        } catch (e) {}
+      }, 50);
+    }
+  }, [awaitingPrompt]);
 
   // Focus input when process starts running or when requested
   useEffect(() => {
@@ -233,107 +249,134 @@ export default function ConsolePanel({
           })}
 
           {/* If running and awaiting input, show inline cursor */}
-          {isRunning && (
+          {isRunning && !awaitingPrompt && (
             <span className="terminal-live-cursor">▎</span>
           )}
-        </div>
 
-        {/* Instant Fix Card when EOFError occurred */}
-        {hasEofError && !isRunning && (
-          <div className="terminal-eof-recovery-card">
-            <div className="eof-card-left">
-              <div className="eof-alert-icon">
-                <AlertCircle size={18} />
-              </div>
-              <div className="eof-text">
-                <div className="eof-title">User Input Missing (EOFError)</div>
-                <div className="eof-desc">
-                  Your program expected input from <code>input()</code> or <code>cin</code>. Enter your value below and run again:
-                </div>
-              </div>
-            </div>
-            <div className="eof-input-row">
+          {/* Inline Interactive Input Line - Prompts the user right here on the prompt line */}
+          {awaitingPrompt && (
+            <div className="terminal-inline-input-line">
+              <span className="terminal-inline-prompt-label">
+                {awaitingPrompt.prompts[awaitingPrompt.currentIndex] || '> '}
+              </span>
               <input
+                ref={inlineInputRef}
                 type="text"
-                className="eof-quick-input"
-                placeholder="Type your name or input here..."
-                value={currentInput}
-                onChange={(e) => setCurrentInput(e.target.value)}
+                className="terminal-inline-input-field"
+                value={inlineValue}
+                onChange={(e) => setInlineValue(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
-                    if (onRun) onRun(currentInput);
+                    if (onInlinePromptSubmit) {
+                      onInlinePromptSubmit(inlineValue);
+                      setInlineValue('');
+                    }
                   }
                 }}
                 autoFocus
+                placeholder="Type here and press Enter ↵..."
+                spellCheck="false"
+                autoComplete="off"
               />
-              <button 
-                type="button" 
-                className="eof-submit-btn"
-                onClick={() => onRun && onRun(currentInput)}
-                id="btn-eof-quick-run"
+              <button
+                type="button"
+                className="terminal-inline-submit-btn"
+                onClick={() => {
+                  if (onInlinePromptSubmit) {
+                    onInlinePromptSubmit(inlineValue);
+                    setInlineValue('');
+                  }
+                }}
+                title="Submit input (Enter)"
               >
-                <Play size={13} fill="currentColor" />
-                <span>Submit & Run</span>
+                <CornerDownLeft size={13} />
+                <span>Enter</span>
               </button>
             </div>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* Real-time Interactive IDLE Input Bar */}
-      <div 
-        className={`terminal-input-bar ${isRunning ? 'active-input-bar' : ''}`}
-        onClick={() => inputRef.current?.focus()}
-        onTouchEnd={() => inputRef.current?.focus()}
-      >
-        <div className="input-prompt-label">
-          <span className="prompt-symbol">❯</span>
-          <span className="prompt-text">
-            {isRunning ? 'stdin:' : 'input:'}
-          </span>
+          {/* Instant Inline Recovery if unexpected EOF occurred */}
+          {hasEofError && !isRunning && !awaitingPrompt && (
+            <div className="terminal-inline-input-line eof-inline-line">
+              <span className="terminal-inline-prompt-label">
+                [Input Required]: 
+              </span>
+              <input
+                ref={inlineInputRef}
+                type="text"
+                className="terminal-inline-input-field"
+                value={inlineValue}
+                onChange={(e) => setInlineValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (onRun) {
+                      onRun(inlineValue);
+                      setInlineValue('');
+                    }
+                  }
+                }}
+                autoFocus
+                placeholder="Type input and press Enter to run..."
+                spellCheck="false"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                className="terminal-inline-submit-btn"
+                onClick={() => {
+                  if (onRun) {
+                    onRun(inlineValue);
+                    setInlineValue('');
+                  }
+                }}
+                title="Run with input"
+              >
+                <Play size={12} fill="currentColor" />
+                <span>Run</span>
+              </button>
+            </div>
+          )}
         </div>
-        
-        <input
-          ref={inputRef}
-          type="text"
-          className="terminal-inline-input"
-          placeholder={
-            isRunning 
-              ? (isMobile ? "Type stdin & press Send..." : "Type input for program and press Enter ↵...") 
-              : (isMobile ? "Type custom input / stdin..." : "Type custom stdin or press Run (Enter ↵)...")
-          }
-          value={currentInput}
-          onChange={(e) => setCurrentInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          id="terminal-input"
-          spellCheck="false"
-          autoComplete="off"
-        />
-
-        {navigator?.clipboard?.readText && (
-          <button
-            type="button"
-            className="paste-stdin-btn"
-            onClick={handlePasteInput}
-            title="Paste Clipboard into Input"
-            aria-label="Paste input"
-          >
-            <ClipboardPaste size={13} />
-            <span>Paste</span>
-          </button>
-        )}
-
-        <button 
-          className={`send-stdin-btn ${isRunning ? 'active' : ''}`}
-          onClick={handleSend}
-          title={isRunning ? "Send input to running program (Enter)" : "Run program with input (Enter)"}
-          id="send-stdin-btn"
-        >
-          <CornerDownLeft size={13} />
-          <span>{isRunning ? 'Send' : 'Run'}</span>
-        </button>
       </div>
+
+      {/* Real-time Interactive IDLE Input Bar (Only visible during live process execution) */}
+      {isRunning && (
+        <div 
+          className="terminal-input-bar active-input-bar"
+          onClick={() => inputRef.current?.focus()}
+          onTouchEnd={() => inputRef.current?.focus()}
+        >
+          <div className="input-prompt-label">
+            <span className="prompt-symbol">❯</span>
+            <span className="prompt-text">stdin:</span>
+          </div>
+          
+          <input
+            ref={inputRef}
+            type="text"
+            className="terminal-inline-input"
+            placeholder={isMobile ? "Type stdin & press Send..." : "Type input for running process and press Enter ↵..."}
+            value={currentInput}
+            onChange={(e) => setCurrentInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            id="terminal-input"
+            spellCheck="false"
+            autoComplete="off"
+          />
+
+          <button 
+            className="send-stdin-btn active"
+            onClick={handleSend}
+            title="Send input to running program (Enter)"
+            id="send-stdin-btn"
+          >
+            <CornerDownLeft size={13} />
+            <span>Send</span>
+          </button>
+        </div>
+      )}
 
       {/* Terminal Footer with Status & Execution Time */}
       <div className="console-footer">
