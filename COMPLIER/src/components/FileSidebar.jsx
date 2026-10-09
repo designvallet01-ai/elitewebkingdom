@@ -23,7 +23,8 @@ export default function FileSidebar({
   onRenameFile,
   onOpenTemplates,
   isOpen,
-  onToggleSidebar
+  onToggleSidebar,
+  isMobile = false
 }) {
   const [editingFileId, setEditingFileId] = useState(null);
   const [renameText, setRenameText] = useState('');
@@ -102,6 +103,16 @@ export default function FileSidebar({
           >
             <BookOpen size={15} />
           </button>
+          {isMobile && (
+            <button
+              className="sidebar-tool-btn close-drawer-btn"
+              onClick={onToggleSidebar}
+              title="Close Drawer"
+              id="sidebar-close-drawer-btn"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
 

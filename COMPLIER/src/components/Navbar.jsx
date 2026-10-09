@@ -32,7 +32,8 @@ export default function Navbar({
   isSidebarOpen,
   onToggleSidebar,
   selectedLanguage = 'auto',
-  onSelectLanguage
+  onSelectLanguage,
+  isMobile = false
 }) {
   const fileInputRef = useRef(null);
 
@@ -69,11 +70,23 @@ export default function Navbar({
   return (
     <header className="ide-navbar">
       <div className="nav-left">
+        {/* Mobile Files Drawer Button */}
+        {isMobile && (
+          <button
+            className={`nav-icon-btn mobile-files-toggle ${isSidebarOpen ? 'active' : ''}`}
+            onClick={onToggleSidebar}
+            title={isSidebarOpen ? "Hide Files Drawer" : "Open Files Drawer"}
+            id="mobile-files-drawer-btn"
+          >
+            <FolderTree size={16} />
+          </button>
+        )}
+
         <a href="/" className="brand" title="Return to Elite Web Kingdom Main Website" style={{ textDecoration: 'none', color: 'inherit' }}>
           <img src="/compiler/logo.png" alt="Elite IDE Logo" className="brand-logo-img" />
           <div className="brand-text">
             <span className="brand-title">Elite IDE</span>
-            <span className="brand-badge">PRO COMPILER</span>
+            {!isMobile && <span className="brand-badge">PRO COMPILER</span>}
           </div>
         </a>
 
@@ -81,7 +94,7 @@ export default function Navbar({
         <div className="auto-lang-selector-wrapper">
           <div className="auto-lang-pill" title="Programming language is identified automatically from your code in real-time">
             <Zap size={14} className="zap-icon" />
-            <span className="auto-label">{selectedLanguage === 'auto' ? 'Auto-Detect:' : 'Language:'}</span>
+            {!isMobile && <span className="auto-label">{selectedLanguage === 'auto' ? 'Auto-Detect:' : 'Language:'}</span>}
             <select
               value={selectedLanguage}
               onChange={(e) => onSelectLanguage && onSelectLanguage(e.target.value)}
@@ -90,14 +103,14 @@ export default function Navbar({
               title="Select programming language or keep on real-time Auto-Detection"
             >
               <option value="auto">
-                ⚡ Auto-Detect {detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : '(Type Code...)'}
+                ⚡ {isMobile ? 'Auto' : 'Auto-Detect'} {detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : ''}
               </option>
               <option value="python">🐍 Python 3</option>
-              <option value="cpp">⚙️ C++ (G++ 13.3)</option>
-              <option value="c">🔧 C (GCC 13.3)</option>
+              <option value="cpp">⚙️ C++ (G++ 14)</option>
+              <option value="c">🔧 C (GCC 9.2)</option>
               <option value="java">☕ Java (OpenJDK 17)</option>
-              <option value="javascript">⚡ JavaScript (Node.js 24)</option>
-              <option value="html">🌐 HTML / Web Sandbox</option>
+              <option value="javascript">⚡ JavaScript (Node)</option>
+              <option value="html">🌐 HTML / Sandbox</option>
             </select>
             {detectedLangInfo?.detected && (
               <span className="extension-badge live-detected">.{detectedLangInfo.extension}</span>
@@ -106,16 +119,18 @@ export default function Navbar({
         </div>
 
         {/* Algorithm & Template Library Nav Button */}
-        <button
-          className="nav-library-btn"
-          onClick={onOpenTemplates}
-          title="Open Curated Algorithm & Data Structure Library"
-          id="nav-algorithm-library-btn"
-        >
-          <BookOpen size={14} />
-          <span>Algorithms</span>
-          <span className="library-badge">Library</span>
-        </button>
+        {!isMobile && (
+          <button
+            className="nav-library-btn"
+            onClick={onOpenTemplates}
+            title="Open Curated Algorithm & Data Structure Library"
+            id="nav-algorithm-library-btn"
+          >
+            <BookOpen size={14} />
+            <span>Algorithms</span>
+            <span className="library-badge">Library</span>
+          </button>
+        )}
       </div>
 
       <div className="nav-center">
@@ -125,11 +140,11 @@ export default function Navbar({
           onClick={onRun}
           disabled={isRunning}
           id="run-code-button"
-          title="Compile & Run Code (Ctrl + Enter)"
+          title="Compile & Run Code"
         >
           <Play size={16} fill="currentColor" />
-          <span>{isRunning ? 'Compiling & Running...' : 'Run Code'}</span>
-          <kbd className="kbd-shortcut">Ctrl+↵</kbd>
+          <span>{isRunning ? 'Running...' : (isMobile ? 'Run' : 'Run Code')}</span>
+          {!isMobile && <kbd className="kbd-shortcut">Ctrl+↵</kbd>}
         </button>
       </div>
 

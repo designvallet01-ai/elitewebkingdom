@@ -27,7 +27,8 @@ export default function EditorPanel({
   theme,
   fontSize,
   filename,
-  onMountEditor
+  onMountEditor,
+  isMobile = false
 }) {
   const editorRef = useRef(null);
   const [copied, setCopied] = React.useState(false);
@@ -166,22 +167,27 @@ export default function EditorPanel({
           onChange={(val) => onChange(val || '')}
           onMount={handleEditorDidMount}
           options={{
-            fontSize: fontSize || 14,
+            fontSize: isMobile ? 13 : (fontSize || 14),
             fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace",
             fontLigatures: true,
             tabSize: 4,
-            minimap: { enabled: true },
+            minimap: { enabled: !isMobile },
             scrollBeyondLastLine: false,
             automaticLayout: true,
             wordWrap: 'on',
             lineNumbers: 'on',
+            lineNumbersMinChars: isMobile ? 2 : 4,
             renderWhitespace: 'selection',
             cursorBlinking: 'smooth',
             cursorSmoothCaretAnimation: 'on',
             smoothScrolling: true,
             bracketPairColorization: { enabled: true },
             guides: { bracketPairs: true, indentation: true },
-            padding: { top: 12, bottom: 12 }
+            padding: { top: isMobile ? 8 : 12, bottom: isMobile ? 8 : 12 },
+            scrollbar: {
+              verticalScrollbarSize: isMobile ? 6 : 10,
+              horizontalScrollbarSize: isMobile ? 6 : 10
+            }
           }}
           loading={
             <div className="editor-loading">

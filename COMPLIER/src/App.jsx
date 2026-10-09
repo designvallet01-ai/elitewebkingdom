@@ -7,7 +7,7 @@ import WebPreview from './components/WebPreview';
 import FileSidebar from './components/FileSidebar';
 import AlgorithmModal from './components/AlgorithmModal';
 import { detectLanguage } from './services/languageDetector';
-import { Terminal, GitFork, Globe } from 'lucide-react';
+import { Terminal, GitFork, Globe, Code2, FolderTree } from 'lucide-react';
 
 const STORAGE_FILES_KEY = 'elite_ide_workspace_files_v2';
 const STORAGE_ACTIVE_KEY = 'elite_ide_active_file_id_v2';
@@ -24,6 +24,9 @@ const DEFAULT_INITIAL_FILES = [
 ];
 
 export default function App() {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [mobileActiveTab, setMobileActiveTab] = useState('editor'); // 'editor' | 'terminal' | 'graphical' | 'preview'
+
   // Multi-file workspace state with local storage fallback
   const [files, setFiles] = useState(() => {
     try {
@@ -48,6 +51,7 @@ export default function App() {
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     try {
+      if (typeof window !== 'undefined' && window.innerWidth <= 768) return false;
       const saved = localStorage.getItem(STORAGE_SIDEBAR_KEY);
       if (saved !== null) return saved === 'true';
     } catch (e) {}
@@ -66,6 +70,29 @@ export default function App() {
 
   const editorInstanceRef = useRef(null);
   const wsRef = useRef(null);
+
+  // Mobile viewport resize listener
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (editorInstanceRef.current) {
+        editorInstanceRef.current.layout();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // When switching views on mobile, trigger Monaco layout recalculation
+  useEffect(() => {
+    if (mobileActiveTab === 'editor' && editorInstanceRef.current) {
+      const t = setTimeout(() => {
+        editorInstanceRef.current?.layout();
+      }, 60);
+      return () => clearTimeout(t);
+    }
+  }, [mobileActiveTab]);
 
   // Active file resolution
   const activeFile = useMemo(() => {
@@ -246,6 +273,10 @@ export default function App() {
   const handleSelectFile = (fileId) => {
     setActiveFileId(fileId);
     setSelectedLine(null);
+    if (isMobile) {
+      setIsSidebarOpen(false);
+      setMobileActiveTab('editor');
+    }
   };
 
   // Create new file / scratchpad tab (adopts currently active language extension)
@@ -553,11 +584,16 @@ export default function App() {
     // If language is HTML, render live WebPreview immediately
     if (activeLanguage === 'html') {
       setRightPaneView('preview');
+      if (isMobile) setMobileActiveTab('preview');
       setTerminalEntries([
         { type: 'system', text: '[Web Preview]: Rendering HTML & CSS in live browser canvas...\n' }
       ]);
       setLastStats({ code: 0, executionTime: 5, status: 'SUCCESS', runner: 'Browser DOM Sandbox' });
       return;
+    }
+
+    if (isMobile) {
+      setMobileActiveTab('terminal');
     }
 
     // Check if running in local dev with dev server
@@ -657,7 +693,7 @@ export default function App() {
   };
 
   return (
-    <div className={`ide-root ${theme}`}>
+    <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''}`}>
       {/* Top Professional IDE Header */}
       <Navbar
         detectedLangInfo={detectedLangInfo}
@@ -676,11 +712,21 @@ export default function App() {
         onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
         selectedLanguage={manualLanguage}
         onSelectLanguage={handleLanguageChange}
+        isMobile={isMobile}
       />
 
-      {/* Main Workspace: Split Pane (Sidebar + Editor + Terminal / Flowchart) */}
+      {/* Main Workspace: Split Pane on Desktop, Tabbed Switcher on Mobile */}
       <main className="ide-workspace">
-        {/* Workspace Files Sidebar (Collapsible) */}
+        {/* Mobile Backdrop for Sidebar Drawer */}
+        {isMobile && isSidebarOpen && (
+          <div 
+            className="sidebar-backdrop"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close files sidebar overlay"
+          />
+        )}
+
+        {/* Workspace Files Sidebar (Drawer overlay on Mobile, Left pane on Desktop) */}
         <FileSidebar
           files={files}
           activeFileId={activeFileId}
@@ -691,10 +737,11 @@ export default function App() {
           onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
           isOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+          isMobile={isMobile}
         />
 
         {/* Editor Section */}
-        <section className="ide-editor-section">
+        <section className={`ide-editor-section ${isMobile && mobileActiveTab !== 'editor' ? 'mobile-hidden' : ''}`}>
           <EditorPanel
             files={files}
             activeFileId={activeFileId}
@@ -710,6 +757,7 @@ export default function App() {
             theme={theme}
             fontSize={fontSize}
             filename={activeFile.name}
+            isMobile={isMobile}
             onMountEditor={(editor) => {
               editorInstanceRef.current = editor;
             }}
@@ -717,8 +765,8 @@ export default function App() {
         </section>
 
         {/* Right Side: View Switcher (Terminal / Graphical Flow / Web Preview) */}
-        <section className="ide-terminal-section">
-          {/* View Switcher Header Bar */}
+        <section className={`ide-terminal-section ${isMobile && mobileActiveTab === 'editor' ? 'mobile-hidden' : ''}`}>
+          {/* View Switcher Header Bar (Desktop Only) */}
           <div className="view-mode-bar">
             <div className="view-mode-tabs">
               <button
@@ -767,6 +815,7 @@ export default function App() {
                 onRun={handleRun}
                 lastStats={lastStats}
                 activeLanguage={activeLanguage}
+                isMobile={isMobile}
               />
             )}
 
@@ -785,6 +834,61 @@ export default function App() {
           </div>
         </section>
       </main>
+
+      {/* Mobile Bottom Navigation Bar (Visible only on mobile devices) */}
+      {isMobile && (
+        <nav className="mobile-view-tabs" aria-label="Mobile workspace view tabs">
+          <button
+            className={`mobile-tab-btn ${mobileActiveTab === 'editor' ? 'active' : ''}`}
+            onClick={() => setMobileActiveTab('editor')}
+            id="mobile-tab-editor"
+          >
+            <Code2 size={16} />
+            <span>Code</span>
+          </button>
+
+          <button
+            className={`mobile-tab-btn ${mobileActiveTab === 'terminal' ? 'active' : ''}`}
+            onClick={() => { setMobileActiveTab('terminal'); setRightPaneView('console'); }}
+            id="mobile-tab-terminal"
+          >
+            <Terminal size={16} />
+            <span>Terminal</span>
+            {lastStats && (
+              <span className={`mobile-tab-dot ${lastStats.code === 0 ? 'success' : 'error'}`} />
+            )}
+          </button>
+
+          <button
+            className={`mobile-tab-btn ${mobileActiveTab === 'graphical' ? 'active' : ''}`}
+            onClick={() => { setMobileActiveTab('graphical'); setRightPaneView('graphical'); }}
+            id="mobile-tab-flowchart"
+          >
+            <GitFork size={16} />
+            <span>Flowchart</span>
+          </button>
+
+          {activeLanguage === 'html' && (
+            <button
+              className={`mobile-tab-btn ${mobileActiveTab === 'preview' ? 'active' : ''}`}
+              onClick={() => { setMobileActiveTab('preview'); setRightPaneView('preview'); }}
+              id="mobile-tab-preview"
+            >
+              <Globe size={16} />
+              <span>Preview</span>
+            </button>
+          )}
+
+          <button
+            className={`mobile-tab-btn ${isSidebarOpen ? 'active' : ''}`}
+            onClick={() => setIsSidebarOpen(prev => !prev)}
+            id="mobile-tab-files"
+          >
+            <FolderTree size={16} />
+            <span>Files</span>
+          </button>
+        </nav>
+      )}
 
       {/* Algorithm & Data Structures Template Library Modal */}
       <AlgorithmModal
