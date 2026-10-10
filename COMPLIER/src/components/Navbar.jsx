@@ -19,7 +19,10 @@ import {
   Type,
   ExternalLink,
   GraduationCap,
-  Lock
+  Lock,
+  Smartphone,
+  Laptop,
+  Check
 } from 'lucide-react';
 
 export default function Navbar({
@@ -46,17 +49,52 @@ export default function Navbar({
 }) {
   const fileInputRef = useRef(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installedSuccess, setInstalledSuccess] = useState(false);
+
+  // Capture beforeinstallprompt event for PWA installation
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  // Handle Install App button click (triggers native prompt or opens install guide modal)
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      try {
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          setInstalledSuccess(true);
+          setTimeout(() => setInstalledSuccess(false), 4000);
+        }
+        setDeferredPrompt(null);
+        return;
+      } catch (err) {
+        console.warn('Install prompt error:', err);
+      }
+    }
+    // If native prompt already used or browser needs manual install, show instructions modal
+    setShowInstallModal(true);
+  };
 
   // Close mobile menu on outside escape
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
+      if (e.key === 'Escape') {
+        if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+        if (showInstallModal) setShowInstallModal(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileMenuOpen]);
+  }, [isMobileMenuOpen, showInstallModal]);
 
   // Download active code file
   const handleDownload = () => {
@@ -115,6 +153,19 @@ export default function Navbar({
             </div>
           </a>
 
+          {/* Mobile Quick Install Button */}
+          {isMobile && (
+            <button
+              className="mobile-install-quick-btn"
+              onClick={handleInstallApp}
+              title="Install Elite IDE on your Phone"
+              id="mobile-install-quick-btn"
+            >
+              <Download size={13} />
+              <span>Install</span>
+            </button>
+          )}
+
           {/* Automatic Language Detection Badge & Interactive Engine Selector */}
           <div className="auto-lang-selector-wrapper">
             <div className="auto-lang-pill" title="Programming language is identified automatically from your code in real-time">
@@ -143,17 +194,30 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* College Exam Mode Button (Desktop Only) */}
+          {/* System Login Button for Student Machine (Desktop) */}
           {!isMobile && (
             <button
               className={`nav-college-mode-btn ${isCollegeMode ? 'active-exam' : ''}`}
               onClick={isCollegeMode ? onExitCollegeMode : onOpenCollegeMode}
-              title={isCollegeMode ? "College Exam Active - Click to Exit (PIN Required)" : "Activate College Exam Lockdown Mode with Admin PIN"}
+              title={isCollegeMode ? "Exam Session Active - Admin PIN Required to Exit" : "System Login for College Lab PCs"}
               id="nav-college-mode-btn"
             >
-              <GraduationCap size={15} />
-              <span>{isCollegeMode ? 'Exam Active' : 'College Mode'}</span>
-              {isCollegeMode ? <span className="exam-status-dot" /> : <span className="clg-pin-badge">PIN</span>}
+              <Laptop size={15} />
+              <span>{isCollegeMode ? 'Session Active' : 'System Login'}</span>
+              {isCollegeMode ? <span className="exam-status-dot" /> : <span className="clg-pin-badge">LAB</span>}
+            </button>
+          )}
+
+          {/* Install App Button (Desktop) */}
+          {!isMobile && (
+            <button
+              className="nav-install-btn"
+              onClick={handleInstallApp}
+              title="Install Elite IDE on your Computer / System"
+              id="btn-install-app-desktop"
+            >
+              <Download size={14} />
+              <span>Install App</span>
             </button>
           )}
 
@@ -406,6 +470,22 @@ export default function Navbar({
                   </button>
 
                   <button 
+                    className="sheet-grid-btn highlight-install" 
+                    onClick={() => { setIsMobileMenuOpen(false); handleInstallApp(); }}
+                  >
+                    <Download size={16} />
+                    <span>Install App</span>
+                  </button>
+
+                  <button 
+                    className="sheet-grid-btn" 
+                    onClick={() => { setIsMobileMenuOpen(false); isCollegeMode ? onExitCollegeMode() : onOpenCollegeMode(); }}
+                  >
+                    <Laptop size={16} />
+                    <span>{isCollegeMode ? 'Exit Lab Session' : 'System Login'}</span>
+                  </button>
+
+                  <button 
                     className="sheet-grid-btn" 
                     onClick={() => fileInputRef.current?.click()}
                   >
@@ -422,6 +502,71 @@ export default function Navbar({
                     <span>Main Site</span>
                   </a>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PWA Install Instructions & Trigger Modal */}
+      {showInstallModal && (
+        <div className="install-modal-backdrop" onClick={() => setShowInstallModal(false)}>
+          <div className="install-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="install-modal-header">
+              <div className="install-modal-title">
+                <Download size={22} className="text-cyan-400" />
+                <div>
+                  <h4>Install Elite IDE App</h4>
+                  <p>Fast, direct access on Desktop & Mobile without browser address bar</p>
+                </div>
+              </div>
+              <button className="install-modal-close" onClick={() => setShowInstallModal(false)}>✕</button>
+            </div>
+
+            <div className="install-modal-body">
+              {installedSuccess && (
+                <div className="install-success-banner">
+                  <Check size={16} />
+                  <span>App installed successfully! Launch it directly from your device.</span>
+                </div>
+              )}
+
+              <div className="install-guide-list">
+                <div className="guide-item">
+                  <Laptop size={22} className="guide-icon text-cyan-400 flex-shrink-0" />
+                  <div>
+                    <strong>Windows / Mac / Linux (Chrome & Edge):</strong>
+                    <p>Click the <strong>Install (⊕)</strong> icon on the right edge of your browser address bar, or click Browser Menu (⋮) ➔ <strong>Install Elite IDE</strong>.</p>
+                  </div>
+                </div>
+
+                <div className="guide-item">
+                  <Smartphone size={22} className="guide-icon text-emerald-400 flex-shrink-0" />
+                  <div>
+                    <strong>Android (Chrome):</strong>
+                    <p>Tap Browser Menu (⋮) ➔ <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+                  </div>
+                </div>
+
+                <div className="guide-item">
+                  <Smartphone size={22} className="guide-icon text-amber-400 flex-shrink-0" />
+                  <div>
+                    <strong>iPhone & iPad (Safari):</strong>
+                    <p>Tap the <strong>Share (⎋)</strong> button at the bottom of the screen ➔ Scroll down and select <strong>Add to Home Screen</strong>.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="install-modal-actions">
+                {deferredPrompt && (
+                  <button type="button" className="install-now-btn" onClick={handleInstallApp}>
+                    <Download size={15} />
+                    <span>Install to Device Now</span>
+                  </button>
+                )}
+                <button type="button" className="install-done-btn" onClick={() => setShowInstallModal(false)}>
+                  Close
+                </button>
               </div>
             </div>
           </div>

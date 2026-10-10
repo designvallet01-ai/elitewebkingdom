@@ -1,6 +1,9 @@
 {
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/compilercollegeadmin", "destination": "/compiler/index.html" },
+    { "source": "/compilercollegeadmin/", "destination": "/compiler/index.html" },
+    { "source": "/compilercollegeadmin/:path*", "destination": "/compiler/index.html" },
     { "source": "/compiler", "destination": "/compiler/index.html" },
     { "source": "/compiler/", "destination": "/compiler/index.html" }
   ]

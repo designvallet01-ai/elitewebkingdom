@@ -150,6 +150,53 @@ export function registerCollege({ collegeName, collegeId, department, adminEmail
   return newCollege;
 }
 
+// Update College Admin Security PIN (Syncs LocalStorage and Supabase)
+export function updateCollegePin(collegeId, newPin) {
+  if (!collegeId || !newPin) return null;
+  const cleanId = collegeId.trim().toUpperCase();
+  const cleanPin = String(newPin).trim();
+  const colleges = getRegisteredColleges();
+
+  let updatedCollege = null;
+  const updated = colleges.map(c => {
+    if (c.collegeId === cleanId) {
+      updatedCollege = { ...c, defaultPin: cleanPin };
+      return updatedCollege;
+    }
+    return c;
+  });
+
+  if (updatedCollege) {
+    try {
+      localStorage.setItem(STORAGE_COLLEGES_KEY, JSON.stringify(updated));
+      const savedSession = localStorage.getItem('elite_college_active_admin_session_v1');
+      if (savedSession) {
+        const parsed = JSON.parse(savedSession);
+        if (parsed.collegeId === cleanId) {
+          localStorage.setItem('elite_college_active_admin_session_v1', JSON.stringify({
+            ...parsed,
+            defaultPin: cleanPin
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('Storage error on PIN update:', e);
+    }
+
+    if (supabase) {
+      supabase.from('college_accounts')
+        .update({ default_pin: cleanPin })
+        .eq('college_id', cleanId)
+        .then(() => {})
+        .catch(err => console.warn('Supabase pin update error:', err));
+    }
+
+    broadcastMessage({ type: 'COLLEGE_PIN_UPDATED', collegeId: cleanId, pin: cleanPin });
+  }
+
+  return updatedCollege;
+}
+
 // 3. Verify College Login Credentials (No password required)
 export function verifyCollegeLogin(collegeId, password = '') {
   if (!collegeId) return null;
@@ -330,6 +377,39 @@ export function registerSystem({ collegeId, password = '', systemName, labRoom =
   broadcastMessage({ type: 'SYSTEM_REGISTERED', system: systemRecord });
 
   return { system: systemRecord, college };
+}
+
+// Auto-bind / initialize current machine as a lab PC if not already registered
+export function autoBindCurrentMachine(collegeId = 'EWK-COLLEGE-01') {
+  const existing = getCurrentMachineSystem();
+  if (existing) return existing;
+
+  let machineId = '';
+  try {
+    machineId = localStorage.getItem('elite_unique_machine_hardware_id');
+    if (!machineId) {
+      machineId = 'MC-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+      localStorage.setItem('elite_unique_machine_hardware_id', machineId);
+    }
+  } catch (e) {
+    machineId = 'MC-' + Date.now().toString(36).substring(2, 7).toUpperCase();
+  }
+
+  const shortCode = machineId.replace('MC-', '').substring(0, 4);
+  const sysName = `LAB-PC-${shortCode}`;
+
+  try {
+    const res = registerSystem({
+      collegeId: collegeId || 'EWK-COLLEGE-01',
+      password: '',
+      systemName: sysName,
+      labRoom: 'Computer Lab 1'
+    });
+    return res.system;
+  } catch (e) {
+    console.warn('Auto-bind machine notice:', e);
+  }
+  return null;
 }
 
 // 7. Update System Exam / Lockdown Status (Syncs Local + Supabase)

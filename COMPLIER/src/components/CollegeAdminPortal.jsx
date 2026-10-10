@@ -38,7 +38,8 @@ import {
   getCurrentMachineSystem,
   syncCollegesFromSupabase,
   syncSystemsFromSupabase,
-  reportIncidentLog
+  reportIncidentLog,
+  updateCollegePin
 } from '../services/collegeService';
 
 export default function CollegeAdminPortal({
@@ -57,6 +58,15 @@ export default function CollegeAdminPortal({
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showRegisterCollegeModal, setShowRegisterCollegeModal] = useState(false);
+
+  // Admin PIN Management state
+  const [isEditingPin, setIsEditingPin] = useState(false);
+  const [pinInputVal, setPinInputVal] = useState('1234');
+  const [pinAlert, setPinAlert] = useState('');
+
+  // Single System Lock Confirmation Modal state
+  const [systemToLock, setSystemToLock] = useState(null);
+  const [targetLockPin, setTargetLockPin] = useState('1234');
 
   // New College Register Form State
   const [regCollegeName, setRegCollegeName] = useState('');
@@ -91,6 +101,34 @@ export default function CollegeAdminPortal({
       return [];
     }
   });
+
+  // Sync PIN input whenever active college changes
+  useEffect(() => {
+    if (activeCollege) {
+      setPinInputVal(activeCollege.defaultPin || '1234');
+      setBroadcastPin(activeCollege.defaultPin || '1234');
+    }
+  }, [activeCollege]);
+
+  // Handle saving updated Admin PIN from College Admin
+  const handleSaveAdminPin = (e) => {
+    if (e) e.preventDefault();
+    if (!activeCollege) return;
+    const cleanPin = pinInputVal.trim();
+    if (!cleanPin || cleanPin.length < 4) {
+      setPinAlert('PIN must be 4-6 digits');
+      setTimeout(() => setPinAlert(''), 3000);
+      return;
+    }
+    const updated = updateCollegePin(activeCollege.collegeId, cleanPin);
+    if (updated) {
+      setActiveCollege(updated);
+      setBroadcastPin(cleanPin);
+      setIsEditingPin(false);
+      setPinAlert(`✅ PIN updated to ${cleanPin}!`);
+      setTimeout(() => setPinAlert(''), 3500);
+    }
+  };
 
   // Load registered colleges from local cache and sync with Supabase Cloud
   useEffect(() => {
@@ -251,9 +289,9 @@ export default function CollegeAdminPortal({
     }
   };
 
-  // Handle Single System Lockdown with Direct Fullscreen
-  const handleLockSingleSystem = (sys) => {
-    const pin = activeCollege?.defaultPin || '1234';
+  // Handle Single System Lockdown with Direct Fullscreen & custom or master PIN
+  const handleLockSingleSystem = (sys, customPin = null) => {
+    const pin = customPin || activeCollege?.defaultPin || '1234';
     const examName = sys.currentExamName || `${activeCollege?.collegeName || 'College'} Lab Practical Exam`;
 
     // 1. Broadcast targeted lock message to this system
@@ -267,15 +305,16 @@ export default function CollegeAdminPortal({
       forceFullscreen: true
     });
 
-    // 2. Update status in local storage
+    // 2. Update status in local storage & Supabase
     updateSystemStatus(sys.systemId, {
       status: 'locked',
       currentExamName: examName,
-      examStartTime: Date.now()
+      examStartTime: Date.now(),
+      currentLockPin: pin
     });
 
     refreshSystems();
-    setBroadcastAlert(`🔒 Fullscreen Lockdown signal sent to ${sys.systemName}!`);
+    setBroadcastAlert(`🔒 System ${sys.systemName} locked with PIN: ${pin}!`);
     setTimeout(() => setBroadcastAlert(''), 3500);
 
     // 3. If current machine is this system, enter lockdown & fullscreen immediately!
@@ -435,6 +474,60 @@ export default function CollegeAdminPortal({
                 <Building2 size={15} className="text-amber-400" />
                 <span className="user-clg-name">{activeCollege.collegeName}</span>
                 <span className="user-clg-code">{activeCollege.collegeId}</span>
+              </div>
+            )}
+
+            {activeCollege && (
+              <div className="portal-pin-control-card" title="Master Security PIN set by College Admin">
+                <div className="portal-pin-info">
+                  <KeyRound size={14} className="text-amber-400" />
+                  <span className="pin-label">Admin PIN:</span>
+                </div>
+                <div className="portal-pin-action-group">
+                  {isEditingPin ? (
+                    <div className="pin-edit-inline">
+                      <input
+                        type="password"
+                        maxLength={6}
+                        className="portal-pin-inline-input"
+                        value={pinInputVal}
+                        onChange={(e) => setPinInputVal(e.target.value.replace(/\D/g, ''))}
+                        placeholder="PIN"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="portal-pin-save-btn"
+                        onClick={handleSaveAdminPin}
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        className="portal-pin-cancel-btn"
+                        onClick={() => {
+                          setIsEditingPin(false);
+                          setPinInputVal(activeCollege.defaultPin || '1234');
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="pin-display-inline">
+                      <span className="portal-pin-code-badge">{activeCollege.defaultPin || '1234'}</span>
+                      <button
+                        type="button"
+                        className="portal-pin-edit-btn"
+                        onClick={() => setIsEditingPin(true)}
+                        title="Change Master Security PIN"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {pinAlert && <span className="portal-pin-success-toast">{pinAlert}</span>}
               </div>
             )}
 
@@ -817,6 +910,10 @@ export default function CollegeAdminPortal({
 
                             {isLocked && (
                               <>
+                                <div className="sys-detail-row font-mono text-amber-300 font-bold">
+                                  <span className="detail-label">Unlock PIN:</span>
+                                  <span className="detail-value">{sys.currentLockPin || activeCollege?.defaultPin || '1234'}</span>
+                                </div>
                                 <div className="sys-detail-row">
                                   <span className="detail-label">Exam:</span>
                                   <span className="detail-value">{sys.currentExamName || 'Lab Exam'}</span>
@@ -855,11 +952,14 @@ export default function CollegeAdminPortal({
                               <button
                                 type="button"
                                 className="sys-btn lock-btn"
-                                onClick={() => handleLockSingleSystem(sys)}
-                                title="Lock this system into Direct Fullscreen Exam Mode"
+                                onClick={() => {
+                                  setSystemToLock(sys);
+                                  setTargetLockPin(activeCollege?.defaultPin || '1234');
+                                }}
+                                title="Lock this system with Security PIN"
                               >
                                 <Lock size={13} />
-                                <span>Lock & Fullscreen</span>
+                                <span>Lock System</span>
                               </button>
                             )}
 
@@ -875,6 +975,67 @@ export default function CollegeAdminPortal({
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* Single System Lock Confirmation / PIN Setup Modal */}
+                {systemToLock && (
+                  <div className="portal-submodal-backdrop">
+                    <div className="portal-submodal-card" style={{ maxWidth: '420px' }}>
+                      <div className="submodal-header">
+                        <div className="submodal-title-group">
+                          <Lock size={20} className="text-amber-400" />
+                          <h4>Lock System: {systemToLock.systemName}</h4>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="submodal-close-btn"
+                          onClick={() => setSystemToLock(null)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <form 
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleLockSingleSystem(systemToLock, targetLockPin);
+                          setSystemToLock(null);
+                        }} 
+                        className="portal-form"
+                      >
+                        <div className="portal-input-group">
+                          <label>Security PIN to Unlock (Required at Student PC):</label>
+                          <input
+                            type="password"
+                            maxLength={6}
+                            className="portal-text-input font-mono font-bold text-amber-400 center-text"
+                            placeholder="Enter 4-6 digit PIN"
+                            value={targetLockPin}
+                            onChange={(e) => setTargetLockPin(e.target.value.replace(/\D/g, ''))}
+                            required
+                            autoFocus
+                          />
+                          <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '6px', lineHeight: '1.4' }}>
+                            Once locked, the student machine will show ONLY the PIN input text box and an Accept button.
+                          </p>
+                        </div>
+
+                        <div className="submodal-actions">
+                          <button 
+                            type="button" 
+                            className="portal-secondary-btn"
+                            onClick={() => setSystemToLock(null)}
+                          >
+                            Cancel
+                          </button>
+                          <button type="submit" className="portal-primary-btn">
+                            <Lock size={15} />
+                            <span>Confirm & Lock PC</span>
+                          </button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 )}
               </div>

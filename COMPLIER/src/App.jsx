@@ -10,11 +10,13 @@ import MobileAccessoryBar from './components/MobileAccessoryBar';
 import CollegeModeModal from './components/CollegeModeModal';
 import CollegeExamBanner from './components/CollegeExamBanner';
 import CollegeAdminPortal from './components/CollegeAdminPortal';
+import SystemLockedOverlay from './components/SystemLockedOverlay';
 import { 
   subscribeToCollegeEvents, 
   broadcastMessage, 
   updateSystemStatus, 
-  getCurrentMachineSystem 
+  getCurrentMachineSystem,
+  autoBindCurrentMachine
 } from './services/collegeService';
 import { detectLanguage } from './services/languageDetector';
 import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock } from 'lucide-react';
@@ -139,14 +141,30 @@ export default function App() {
     return null;
   });
   const [collegeModalState, setCollegeModalState] = useState({ isOpen: false, mode: 'setup' });
-  const [isCollegeAdminPortalOpen, setIsCollegeAdminPortalOpen] = useState(() => {
+  
+  // URL routing helper for /compilercollegeadmin
+  const checkIsCollegeAdminUrl = () => {
+    if (typeof window === 'undefined') return false;
+    const path = window.location.pathname.toLowerCase().replace(/\/+$/, '');
+    const search = window.location.search.toLowerCase();
+    return (
+      path.endsWith('compilercollegeadmin') ||
+      path.includes('compilercollegeadmin') ||
+      search.includes('portal=college-admin')
+    );
+  };
+
+  const [isCollegeAdminPortalOpen, setIsCollegeAdminPortalOpen] = useState(checkIsCollegeAdminUrl);
+
+  // Dedicated Kiosk Lock State (Activated when locked by admin, shows PIN input + Accept button ONLY)
+  const [isSystemLocked, setIsSystemLocked] = useState(() => {
     try {
-      if (typeof window !== 'undefined' && window.location.search.includes('portal=college-admin')) {
-        return true;
-      }
-    } catch (e) {}
-    return false;
+      return localStorage.getItem('elite_system_locked_active') === 'true';
+    } catch (e) {
+      return false;
+    }
   });
+
   const [isFullscreenActive, setIsFullscreenActive] = useState(() => {
     return typeof document !== 'undefined' ? !!document.fullscreenElement : false;
   });
@@ -954,11 +972,13 @@ export default function App() {
     const now = Date.now();
     setCollegeStartTime(now);
     setIsCollegeMode(true);
+    setIsSystemLocked(true);
     setCollegeModalState({ isOpen: false, mode: 'setup' });
     setIsCollegeAdminPortalOpen(false);
 
     try {
       localStorage.setItem('elite_college_exam_active', 'true');
+      localStorage.setItem('elite_system_locked_active', 'true');
       localStorage.setItem('elite_college_exam_pin', config.pin);
       localStorage.setItem('elite_college_exam_info', JSON.stringify({ ...info, startTime: now }));
     } catch (e) {}
@@ -972,7 +992,8 @@ export default function App() {
         currentStudentName: info.studentName,
         currentExamName: info.examName,
         examStartTime: now,
-        violationsCount: 0
+        violationsCount: 0,
+        currentLockPin: config.pin
       });
     }
 
@@ -983,11 +1004,13 @@ export default function App() {
   // College Mode Deactivation Handler
   const handleDeactivateCollegeMode = useCallback(() => {
     setIsCollegeMode(false);
+    setIsSystemLocked(false);
     setIsFullscreenActive(false);
     setCollegeModalState({ isOpen: true, mode: 'summary' });
 
     try {
       localStorage.removeItem('elite_college_exam_active');
+      localStorage.removeItem('elite_system_locked_active');
       localStorage.removeItem('elite_college_exam_pin');
       localStorage.removeItem('elite_college_exam_info');
     } catch (e) {}
@@ -1007,6 +1030,71 @@ export default function App() {
         document.exitFullscreen().catch(() => {});
       }
     } catch (e) {}
+  }, []);
+
+  // Handle unlock when student/invigilator enters correct PIN and clicks Accept in SystemLockedOverlay
+  const handleUnlockFromSystemLock = useCallback(() => {
+    setIsSystemLocked(false);
+    setIsCollegeMode(false);
+    setIsFullscreenActive(false);
+
+    try {
+      localStorage.removeItem('elite_system_locked_active');
+      localStorage.removeItem('elite_college_exam_active');
+      localStorage.removeItem('elite_college_exam_pin');
+      localStorage.removeItem('elite_college_exam_info');
+    } catch (e) {}
+
+    const bound = getCurrentMachineSystem();
+    if (bound) {
+      updateSystemStatus(bound.systemId, {
+        status: 'idle',
+        currentExamName: '',
+        examStartTime: null
+      });
+
+      broadcastMessage({
+        type: 'TARGET_UNLOCK',
+        targetSystemId: bound.systemId,
+        collegeId: bound.collegeId,
+        systemName: bound.systemName
+      });
+    }
+
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch (e) {}
+  }, []);
+
+  // Navigation helpers for College Admin Portal at /compilercollegeadmin
+  const handleOpenCollegeAdmin = useCallback(() => {
+    setIsCollegeAdminPortalOpen(true);
+    if (typeof window !== 'undefined' && !window.location.pathname.includes('compilercollegeadmin')) {
+      window.history.pushState(null, '', '/compilercollegeadmin');
+    }
+  }, []);
+
+  const handleCloseCollegeAdmin = useCallback(() => {
+    setIsCollegeAdminPortalOpen(false);
+    if (typeof window !== 'undefined' && window.location.pathname.includes('compilercollegeadmin')) {
+      window.history.pushState(null, '', '/compiler');
+    }
+  }, []);
+
+  // Sync popstate (browser back/forward button)
+  useEffect(() => {
+    const handlePopState = () => {
+      setIsCollegeAdminPortalOpen(checkIsCollegeAdminUrl());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Auto-bind current machine as a registered lab PC on mount so it's visible in admin portal
+  useEffect(() => {
+    autoBindCurrentMachine();
   }, []);
 
   // Listen to remote Broadcast Commands from College Admin Portal
@@ -1033,9 +1121,13 @@ export default function App() {
         setIsCollegeAdminPortalOpen(false);
         setCollegeModalState({ isOpen: false, mode: 'setup' });
 
+        const lockPin = String(msg.pin || '1234').trim();
+        setCollegePin(lockPin);
+        setIsSystemLocked(true);
+
         // Activate College Mode & Direct Fullscreen
         handleActivateCollegeMode({
-          pin: msg.pin || '1234',
+          pin: lockPin,
           examName: msg.examName || 'University Lab Practical Examination',
           studentRoll: bound?.currentStudentRoll || 'LAB-STUDENT',
           studentName: bound?.currentStudentName || 'Student'
@@ -1056,6 +1148,11 @@ export default function App() {
             return;
           }
         }
+
+        setIsSystemLocked(false);
+        try {
+          localStorage.removeItem('elite_system_locked_active');
+        } catch (e) {}
 
         handleDeactivateCollegeMode();
       }
@@ -1383,7 +1480,7 @@ export default function App() {
         onDeactivateCollegeMode={handleDeactivateCollegeMode}
         onOpenAdminPortal={() => {
           setCollegeModalState({ isOpen: false, mode: 'setup' });
-          setIsCollegeAdminPortalOpen(true);
+          handleOpenCollegeAdmin();
         }}
         currentPin={collegePin}
         violationsCount={collegeViolations}
@@ -1395,9 +1492,16 @@ export default function App() {
       {/* Separate College Admin Portal */}
       <CollegeAdminPortal
         isOpen={isCollegeAdminPortalOpen}
-        onClose={() => setIsCollegeAdminPortalOpen(false)}
+        onClose={handleCloseCollegeAdmin}
         onLockSystemFromPortal={(config) => handleActivateCollegeMode(config)}
         onUnlockSystemFromPortal={() => handleDeactivateCollegeMode()}
+      />
+
+      {/* Strict System Locked Overlay (Only PIN Text and Accept Button) */}
+      <SystemLockedOverlay
+        isLocked={isSystemLocked}
+        correctPin={collegePin}
+        onUnlock={handleUnlockFromSystemLock}
       />
 
       {/* Direct Fullscreen Enforcer Takeover Screen (Desktop Only) */}
