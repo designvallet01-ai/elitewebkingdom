@@ -1,25 +1,67 @@
 {
-  "name": "Elite IDE - Online Compiler & Lab Exam Kiosk",
+  "id": "/compiler/",
+  "name": "Elite IDE - Professional Online Compiler & Developer Studio",
   "short_name": "Elite IDE",
-  "description": "High-performance online compiler, developer studio, and college lab examination kiosk.",
+  "description": "High-performance online compiler, cloud developer studio, and college lab examination kiosk supporting 30+ programming languages.",
   "start_url": "/compiler/",
   "scope": "/compiler/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0b0f19",
   "theme_color": "#0f172a",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["developer", "education", "productivity", "utilities"],
   "icons": [
     {
       "src": "/compiler/favicon.png",
-      "sizes": "192x192",
+      "sizes": "48x48",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/compiler/logo.png",
+      "src": "/compiler/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/compiler/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/compiler/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/compiler/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Python Compiler",
+      "short_name": "Python",
+      "url": "/compiler/?lang=python",
+      "icons": [{ "src": "/compiler/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Open C++ Compiler",
+      "short_name": "C++",
+      "url": "/compiler/?lang=cpp",
+      "icons": [{ "src": "/compiler/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Open Java Compiler",
+      "short_name": "Java",
+      "url": "/compiler/?lang=java",
+      "icons": [{ "src": "/compiler/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

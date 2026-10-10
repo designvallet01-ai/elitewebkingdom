@@ -3,6 +3,19 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+// Register Service Worker for PWA installation & standalone performance
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/compiler/sw.js', { scope: '/compiler/' })
+      .then((reg) => {
+        console.log('[Elite IDE] Service Worker active, scope:', reg.scope);
+      })
+      .catch((err) => {
+        console.warn('[Elite IDE] Service Worker registration failed:', err);
+      });
+  });
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
