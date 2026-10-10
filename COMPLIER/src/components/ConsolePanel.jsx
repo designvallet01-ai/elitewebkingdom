@@ -257,7 +257,7 @@ export default function ConsolePanel({
           {awaitingPrompt && (
             <div className="terminal-inline-input-line">
               <span className="terminal-inline-prompt-label">
-                {awaitingPrompt.prompts[awaitingPrompt.currentIndex] || '> '}
+                {awaitingPrompt.prompts[awaitingPrompt.currentIndex] ? awaitingPrompt.prompts[awaitingPrompt.currentIndex].trimStart() : '> '}
               </span>
               <input
                 ref={inlineInputRef}

@@ -35,29 +35,113 @@ const DEFAULT_INITIAL_FILES = [
   }
 ];
 
-// Extract interactive input prompts (e.g. input("Enter your name: ")) from code
+const unescapeStr = (str) => {
+  if (!str) return '';
+  return str
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\r/g, '\r')
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'");
+};
+
+const removeComments = (code, lang) => {
+  if (!code) return '';
+  let clean = code.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  clean = clean.replace(/\/\/.*$/gm, ' ');
+  if (lang === 'python' || lang === 'py') {
+    clean = clean.replace(/#.*$/gm, ' ');
+  }
+  return clean;
+};
+
+// Extract interactive input prompts (e.g. printf -> scanf, cin >>, input()) from code
 export const extractPromptsFromCode = (code, lang) => {
   if (!code) return [];
+  const cleanCode = removeComments(code, lang);
   const prompts = [];
+
+  // 1. PYTHON
   if (lang === 'python' || lang === 'py') {
-    const regex = /input\s*\(\s*(?:(['"])(.*?)\1)?\s*\)/g;
+    const inputRegex = /input\s*\(\s*(?:(['"])([\s\S]*?)\1)?\s*\)/g;
     let match;
-    while ((match = regex.exec(code)) !== null) {
-      prompts.push(match[2] !== undefined ? match[2] : '');
+    let lastIndex = 0;
+    while ((match = inputRegex.exec(cleanCode)) !== null) {
+      if (match[2] !== undefined) {
+        prompts.push(unescapeStr(match[2]));
+      } else {
+        const chunk = cleanCode.slice(lastIndex, match.index);
+        const printRegex = /print\s*\(\s*(['"])([\s\S]*?)\1/g;
+        let pMatch;
+        let lastPrintStr = null;
+        while ((pMatch = printRegex.exec(chunk)) !== null) {
+          lastPrintStr = pMatch[2];
+        }
+        prompts.push(lastPrintStr ? unescapeStr(lastPrintStr) : '');
+      }
+      lastIndex = match.index + match[0].length;
     }
-  } else if (lang === 'cpp' || lang === 'c') {
-    const cinCount = (code.match(/cin\s*>>/g) || []).length;
-    const scanfCount = (code.match(/scanf\s*\(/g) || []).length;
-    const total = cinCount + scanfCount;
-    for (let i = 0; i < total; i++) {
-      prompts.push('');
-    }
-  } else if (lang === 'java') {
-    const scCount = (code.match(/\.next(Line|Int|Double|Float)?\s*\(/g) || []).length;
-    for (let i = 0; i < scCount.length; i++) {
-      prompts.push('');
-    }
+    return prompts;
   }
+
+  // 2. C & C++
+  if (lang === 'c' || lang === 'cpp') {
+    const tokenRegex = /(?:scanf\s*\(\s*(['"])([\s\S]*?)\1)|(?:(?:std::)?cin\s*>>\s*([a-zA-Z0-9_]+(?:\s*>>\s*[a-zA-Z0-9_]+)*))|(?:(?:std::)?getline\s*\(\s*(?:std::)?cin\s*,\s*[a-zA-Z0-9_]+\s*\))|(?:(?:gets|fgets|getchar)\s*\()/g;
+    let match;
+    let lastIndex = 0;
+
+    while ((match = tokenRegex.exec(cleanCode)) !== null) {
+      const chunk = cleanCode.slice(lastIndex, match.index);
+      const printRegex = /(?:(?:printf|puts)\s*\(\s*(['"])([\s\S]*?)\1)|(?:(?:std::)?cout\s*<<(?:\s*(?:std::)?(?:endl|\"[^\"]*\"|'[^']*')\s*<<)*\s*(['"])([\s\S]*?)\3)/g;
+      let pMatch;
+      let lastPrompt = null;
+      while ((pMatch = printRegex.exec(chunk)) !== null) {
+        lastPrompt = pMatch[2] !== undefined ? pMatch[2] : pMatch[4];
+      }
+
+      const promptStr = lastPrompt ? unescapeStr(lastPrompt).replace(/^[\r\n]+/, '') : '';
+
+      let inputCount = 1;
+      if (match[2] !== undefined) {
+        const fmt = match[2].replace(/%%/g, '');
+        const specifiers = (fmt.match(/%(\*?[0-9]*[a-zA-Z\[\]^]+)/g) || []).length;
+        inputCount = specifiers > 0 ? specifiers : 1;
+      } else if (match[3] !== undefined) {
+        const chained = (match[3].match(/>>/g) || []).length;
+        inputCount = chained + 1;
+      }
+
+      for (let i = 0; i < inputCount; i++) {
+        prompts.push(i === 0 ? promptStr : '');
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+    return prompts;
+  }
+
+  // 3. JAVA
+  if (lang === 'java') {
+    const javaInputRegex = /(?:[a-zA-Z0-9_]+\s*\.\s*(?:nextLine|nextInt|nextDouble|nextFloat|nextLong|nextShort|nextByte|nextBoolean|next)\s*\()|(?:\breadLine\s*\()/g;
+    let match;
+    let lastIndex = 0;
+
+    while ((match = javaInputRegex.exec(cleanCode)) !== null) {
+      const chunk = cleanCode.slice(lastIndex, match.index);
+      const printRegex = /System\s*\.\s*out\s*\.\s*print(?:ln)?\s*\(\s*(['"])([\s\S]*?)\1/g;
+      let pMatch;
+      let lastPrompt = null;
+      while ((pMatch = printRegex.exec(chunk)) !== null) {
+        lastPrompt = pMatch[2];
+      }
+
+      const promptStr = lastPrompt ? unescapeStr(lastPrompt).replace(/^[\r\n]+/, '') : '';
+      prompts.push(promptStr);
+      lastIndex = match.index + match[0].length;
+    }
+    return prompts;
+  }
+
   return prompts;
 };
 
@@ -625,17 +709,20 @@ export default function App() {
       const entries = [];
       if (inlineContext && inlineContext.answeredPrompts?.length) {
         // Authentically construct terminal stream: display prompt line + user response, then program output
-        let remainingStdout = data.stdout || '';
+        let remainingStdout = (data.stdout || '').replace(/\r\n/g, '\n');
         inlineContext.answeredPrompts.forEach((p, idx) => {
           const userInp = inlineContext.answeredInputs?.[idx] || '';
-          entries.push({ type: 'stdout', text: `${p}${userInp}\n` });
-          if (p && remainingStdout.includes(p)) {
-            remainingStdout = remainingStdout.replace(p, '');
+          const cleanP = p || '';
+          entries.push({ type: 'stdout', text: `${cleanP}${userInp}\n` });
+          if (cleanP && remainingStdout.includes(cleanP)) {
+            remainingStdout = remainingStdout.replace(cleanP, '');
+          } else if (cleanP.trim() && remainingStdout.includes(cleanP.trim())) {
+            remainingStdout = remainingStdout.replace(cleanP.trim(), '');
           }
         });
+        remainingStdout = remainingStdout.replace(/^[\r\n]+/, '');
         if (remainingStdout.trim()) {
-          const cleanRemaining = remainingStdout.startsWith('\n') ? remainingStdout.slice(1) : remainingStdout;
-          entries.push({ type: 'stdout', text: cleanRemaining });
+          entries.push({ type: 'stdout', text: remainingStdout });
         }
       } else {
         if (data.stdout) {
@@ -733,7 +820,16 @@ export default function App() {
       setCurrentStdin(customStdin);
       try { localStorage.setItem('elite_ide_last_stdin_v1', customStdin); } catch (e) {}
       setAwaitingPrompt(null);
-      runHttpFallback(currentCode, activeLanguage, customStdin);
+      const prompts = extractPromptsFromCode(currentCode, activeLanguage);
+      if (prompts.length > 0) {
+        const stdinLines = customStdin.split('\n');
+        runHttpFallback(currentCode, activeLanguage, customStdin, {
+          answeredPrompts: prompts,
+          answeredInputs: stdinLines
+        });
+      } else {
+        runHttpFallback(currentCode, activeLanguage, customStdin);
+      }
       return;
     }
 
