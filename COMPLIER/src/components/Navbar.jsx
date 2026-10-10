@@ -51,27 +51,83 @@ export default function Navbar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
-  const [installedSuccess, setInstalledSuccess] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                         window.matchMedia('(display-mode: fullscreen)').matches ||
+                         window.matchMedia('(display-mode: minimal-ui)').matches ||
+                         window.navigator.standalone === true ||
+                         document.referrer.includes('android-app://');
+    const stored = localStorage.getItem('elite_ide_pwa_installed') === 'true';
+    return isStandalone || stored;
+  });
 
-  // Capture beforeinstallprompt event for PWA installation
+  // Capture beforeinstallprompt and appinstalled events for PWA installation
   useEffect(() => {
+    const checkStandalone = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                           window.matchMedia('(display-mode: fullscreen)').matches ||
+                           window.matchMedia('(display-mode: minimal-ui)').matches ||
+                           window.navigator.standalone === true ||
+                           document.referrer.includes('android-app://');
+      if (isStandalone) {
+        setIsAppInstalled(true);
+        localStorage.setItem('elite_ide_pwa_installed', 'true');
+      }
+    };
+
+    checkStandalone();
+
+    const mq = window.matchMedia('(display-mode: standalone)');
+    const handleMQChange = (e) => {
+      if (e.matches) {
+        setIsAppInstalled(true);
+        localStorage.setItem('elite_ide_pwa_installed', 'true');
+      }
+    };
+    if (mq.addEventListener) {
+      mq.addEventListener('change', handleMQChange);
+    }
+
     const handleBeforeInstall = (e) => {
+      if (isAppInstalled) return;
       e.preventDefault();
       setDeferredPrompt(e);
     };
 
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      localStorage.setItem('elite_ide_pwa_installed', 'true');
+      setInstalledSuccess(true);
+      setShowInstallModal(false);
+      setDeferredPrompt(null);
+      setTimeout(() => setInstalledSuccess(false), 4000);
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      if (mq.removeEventListener) {
+        mq.removeEventListener('change', handleMQChange);
+      }
+    };
+  }, [isAppInstalled]);
 
   // Handle Install App button click (triggers native prompt or opens install guide modal)
   const handleInstallApp = async () => {
+    if (isAppInstalled) return;
     if (deferredPrompt) {
       try {
         deferredPrompt.prompt();
         const choice = await deferredPrompt.userChoice;
         if (choice.outcome === 'accepted') {
+          setIsAppInstalled(true);
+          localStorage.setItem('elite_ide_pwa_installed', 'true');
           setInstalledSuccess(true);
+          setShowInstallModal(false);
           setTimeout(() => setInstalledSuccess(false), 4000);
         }
         setDeferredPrompt(null);
@@ -153,8 +209,8 @@ export default function Navbar({
             </div>
           </a>
 
-          {/* Mobile Quick Install Button */}
-          {isMobile && (
+          {/* Mobile Quick Install Button (hidden once installed) */}
+          {isMobile && !isAppInstalled && (
             <button
               className="mobile-install-quick-btn"
               onClick={handleInstallApp}
@@ -208,8 +264,8 @@ export default function Navbar({
             </button>
           )}
 
-          {/* Install App Button (Desktop) */}
-          {!isMobile && (
+          {/* Install App Button (Desktop - hidden once installed) */}
+          {!isMobile && !isAppInstalled && (
             <button
               className="nav-install-btn"
               onClick={handleInstallApp}
@@ -469,13 +525,15 @@ export default function Navbar({
                     <span>Download File</span>
                   </button>
 
-                  <button 
-                    className="sheet-grid-btn highlight-install" 
-                    onClick={() => { setIsMobileMenuOpen(false); handleInstallApp(); }}
-                  >
-                    <Download size={16} />
-                    <span>Install App</span>
-                  </button>
+                  {!isAppInstalled && (
+                    <button 
+                      className="sheet-grid-btn highlight-install" 
+                      onClick={() => { setIsMobileMenuOpen(false); handleInstallApp(); }}
+                    >
+                      <Download size={16} />
+                      <span>Install App</span>
+                    </button>
+                  )}
 
                   <button 
                     className="sheet-grid-btn" 

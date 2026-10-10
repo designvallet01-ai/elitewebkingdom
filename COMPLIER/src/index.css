@@ -5352,6 +5352,15 @@ html, body, #root {
 /* ==============================================================
    PWA INSTALL BUTTON & GUIDE MODAL (DESKTOP & MOBILE)
    ============================================================== */
+@media all and (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .nav-install-btn,
+  .mobile-install-quick-btn,
+  .highlight-install,
+  .install-modal-backdrop {
+    display: none !important;
+  }
+}
+
 .nav-install-btn {
   display: inline-flex;
   align-items: center;
