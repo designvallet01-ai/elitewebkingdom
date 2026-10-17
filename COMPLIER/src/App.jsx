@@ -6,6 +6,12 @@ import GraphicalView from './components/GraphicalView';
 import WebPreview from './components/WebPreview';
 import FileSidebar from './components/FileSidebar';
 import AlgorithmModal from './components/AlgorithmModal';
+import AiExplainerModal from './components/AiExplainerModal';
+import CpTestCaseWorkbench from './components/CpTestCaseWorkbench';
+import MemoryArrayVisualizer from './components/MemoryArrayVisualizer';
+import RecursionVisualizer from './components/RecursionVisualizer';
+import CodeTranspilerModal from './components/CodeTranspilerModal';
+import LabReportModal from './components/LabReportModal';
 import MobileAccessoryBar from './components/MobileAccessoryBar';
 import CollegeModeModal from './components/CollegeModeModal';
 import CollegeExamBanner from './components/CollegeExamBanner';
@@ -19,7 +25,7 @@ import {
   autoBindCurrentMachine
 } from './services/collegeService';
 import { detectLanguage } from './services/languageDetector';
-import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock } from 'lucide-react';
+import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages } from 'lucide-react';
 
 const STORAGE_FILES_KEY = 'elite_ide_workspace_files_v2';
 const STORAGE_ACTIVE_KEY = 'elite_ide_active_file_id_v2';
@@ -225,6 +231,9 @@ export default function App() {
     return null;
   });
   const [collegeModalState, setCollegeModalState] = useState({ isOpen: false, mode: 'setup' });
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isLabReportModalOpen, setIsLabReportModalOpen] = useState(false);
+  const [isTranspilerModalOpen, setIsTranspilerModalOpen] = useState(false);
   
   // URL routing helper for /compilercollegeadmin
   const checkIsCollegeAdminUrl = () => {
@@ -348,11 +357,42 @@ export default function App() {
 
     const extMap = {
       py: { language: 'python', name: 'Python 3', extension: 'py', monaco: 'python' },
-      cpp: { language: 'cpp', name: 'C++ (G++)', extension: 'cpp', monaco: 'cpp' },
-      cc: { language: 'cpp', name: 'C++ (G++)', extension: 'cpp', monaco: 'cpp' },
-      c: { language: 'c', name: 'C (GCC)', extension: 'c', monaco: 'c' },
-      java: { language: 'java', name: 'Java (OpenJDK 17)', extension: 'java', monaco: 'java' },
-      js: { language: 'javascript', name: 'JavaScript (Node.js)', extension: 'js', monaco: 'javascript' },
+      python: { language: 'python', name: 'Python 3', extension: 'py', monaco: 'python' },
+      cpp: { language: 'cpp', name: 'C++ (G++ 14)', extension: 'cpp', monaco: 'cpp' },
+      cc: { language: 'cpp', name: 'C++ (G++ 14)', extension: 'cpp', monaco: 'cpp' },
+      cxx: { language: 'cpp', name: 'C++ (G++ 14)', extension: 'cpp', monaco: 'cpp' },
+      c: { language: 'c', name: 'C (GCC 14)', extension: 'c', monaco: 'c' },
+      java: { language: 'java', name: 'Java (JDK 17)', extension: 'java', monaco: 'java' },
+      js: { language: 'javascript', name: 'JavaScript (Node 22)', extension: 'js', monaco: 'javascript' },
+      javascript: { language: 'javascript', name: 'JavaScript (Node 22)', extension: 'js', monaco: 'javascript' },
+      ts: { language: 'typescript', name: 'TypeScript (5.6)', extension: 'ts', monaco: 'typescript' },
+      typescript: { language: 'typescript', name: 'TypeScript (5.6)', extension: 'ts', monaco: 'typescript' },
+      rs: { language: 'rust', name: 'Rust (1.85)', extension: 'rs', monaco: 'rust' },
+      rust: { language: 'rust', name: 'Rust (1.85)', extension: 'rs', monaco: 'rust' },
+      go: { language: 'go', name: 'Go (1.23)', extension: 'go', monaco: 'go' },
+      golang: { language: 'go', name: 'Go (1.23)', extension: 'go', monaco: 'go' },
+      cs: { language: 'csharp', name: 'C# (Mono 6.6)', extension: 'cs', monaco: 'csharp' },
+      csharp: { language: 'csharp', name: 'C# (Mono 6.6)', extension: 'cs', monaco: 'csharp' },
+      php: { language: 'php', name: 'PHP (8.3)', extension: 'php', monaco: 'php' },
+      rb: { language: 'ruby', name: 'Ruby (2.7)', extension: 'rb', monaco: 'ruby' },
+      ruby: { language: 'ruby', name: 'Ruby (2.7)', extension: 'rb', monaco: 'ruby' },
+      kt: { language: 'kotlin', name: 'Kotlin (2.1)', extension: 'kt', monaco: 'kotlin' },
+      kotlin: { language: 'kotlin', name: 'Kotlin (2.1)', extension: 'kt', monaco: 'kotlin' },
+      swift: { language: 'swift', name: 'Swift (5.2)', extension: 'swift', monaco: 'swift' },
+      dart: { language: 'dart', name: 'Dart (2.19)', extension: 'dart', monaco: 'dart' },
+      sql: { language: 'sql', name: 'SQL (SQLite 3)', extension: 'sql', monaco: 'sql' },
+      sqlite: { language: 'sql', name: 'SQL (SQLite 3)', extension: 'sql', monaco: 'sql' },
+      r: { language: 'r', name: 'R (4.4)', extension: 'r', monaco: 'r' },
+      sh: { language: 'bash', name: 'Bash Shell', extension: 'sh', monaco: 'shell' },
+      bash: { language: 'bash', name: 'Bash Shell', extension: 'sh', monaco: 'shell' },
+      scala: { language: 'scala', name: 'Scala (3.4)', extension: 'scala', monaco: 'scala' },
+      lua: { language: 'lua', name: 'Lua (5.3)', extension: 'lua', monaco: 'lua' },
+      hs: { language: 'haskell', name: 'Haskell (GHC)', extension: 'hs', monaco: 'haskell' },
+      haskell: { language: 'haskell', name: 'Haskell (GHC)', extension: 'hs', monaco: 'haskell' },
+      pl: { language: 'perl', name: 'Perl (5.28)', extension: 'pl', monaco: 'perl' },
+      perl: { language: 'perl', name: 'Perl (5.28)', extension: 'pl', monaco: 'perl' },
+      asm: { language: 'assembly', name: 'Assembly (NASM)', extension: 'asm', monaco: 'plaintext' },
+      assembly: { language: 'assembly', name: 'Assembly (NASM)', extension: 'asm', monaco: 'plaintext' },
       html: { language: 'html', name: 'HTML / Web Sandbox', extension: 'html', monaco: 'html' }
     };
 
@@ -406,6 +446,32 @@ export default function App() {
   const handleLanguageChange = (newLang) => {
     setManualLanguage(newLang);
 
+    const STARTERS = {
+      cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello from C++ (GCC 14)!" << std::endl;\n    return 0;\n}',
+      c: '#include <stdio.h>\n\nint main() {\n    printf("Hello from C (GCC 14)!\\n");\n    return 0;\n}',
+      python: 'print("Hello from Python 3.12!")',
+      java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java 17!");\n    }\n}',
+      javascript: 'console.log("Hello from JavaScript (Node 22)!");',
+      typescript: 'const greeting: string = "Hello from TypeScript 5.6!";\nconsole.log(greeting);',
+      rust: 'fn main() {\n    println!("Hello from Rust 1.85!");\n}',
+      go: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello from Go 1.23!")\n}',
+      csharp: 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from C# (.NET)!");\n    }\n}',
+      php: '<?php\necho "Hello from PHP 8.3!\\n";',
+      ruby: 'puts "Hello from Ruby 2.7!"',
+      kotlin: 'fun main() {\n    println("Hello from Kotlin 2.1!")\n}',
+      swift: 'print("Hello from Swift 5.2!")',
+      dart: 'void main() {\n  print("Hello from Dart 2.19!");\n}',
+      sql: 'CREATE TABLE heroes (id INTEGER PRIMARY KEY, name TEXT, role TEXT);\nINSERT INTO heroes VALUES (1, "Aryabhata", "Mathematician"), (2, "Turing", "Computer Scientist");\nSELECT * FROM heroes;',
+      r: 'cat("Hello from R 4.4!\\n")',
+      bash: 'echo "Hello from Bash Shell!"',
+      scala: 'object Main extends App {\n  println("Hello from Scala 3.4!")\n}',
+      lua: 'print("Hello from Lua 5.3!")',
+      haskell: 'main = putStrLn "Hello from Haskell (GHC)!"',
+      perl: 'print "Hello from Perl 5.28!\\n";',
+      assembly: 'section .data\n    msg db "Hello from Assembly (NASM)!", 10\n    len equ $ - msg\n\nsection .text\n    global _start\n\n_start:\n    mov edx, len\n    mov ecx, msg\n    mov ebx, 1\n    mov eax, 4\n    int 0x80\n\n    mov eax, 1\n    int 0x80',
+      html: '<!DOCTYPE html>\n<html>\n<head>\n  <style>body { font-family: sans-serif; background: #0f172a; color: #38bdf8; padding: 2rem; }</style>\n</head>\n<body>\n  <h1>Elite Web Sandbox</h1>\n  <p>Live interactive browser DOM canvas.</p>\n</body>\n</html>'
+    };
+
     if (newLang === 'auto') {
       const detected = detectLanguage(activeFile.code);
       if (detected.detected) {
@@ -417,12 +483,11 @@ export default function App() {
       }
     } else {
       const extMap = {
-        python: 'py',
-        cpp: 'cpp',
-        c: 'c',
-        java: 'java',
-        javascript: 'js',
-        html: 'html'
+        python: 'py', cpp: 'cpp', c: 'c', java: 'java', javascript: 'js',
+        typescript: 'ts', rust: 'rs', go: 'go', csharp: 'cs', php: 'php',
+        ruby: 'rb', kotlin: 'kt', swift: 'swift', dart: 'dart', sql: 'sql',
+        r: 'r', bash: 'sh', scala: 'scala', lua: 'lua', haskell: 'hs',
+        perl: 'pl', assembly: 'asm', html: 'html'
       };
       const ext = extMap[newLang] || 'txt';
       const parts = activeFile.name.split('.');
@@ -430,7 +495,12 @@ export default function App() {
       if (newLang === 'java' && base.toLowerCase() === 'main') base = 'Main';
       const newName = `${base}.${ext}`;
 
-      setFiles(prev => prev.map(f => f.id === activeFileId ? { ...f, name: newName, language: newLang } : f));
+      // If existing code is empty or minimal, inject starter code
+      const currentCode = (activeFile.code || '').trim();
+      const shouldInjectStarter = !currentCode || currentCode.startsWith('//') || currentCode.startsWith('#') || currentCode.length < 50;
+      const updatedCode = shouldInjectStarter && STARTERS[newLang] ? STARTERS[newLang] : activeFile.code;
+
+      setFiles(prev => prev.map(f => f.id === activeFileId ? { ...f, name: newName, language: newLang, code: updatedCode } : f));
     }
   };
 
@@ -675,19 +745,52 @@ export default function App() {
         data = await response.json();
       } catch (apiErr) {
         console.warn('Local /api/run unavailable, engaging direct Cloud Judge0 fallback:', apiErr);
-        // Direct Judge0 CE fallback
+        // Direct Judge0 CE fallback for 25+ world languages
         const JUDGE0_MAP = {
           cpp: { id: 105, name: 'C++ (GCC 14.1)' },
-          c: { id: 50, name: 'C (GCC 9.2)' },
-          python: { id: 92, name: 'Python (3.11.2)' },
-          java: { id: 91, name: 'Java (OpenJDK 17)' },
+          c: { id: 103, name: 'C (GCC 14.1)' },
+          python: { id: 100, name: 'Python (3.12.5)' },
+          py: { id: 100, name: 'Python (3.12.5)' },
+          java: { id: 91, name: 'Java (JDK 17)' },
           javascript: { id: 102, name: 'JavaScript (Node.js 22)' },
-          typescript: { id: 101, name: 'TypeScript (5.6.2)' }
+          js: { id: 102, name: 'JavaScript (Node.js 22)' },
+          typescript: { id: 101, name: 'TypeScript (5.6.2)' },
+          ts: { id: 101, name: 'TypeScript (5.6.2)' },
+          rust: { id: 108, name: 'Rust (1.85)' },
+          rs: { id: 108, name: 'Rust (1.85)' },
+          go: { id: 107, name: 'Go (1.23)' },
+          golang: { id: 107, name: 'Go (1.23)' },
+          csharp: { id: 51, name: 'C# (Mono 6.6)' },
+          cs: { id: 51, name: 'C# (Mono 6.6)' },
+          php: { id: 98, name: 'PHP (8.3.11)' },
+          ruby: { id: 72, name: 'Ruby (2.7)' },
+          rb: { id: 72, name: 'Ruby (2.7)' },
+          kotlin: { id: 111, name: 'Kotlin (2.1.10)' },
+          kt: { id: 111, name: 'Kotlin (2.1.10)' },
+          swift: { id: 83, name: 'Swift (5.2)' },
+          dart: { id: 90, name: 'Dart (2.19)' },
+          sql: { id: 82, name: 'SQL (SQLite 3)' },
+          sqlite: { id: 82, name: 'SQL (SQLite 3)' },
+          r: { id: 99, name: 'R (4.4.1)' },
+          bash: { id: 46, name: 'Bash (5.0)' },
+          sh: { id: 46, name: 'Bash (5.0)' },
+          scala: { id: 112, name: 'Scala (3.4.2)' },
+          lua: { id: 64, name: 'Lua (5.3.5)' },
+          haskell: { id: 61, name: 'Haskell (GHC 8.8)' },
+          hs: { id: 61, name: 'Haskell (GHC 8.8)' },
+          perl: { id: 85, name: 'Perl (5.28)' },
+          pl: { id: 85, name: 'Perl (5.28)' },
+          assembly: { id: 45, name: 'Assembly (NASM 2.14)' },
+          asm: { id: 45, name: 'Assembly (NASM 2.14)' },
+          elixir: { id: 57, name: 'Elixir (1.9)' },
+          fortran: { id: 59, name: 'Fortran (GFortran 9.2)' }
         };
         const target = JUDGE0_MAP[lang] || JUDGE0_MAP['python'];
         let src = codeToRun;
         if (lang === 'java' && !src.includes('class ')) {
           src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+        } else if ((lang === 'csharp' || lang === 'cs') && !src.includes('class ')) {
+          src = `using System;\nclass Program {\n    static void Main() {\n${src}\n    }\n}`;
         }
         const directRes = await fetch('https://ce.judge0.com/submissions?wait=true', {
           method: 'POST',
@@ -887,6 +990,60 @@ export default function App() {
       });
     }
   }, [awaitingPrompt, runHttpFallback]);
+
+  // Run a single test case for Competitive Programming Workbench
+  const handleRunSingleTestCase = useCallback(async (stdinInput) => {
+    const lang = activeLanguage;
+    const codeToRun = activeFile.code;
+    if (!codeToRun || !codeToRun.trim()) {
+      return { stdout: '', stderr: 'Empty code buffer', code: 1, executionTime: 0 };
+    }
+
+    try {
+      const response = await fetch('/api/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language: lang,
+          code: codeToRun,
+          stdin: stdinInput || ''
+        })
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error(`Server returned ${response.status}`);
+    } catch (apiErr) {
+      // Cloud Judge0 CE fallback
+      const JUDGE0_MAP = {
+        cpp: { id: 105, name: 'C++ (GCC 14.1)' },
+        c: { id: 50, name: 'C (GCC 9.2)' },
+        python: { id: 92, name: 'Python (3.11.2)' },
+        java: { id: 91, name: 'Java (OpenJDK 17)' },
+        javascript: { id: 102, name: 'JavaScript (Node.js 22)' },
+        typescript: { id: 101, name: 'TypeScript (5.6.2)' }
+      };
+      const target = JUDGE0_MAP[lang] || JUDGE0_MAP['python'];
+      let src = codeToRun;
+      if (lang === 'java' && !src.includes('class ')) {
+        src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+      }
+      const directRes = await fetch('https://ce.judge0.com/submissions?wait=true', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language_id: target.id, source_code: src, stdin: stdinInput || '' })
+      });
+      const judgeData = await directRes.json();
+      const isSuccess = judgeData.status?.id === 3;
+      return {
+        stdout: judgeData.stdout || '',
+        stderr: judgeData.compile_output || judgeData.stderr || (isSuccess ? '' : judgeData.status?.description || ''),
+        code: isSuccess ? 0 : 1,
+        executionTime: judgeData.time ? Math.round(parseFloat(judgeData.time) * 1000) : 15,
+        status: isSuccess ? 'SUCCESS' : (judgeData.status?.id === 6 ? 'COMPILE_ERROR' : 'RUNTIME_ERROR')
+      };
+    }
+  }, [activeLanguage, activeFile.code]);
 
   // College Exam Mode Anti-Cheating & Lockdown Event Listeners (Desktop Only)
   useEffect(() => {
@@ -1257,17 +1414,29 @@ export default function App() {
     return () => unsubscribe();
   }, [handleActivateCollegeMode, handleDeactivateCollegeMode]);
 
-  // Keyboard shortcut Ctrl + Enter
+  // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         handleRun();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        handleFormatCode();
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'P' || e.key === 'p')) {
+        e.preventDefault();
+        setIsLabReportModalOpen(prev => !prev);
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'T' || e.key === 't')) {
+        e.preventDefault();
+        setIsTranspilerModalOpen(prev => !prev);
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'B' || e.key === 'b')) {
+        e.preventDefault();
+        setIsSidebarOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRun]);
+  }, [handleRun, handleFormatCode]);
 
   // Jump to line in Monaco editor
   const handleSelectLine = (line) => {
@@ -1359,6 +1528,10 @@ export default function App() {
         isCollegeMode={isCollegeMode}
         onOpenCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'setup' })}
         onExitCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'unlock' })}
+        onOpenAiExplainer={() => setIsAiModalOpen(true)}
+        onOpenLabReport={() => setIsLabReportModalOpen(true)}
+        onOpenTranspiler={() => setIsTranspilerModalOpen(true)}
+        onChangeRightPaneView={(view) => setRightPaneView(view)}
       />
 
       {/* College Exam Active Banner (Desktop Only) */}
@@ -1417,6 +1590,7 @@ export default function App() {
             onMountEditor={(editor) => {
               editorInstanceRef.current = editor;
             }}
+            onCursorChange={(line) => setSelectedLine(line)}
           />
         </section>
 
@@ -1429,9 +1603,10 @@ export default function App() {
                 className={`view-mode-btn ${rightPaneView === 'console' ? 'active' : ''}`}
                 onClick={() => setRightPaneView('console')}
                 id="btn-view-console"
+                title="Compiler Terminal Output"
               >
                 <Terminal size={14} />
-                <span>Compiler Terminal</span>
+                <span>Terminal</span>
                 {lastStats && (
                   <span className={`pill-badge ${lastStats.code === 0 ? 'success' : 'error'}`} />
                 )}
@@ -1441,9 +1616,40 @@ export default function App() {
                 className={`view-mode-btn ${rightPaneView === 'graphical' ? 'active' : ''}`}
                 onClick={() => setRightPaneView('graphical')}
                 id="btn-view-graphical"
+                title="ISO Flowchart Visualizer"
               >
                 <GitFork size={14} />
-                <span>Graphical Flowchart</span>
+                <span>Flowchart</span>
+              </button>
+
+              <button
+                className={`view-mode-btn ${rightPaneView === 'testcases' ? 'active' : ''}`}
+                onClick={() => setRightPaneView('testcases')}
+                id="btn-view-testcases"
+                title="Competitive Programming TestCases & Judge"
+              >
+                <FlaskConical size={14} className="text-amber-400" />
+                <span>CP Judge</span>
+              </button>
+
+              <button
+                className={`view-mode-btn ${rightPaneView === 'memory' ? 'active' : ''}`}
+                onClick={() => setRightPaneView('memory')}
+                id="btn-view-memory"
+                title="3D Array Memory Matrix & Pointers"
+              >
+                <Database size={14} className="text-cyan-400" />
+                <span>Memory</span>
+              </button>
+
+              <button
+                className={`view-mode-btn ${rightPaneView === 'recursion' ? 'active' : ''}`}
+                onClick={() => setRightPaneView('recursion')}
+                id="btn-view-recursion"
+                title="Recursive Call Stack Frames & Tree"
+              >
+                <GitCommit size={14} className="text-pink-400" />
+                <span>Recursion</span>
               </button>
 
               {activeLanguage === 'html' && (
@@ -1453,9 +1659,33 @@ export default function App() {
                   id="btn-view-preview"
                 >
                   <Globe size={14} />
-                  <span>Web Sandbox</span>
+                  <span>Sandbox</span>
                 </button>
               )}
+            </div>
+
+            <div className="view-mode-actions">
+              <button
+                type="button"
+                className="view-mode-action-btn trans-btn"
+                onClick={() => setIsTranspilerModalOpen(true)}
+                title="Polyglot Code Transpiler: Convert code to C++, Python, Java or JS"
+                id="btn-quick-transpiler"
+              >
+                <Languages size={13} className="text-cyan-400" />
+                <span>Transpile</span>
+              </button>
+
+              <button
+                type="button"
+                className="view-mode-action-btn lab-btn"
+                onClick={() => setIsLabReportModalOpen(true)}
+                title="Generate Official University Lab Practical Record / Interview Sheet PDF"
+                id="btn-quick-lab-record"
+              >
+                <FileCheck2 size={13} className="text-emerald-400" />
+                <span>Lab PDF</span>
+              </button>
             </div>
           </div>
 
@@ -1483,6 +1713,31 @@ export default function App() {
                 language={activeLanguage}
                 onSelectLine={handleSelectLine}
                 selectedLine={selectedLine}
+                onUpdateCode={handleCodeChange}
+                onOpenAiExplainer={() => setIsAiModalOpen(true)}
+              />
+            )}
+
+            {rightPaneView === 'testcases' && (
+              <CpTestCaseWorkbench
+                code={activeFile.code}
+                language={activeLanguage}
+                onRunSingle={handleRunSingleTestCase}
+                isRunning={isRunning}
+              />
+            )}
+
+            {rightPaneView === 'memory' && (
+              <MemoryArrayVisualizer
+                code={activeFile.code}
+                language={activeLanguage}
+              />
+            )}
+
+            {rightPaneView === 'recursion' && (
+              <RecursionVisualizer
+                code={activeFile.code}
+                language={activeLanguage}
               />
             )}
 
@@ -1536,6 +1791,24 @@ export default function App() {
             <span>Flowchart</span>
           </button>
 
+          <button
+            className={`mobile-tab-btn ${mobileActiveTab === 'testcases' ? 'active' : ''}`}
+            onClick={() => { setMobileActiveTab('testcases'); setRightPaneView('testcases'); }}
+            id="mobile-tab-testcases"
+          >
+            <FlaskConical size={16} />
+            <span>Judge</span>
+          </button>
+
+          <button
+            className={`mobile-tab-btn ${mobileActiveTab === 'memory' ? 'active' : ''}`}
+            onClick={() => { setMobileActiveTab('memory'); setRightPaneView('memory'); }}
+            id="mobile-tab-memory"
+          >
+            <Database size={16} />
+            <span>Memory</span>
+          </button>
+
           {activeLanguage === 'html' && (
             <button
               className={`mobile-tab-btn ${mobileActiveTab === 'preview' ? 'active' : ''}`}
@@ -1565,6 +1838,60 @@ export default function App() {
         onOpenInNewTab={handleOpenAlgorithmInNewTab}
         onLoadIntoCurrent={handleLoadAlgorithmIntoCurrent}
         currentLanguage={activeLanguage}
+      />
+
+      {/* AI Code & Flow Intelligence Modal */}
+      <AiExplainerModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        code={activeFile.code}
+        language={activeLanguage}
+        onApplyOptimizedCode={handleCodeChange}
+        onSelectLine={handleSelectLine}
+      />
+
+      {/* University Lab Practical Report & Interview Record Modal */}
+      <LabReportModal
+        isOpen={isLabReportModalOpen}
+        onClose={() => setIsLabReportModalOpen(false)}
+        code={activeFile.code}
+        language={activeLanguage}
+        studentInfo={collegeStudentInfo}
+        terminalOutput={terminalEntries.map(e => e.text).join('')}
+        lastStats={lastStats}
+        activeFileName={activeFile.name}
+      />
+
+      {/* Polyglot Code Transpiler Modal */}
+      <CodeTranspilerModal
+        isOpen={isTranspilerModalOpen}
+        onClose={() => setIsTranspilerModalOpen(false)}
+        sourceCode={activeFile.code}
+        sourceLanguage={activeLanguage}
+        onApplyConvertedCode={(newCode, newLang) => {
+          const extMap = {
+            python: 'py', cpp: 'cpp', c: 'c', java: 'java', javascript: 'js',
+            typescript: 'ts', rust: 'rs', go: 'go', csharp: 'cs', php: 'php',
+            ruby: 'rb', kotlin: 'kt', swift: 'swift', dart: 'dart', sql: 'sql'
+          };
+          const ext = extMap[newLang] || 'txt';
+          const parts = activeFile.name.split('.');
+          let base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
+          if (newLang === 'java' && base.toLowerCase() === 'main') base = 'Main';
+          const newName = `${base}.${ext}`;
+
+          setManualLanguage(newLang);
+          setFiles(prev => prev.map(f => f.id === activeFileId ? {
+            ...f,
+            name: newName,
+            language: newLang,
+            code: newCode
+          } : f));
+
+          if (editorInstanceRef.current) {
+            editorInstanceRef.current.setValue(newCode);
+          }
+        }}
       />
 
       {/* College Exam Mode Setup / PIN Exit / Security Lockdown Modal */}

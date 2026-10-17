@@ -22,7 +22,17 @@ import {
   Lock,
   Smartphone,
   Laptop,
-  Check
+  Check,
+  FileCheck2,
+  ChevronDown,
+  Languages,
+  FlaskConical,
+  Database,
+  GitCommit,
+  GitFork,
+  Keyboard,
+  Wand2,
+  Terminal
 } from 'lucide-react';
 
 export default function Navbar({
@@ -45,10 +55,16 @@ export default function Navbar({
   isMobile = false,
   isCollegeMode = false,
   onOpenCollegeMode,
-  onExitCollegeMode
+  onExitCollegeMode,
+  onOpenAiExplainer,
+  onOpenLabReport,
+  onOpenTranspiler,
+  onChangeRightPaneView
 }) {
   const fileInputRef = useRef(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showToolsMenu, setShowToolsMenu] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isAppInstalled, setIsAppInstalled] = useState(() => {
@@ -146,11 +162,13 @@ export default function Navbar({
       if (e.key === 'Escape') {
         if (isMobileMenuOpen) setIsMobileMenuOpen(false);
         if (showInstallModal) setShowInstallModal(false);
+        if (showShortcutsModal) setShowShortcutsModal(false);
+        if (showToolsMenu) setShowToolsMenu(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileMenuOpen, showInstallModal]);
+  }, [isMobileMenuOpen, showInstallModal, showShortcutsModal, showToolsMenu]);
 
   // Download active code file
   const handleDownload = () => {
@@ -237,12 +255,41 @@ export default function Navbar({
                 <option value="auto">
                   ⚡ {isMobile ? 'Auto' : 'Auto-Detect'} {detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : ''}
                 </option>
-                <option value="python">🐍 Python 3</option>
-                <option value="cpp">⚙️ C++ (G++ 14)</option>
-                <option value="c">🔧 C (GCC 9.2)</option>
-                <option value="java">☕ Java (OpenJDK 17)</option>
-                <option value="javascript">⚡ JavaScript (Node)</option>
-                <option value="html">🌐 HTML / Sandbox</option>
+
+                <optgroup label="🌟 Core & Systems">
+                  <option value="python">🐍 Python 3.12</option>
+                  <option value="cpp">⚙️ C++ (GCC 14)</option>
+                  <option value="c">🔧 C (GCC 14)</option>
+                  <option value="java">☕ Java (JDK 17)</option>
+                  <option value="javascript">⚡ JavaScript (Node 22)</option>
+                  <option value="typescript">📘 TypeScript 5.6</option>
+                  <option value="rust">🦀 Rust 1.85</option>
+                  <option value="go">🐹 Go 1.23</option>
+                  <option value="csharp">🔷 C# (Mono 6.6)</option>
+                </optgroup>
+
+                <optgroup label="🌐 Web, Mobile & Backend">
+                  <option value="php">🐘 PHP 8.3</option>
+                  <option value="ruby">💎 Ruby 2.7</option>
+                  <option value="kotlin">📱 Kotlin 2.1</option>
+                  <option value="swift">🍎 Swift 5.2</option>
+                  <option value="dart">🎯 Dart 2.19</option>
+                  <option value="html">🌐 HTML / DOM Sandbox</option>
+                </optgroup>
+
+                <optgroup label="📊 Data, DB & Shell">
+                  <option value="sql">🗄️ SQL (SQLite 3)</option>
+                  <option value="r">📊 R 4.4</option>
+                  <option value="bash">💻 Bash Shell</option>
+                </optgroup>
+
+                <optgroup label="🔬 Functional & Advanced">
+                  <option value="scala">🔴 Scala 3.4</option>
+                  <option value="lua">🌙 Lua 5.3</option>
+                  <option value="haskell">λ Haskell (GHC)</option>
+                  <option value="perl">🐪 Perl 5.28</option>
+                  <option value="assembly">⚡ Assembly (NASM)</option>
+                </optgroup>
               </select>
               {detectedLangInfo?.detected && !isMobile && (
                 <span className="extension-badge live-detected">.{detectedLangInfo.extension}</span>
@@ -250,34 +297,7 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* System Login Button for Student Machine (Desktop) */}
-          {!isMobile && (
-            <button
-              className={`nav-college-mode-btn ${isCollegeMode ? 'active-exam' : ''}`}
-              onClick={isCollegeMode ? onExitCollegeMode : onOpenCollegeMode}
-              title={isCollegeMode ? "Exam Session Active - Admin PIN Required to Exit" : "System Login for College Lab PCs"}
-              id="nav-college-mode-btn"
-            >
-              <Laptop size={15} />
-              <span>{isCollegeMode ? 'Session Active' : 'System Login'}</span>
-              {isCollegeMode ? <span className="exam-status-dot" /> : <span className="clg-pin-badge">LAB</span>}
-            </button>
-          )}
-
-          {/* Install App Button (Desktop - hidden once installed) */}
-          {!isMobile && !isAppInstalled && (
-            <button
-              className="nav-install-btn"
-              onClick={handleInstallApp}
-              title="Install Elite IDE on your Computer / System"
-              id="btn-install-app-desktop"
-            >
-              <Download size={14} />
-              <span>Install App</span>
-            </button>
-          )}
-
-          {/* Algorithm & Template Library Nav Button (Desktop - hidden during College Exam) */}
+          {/* Algorithm & Template Library Nav Button */}
           {!isMobile && !isCollegeMode && (
             <button
               className="nav-library-btn"
@@ -289,6 +309,205 @@ export default function Navbar({
               <span>Algorithms</span>
               <span className="library-badge">Library</span>
             </button>
+          )}
+
+          {/* AI Logic & Flow Intelligence Nav Button */}
+          {!isMobile && (
+            <button
+              className="nav-ai-btn"
+              onClick={onOpenAiExplainer}
+              title="Open AI Code & Flow Intelligence (Big-O, Bugs, Logic Breakdown)"
+              id="nav-ai-explainer-btn"
+            >
+              <Sparkles size={14} className="text-cyan" />
+              <span>AI Insights</span>
+              <span className="ai-nav-badge">NEW</span>
+            </button>
+          )}
+
+          {/* Active College Exam Status Button */}
+          {!isMobile && isCollegeMode && (
+            <button
+              className="nav-college-mode-btn active-exam"
+              onClick={onExitCollegeMode}
+              title="Exam Session Active - Admin PIN Required to Exit"
+              id="nav-college-mode-btn"
+            >
+              <Laptop size={15} />
+              <span>Session Active</span>
+              <span className="exam-status-dot" />
+            </button>
+          )}
+
+          {/* Unified Desktop Studio Tools Dropdown */}
+          {!isMobile && !isCollegeMode && (
+            <div className="dropdown-wrapper">
+              <button
+                className={`nav-tools-menu-btn ${showToolsMenu ? 'active' : ''}`}
+                onClick={() => setShowToolsMenu(prev => !prev)}
+                title="Lab Practical Records, College Machine Login & App Tools"
+                id="nav-tools-dropdown-btn"
+              >
+                <span>Studio Tools</span>
+                <ChevronDown size={13} className={`chevron-trans ${showToolsMenu ? 'rotated' : ''}`} />
+              </button>
+
+              {showToolsMenu && (
+                <div className="flow-dropdown-menu nav-tools-dropdown" onClick={() => setShowToolsMenu(false)}>
+                  <div className="dropdown-menu-title">🎓 Academic & Lab Certification</div>
+
+                  {onOpenLabReport && (
+                    <button
+                      className="dropdown-item"
+                      onClick={onOpenLabReport}
+                      title="Generate Official University Lab Practical Record / Interview Sheet PDF"
+                    >
+                      <span className="tool-item-inner">
+                        <FileCheck2 size={15} className="text-emerald" />
+                        <span className="item-name">Lab Practical Record PDF</span>
+                      </span>
+                      <span className="item-tag green">PDF</span>
+                    </button>
+                  )}
+
+                  <button
+                    className="dropdown-item"
+                    onClick={onOpenCollegeMode}
+                    title="Student Exam Kiosk Mode with Anti-Cheat Lockdown & Admin PIN"
+                  >
+                    <span className="tool-item-inner">
+                      <Laptop size={15} className="text-amber" />
+                      <span className="item-name">College Exam Kiosk Mode</span>
+                    </span>
+                    <span className="item-tag amber">LOCK</span>
+                  </button>
+
+                  <div className="dropdown-menu-title" style={{ marginTop: '6px' }}>⚡ Code AI & Polyglot Engine</div>
+
+                  {onOpenTranspiler && (
+                    <button
+                      className="dropdown-item"
+                      onClick={onOpenTranspiler}
+                      title="1-Click Polyglot Code Transpiler between C++, Python, Java & JS"
+                    >
+                      <span className="tool-item-inner">
+                        <Languages size={15} className="text-cyan" />
+                        <span className="item-name">Polyglot Code Transpiler</span>
+                      </span>
+                      <span className="item-tag cyan">CONVERT</span>
+                    </button>
+                  )}
+
+                  {onOpenAiExplainer && (
+                    <button
+                      className="dropdown-item"
+                      onClick={onOpenAiExplainer}
+                      title="AI Algorithmic Logic Breakdown, Big-O Analysis & Bug Diagnosis"
+                    >
+                      <span className="tool-item-inner">
+                        <Sparkles size={15} className="text-purple" />
+                        <span className="item-name">AI Logic & Big-O Auditor</span>
+                      </span>
+                      <span className="item-tag purple">AI</span>
+                    </button>
+                  )}
+
+                  <div className="dropdown-menu-title" style={{ marginTop: '6px' }}>🔬 Simulators & CP Workbench</div>
+
+                  {onChangeRightPaneView && (
+                    <>
+                      <button
+                        className="dropdown-item"
+                        onClick={() => onChangeRightPaneView('console')}
+                        title="Interactive Execution Terminal & Live Standard Output / Stdin"
+                      >
+                        <span className="tool-item-inner">
+                          <Terminal size={15} className="text-emerald" />
+                          <span className="item-name">Execution Terminal / Stdout</span>
+                        </span>
+                        <span className="item-tag green">CLI</span>
+                      </button>
+
+                      <button
+                        className="dropdown-item"
+                        onClick={() => onChangeRightPaneView('graphical')}
+                        title="Interactive ISO Flowchart Visualizer with Branching"
+                      >
+                        <span className="tool-item-inner">
+                          <GitFork size={15} className="text-emerald" />
+                          <span className="item-name">ISO Flowchart Visualizer</span>
+                        </span>
+                        <span className="item-tag green">FLOW</span>
+                      </button>
+
+                      <button
+                        className="dropdown-item"
+                        onClick={() => onChangeRightPaneView('testcases')}
+                        title="Competitive Programming Judge Arena with Multi-TestCase Runner"
+                      >
+                        <span className="tool-item-inner">
+                          <FlaskConical size={15} className="text-amber" />
+                          <span className="item-name">CP TestCase Judge Arena</span>
+                        </span>
+                        <span className="item-tag amber">JUDGE</span>
+                      </button>
+
+                      <button
+                        className="dropdown-item"
+                        onClick={() => onChangeRightPaneView('memory')}
+                        title="3D Array Memory Matrix & Pointer Simulator"
+                      >
+                        <span className="tool-item-inner">
+                          <Database size={15} className="text-cyan" />
+                          <span className="item-name">3D Memory Matrix Simulator</span>
+                        </span>
+                        <span className="item-tag cyan">RAM</span>
+                      </button>
+
+                      <button
+                        className="dropdown-item"
+                        onClick={() => onChangeRightPaneView('recursion')}
+                        title="LIFO Recursive Call Stack & Execution Tree"
+                      >
+                        <span className="tool-item-inner">
+                          <GitCommit size={15} className="text-pink" />
+                          <span className="item-name">Recursion Call Stack Frames</span>
+                        </span>
+                        <span className="item-tag pink">STACK</span>
+                      </button>
+                    </>
+                  )}
+
+                  <div className="dropdown-menu-title" style={{ marginTop: '6px' }}>⚙️ Productivity & System</div>
+
+                  <button
+                    className="dropdown-item"
+                    onClick={() => setShowShortcutsModal(true)}
+                    title="View Keyboard Shortcuts Cheat Sheet"
+                  >
+                    <span className="tool-item-inner">
+                      <Keyboard size={15} className="text-sky" />
+                      <span className="item-name">Keyboard Shortcuts</span>
+                    </span>
+                    <span className="item-tag">KEYS</span>
+                  </button>
+
+                  {!isAppInstalled && (
+                    <button
+                      className="dropdown-item"
+                      onClick={handleInstallApp}
+                      title="Install Elite IDE on your Computer / System"
+                    >
+                      <span className="tool-item-inner">
+                        <Download size={15} className="text-purple" />
+                        <span className="item-name">Install Desktop PWA App</span>
+                      </span>
+                      <span className="item-tag purple">PWA</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -510,6 +729,34 @@ export default function Navbar({
                   </button>
 
                   <button 
+                    className="sheet-grid-btn text-cyan" 
+                    onClick={() => { onOpenAiExplainer(); setIsMobileMenuOpen(false); }}
+                  >
+                    <Sparkles size={16} />
+                    <span>AI Insights</span>
+                  </button>
+
+                  {onOpenLabReport && (
+                    <button 
+                      className="sheet-grid-btn text-emerald" 
+                      onClick={() => { onOpenLabReport(); setIsMobileMenuOpen(false); }}
+                    >
+                      <FileCheck2 size={16} />
+                      <span>Lab Record PDF</span>
+                    </button>
+                  )}
+
+                  {onOpenTranspiler && (
+                    <button 
+                      className="sheet-grid-btn text-cyan" 
+                      onClick={() => { onOpenTranspiler(); setIsMobileMenuOpen(false); }}
+                    >
+                      <Languages size={16} />
+                      <span>Code Transpiler</span>
+                    </button>
+                  )}
+
+                  <button 
                     className="sheet-grid-btn danger" 
                     onClick={() => { onClearCode(); setIsMobileMenuOpen(false); }}
                   >
@@ -623,6 +870,67 @@ export default function Navbar({
                   </button>
                 )}
                 <button type="button" className="install-done-btn" onClick={() => setShowInstallModal(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Cheat Sheet Modal */}
+      {showShortcutsModal && (
+        <div className="install-modal-backdrop" onClick={() => setShowShortcutsModal(false)}>
+          <div className="install-modal-card shortcuts-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="install-modal-header">
+              <div className="install-modal-title">
+                <Keyboard size={20} className="text-cyan-400" />
+                <div>
+                  <h4>Keyboard Shortcuts</h4>
+                  <p>Productivity accelerators for Elite Code Studio</p>
+                </div>
+              </div>
+              <button className="install-modal-close" onClick={() => setShowShortcutsModal(false)}>✕</button>
+            </div>
+
+            <div className="shortcuts-modal-body">
+              <div className="shortcuts-list">
+                <div className="shortcut-item">
+                  <span className="shortcut-desc">Run & Compile Code</span>
+                  <div className="shortcut-badge"><kbd>Ctrl</kbd> + <kbd>↵ Enter</kbd></div>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-desc">Auto-Format Code (Prettier)</span>
+                  <div className="shortcut-badge"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd></div>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-desc">Official Lab Report PDF Generator</span>
+                  <div className="shortcut-badge"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>P</kbd></div>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-desc">Polyglot Code Transpiler</span>
+                  <div className="shortcut-badge"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd></div>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-desc">Toggle Project File Explorer</span>
+                  <div className="shortcut-badge"><kbd>Ctrl</kbd> + <kbd>B</kbd></div>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-desc">Find in Code Editor</span>
+                  <div className="shortcut-badge"><kbd>Ctrl</kbd> + <kbd>F</kbd></div>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-desc">Replace in Code Editor</span>
+                  <div className="shortcut-badge"><kbd>Ctrl</kbd> + <kbd>H</kbd></div>
+                </div>
+                <div className="shortcut-item">
+                  <span className="shortcut-desc">Close Active Modal / Dropdown</span>
+                  <div className="shortcut-badge"><kbd>Esc</kbd></div>
+                </div>
+              </div>
+
+              <div className="install-modal-actions" style={{ marginTop: '1.25rem' }}>
+                <button type="button" className="install-done-btn" onClick={() => setShowShortcutsModal(false)}>
                   Close
                 </button>
               </div>

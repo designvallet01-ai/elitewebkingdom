@@ -48,17 +48,58 @@ export default async function handler(req, res) {
       });
     }
 
-    // Language mapping for Judge0 CE
+    // Comprehensive language mapping for Judge0 CE (25+ world languages)
     const JUDGE0_MAP = {
+      // Core & Popular
       cpp: { id: 105, name: 'C++ (GCC 14.1.0)' },
-      c: { id: 50, name: 'C (GCC 9.2.0)' },
-      python: { id: 92, name: 'Python (CPython 3.11.2)' },
-      py: { id: 92, name: 'Python (CPython 3.11.2)' },
-      java: { id: 91, name: 'Java (OpenJDK 17.0.6)' },
+      c: { id: 103, name: 'C (GCC 14.1.0)' },
+      python: { id: 100, name: 'Python (3.12.5)' },
+      py: { id: 100, name: 'Python (3.12.5)' },
+      java: { id: 91, name: 'Java (JDK 17.0.6)' },
       javascript: { id: 102, name: 'JavaScript (Node.js 22.08)' },
       js: { id: 102, name: 'JavaScript (Node.js 22.08)' },
       typescript: { id: 101, name: 'TypeScript (5.6.2)' },
-      ts: { id: 101, name: 'TypeScript (5.6.2)' }
+      ts: { id: 101, name: 'TypeScript (5.6.2)' },
+
+      // Systems & Cloud
+      rust: { id: 108, name: 'Rust (1.85.0)' },
+      rs: { id: 108, name: 'Rust (1.85.0)' },
+      go: { id: 107, name: 'Go (1.23.5)' },
+      golang: { id: 107, name: 'Go (1.23.5)' },
+      csharp: { id: 51, name: 'C# (Mono 6.6)' },
+      cs: { id: 51, name: 'C# (Mono 6.6)' },
+
+      // Web & Backend
+      php: { id: 98, name: 'PHP (8.3.11)' },
+      ruby: { id: 72, name: 'Ruby (2.7.0)' },
+      rb: { id: 72, name: 'Ruby (2.7.0)' },
+
+      // Mobile & Modern
+      kotlin: { id: 111, name: 'Kotlin (2.1.10)' },
+      kt: { id: 111, name: 'Kotlin (2.1.10)' },
+      swift: { id: 83, name: 'Swift (5.2.3)' },
+      dart: { id: 90, name: 'Dart (2.19.2)' },
+
+      // Data, Shell & DB
+      sql: { id: 82, name: 'SQL (SQLite 3.27.2)' },
+      sqlite: { id: 82, name: 'SQL (SQLite 3.27.2)' },
+      r: { id: 99, name: 'R (4.4.1)' },
+      bash: { id: 46, name: 'Bash (5.0.0)' },
+      sh: { id: 46, name: 'Bash (5.0.0)' },
+
+      // Functional & Scientific
+      scala: { id: 112, name: 'Scala (3.4.2)' },
+      lua: { id: 64, name: 'Lua (5.3.5)' },
+      haskell: { id: 61, name: 'Haskell (GHC 8.8.1)' },
+      hs: { id: 61, name: 'Haskell (GHC 8.8.1)' },
+      perl: { id: 85, name: 'Perl (5.28.1)' },
+      pl: { id: 85, name: 'Perl (5.28.1)' },
+      assembly: { id: 45, name: 'Assembly (NASM 2.14)' },
+      asm: { id: 45, name: 'Assembly (NASM 2.14)' },
+      elixir: { id: 57, name: 'Elixir (1.9.4)' },
+      ex: { id: 57, name: 'Elixir (1.9.4)' },
+      fortran: { id: 59, name: 'Fortran (GFortran 9.2)' },
+      f90: { id: 59, name: 'Fortran (GFortran 9.2)' }
     };
 
     const targetLang = JUDGE0_MAP[lang] || JUDGE0_MAP['python'];
@@ -67,6 +108,8 @@ export default async function handler(req, res) {
     let source_code = code;
     if ((lang === 'java') && !code.includes('class ')) {
       source_code = `public class Main {\n    public static void main(String[] args) {\n${code}\n    }\n}`;
+    } else if ((lang === 'csharp' || lang === 'cs') && !code.includes('class ')) {
+      source_code = `using System;\nclass Program {\n    static void Main() {\n${code}\n    }\n}`;
     }
 
     // Call Judge0 CE execution service
