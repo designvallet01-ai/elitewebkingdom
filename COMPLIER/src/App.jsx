@@ -27,18 +27,32 @@ import {
   autoBindCurrentMachine
 } from './services/collegeService';
 import { detectLanguage } from './services/languageDetector';
+import { transpileCode } from './services/transpilerEngine';
 import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages } from 'lucide-react';
 
 const STORAGE_FILES_KEY = 'elite_ide_workspace_files_v2';
 const STORAGE_ACTIVE_KEY = 'elite_ide_active_file_id_v2';
 const STORAGE_SIDEBAR_KEY = 'elite_ide_sidebar_open_v2';
 
+const STARTER_TEMPLATES = {
+  cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello from C++ (GCC 14)!" << std::endl;\n    return 0;\n}',
+  c: '#include <stdio.h>\n\nint main() {\n    printf("Hello from C (GCC 14)!\\n");\n    return 0;\n}',
+  python: 'print("Hello from Python 3.12!")',
+  java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java 17!");\n    }\n}',
+  javascript: 'console.log("Hello from JavaScript (Node 22)!");',
+  typescript: 'const greeting: string = "Hello from TypeScript 5.6!";\nconsole.log(greeting);',
+  rust: 'fn main() {\n    println!("Hello from Rust 1.85!");\n}',
+  go: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello from Go 1.23!")\n}',
+  csharp: 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from C# (.NET)!");\n    }\n}',
+  php: '<?php\necho "Hello from PHP 8.3!\\n";'
+};
+
 const DEFAULT_INITIAL_FILES = [
   {
     id: 'file-1',
-    name: 'main.cpp',
-    code: '',
-    language: 'cpp',
+    name: 'main.py',
+    code: 'print("Hello from Python 3.12!")',
+    language: 'python',
     isModified: false
   }
 ];
@@ -192,7 +206,14 @@ export default function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [terminalEntries, setTerminalEntries] = useState([]);
   const [lastStats, setLastStats] = useState(null);
-  const [theme, setTheme] = useState('vs-dark'); // 'vs-dark' or 'vs-light'
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('elite_ide_theme');
+      if (saved === 'vs-dark' || saved === 'vs-light') return saved;
+      localStorage.setItem('elite_ide_theme', 'vs-dark');
+    } catch (e) {}
+    return 'vs-dark';
+  });
   const [fontSize, setFontSize] = useState(14);
   const [rightPaneView, setRightPaneView] = useState('console'); // 'console' | 'graphical' | 'preview'
   const [selectedLine, setSelectedLine] = useState(null);
@@ -307,22 +328,26 @@ export default function App() {
     return files.find(f => f.id === activeFileId) || files[0] || DEFAULT_INITIAL_FILES[0];
   }, [files, activeFileId]);
 
-  // Auto-sync files on mount: if code contains a detectable language, sync extension immediately
+  // Auto-sync files on mount: if code is empty, populate starter template; if code has detectable language, sync extension
   useEffect(() => {
     setFiles(prev => {
       let changed = false;
       const updated = prev.map(f => {
-        if (f.code && f.code.trim()) {
-          const det = detectLanguage(f.code, f.language);
-          if (det.detected && det.extension) {
-            const parts = f.name.split('.');
-            const base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
-            const properBase = (det.language === 'java' && base.toLowerCase() === 'main') ? 'Main' : base;
-            const newName = `${properBase}.${det.extension}`;
-            if (newName !== f.name || det.language !== f.language) {
-              changed = true;
-              return { ...f, name: newName, language: det.language };
-            }
+        let code = f.code;
+        if (!code || !code.trim()) {
+          changed = true;
+          code = STARTER_TEMPLATES[f.language] || STARTER_TEMPLATES.python;
+          return { ...f, code };
+        }
+        const det = detectLanguage(code, f.language);
+        if (det.detected && det.extension) {
+          const parts = f.name.split('.');
+          const base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
+          const properBase = (det.language === 'java' && base.toLowerCase() === 'main') ? 'Main' : base;
+          const newName = `${properBase}.${det.extension}`;
+          if (newName !== f.name || det.language !== f.language) {
+            changed = true;
+            return { ...f, name: newName, language: det.language };
           }
         }
         return f;
@@ -532,26 +557,71 @@ export default function App() {
         const newName = `${properBase}.${detected.extension}`;
         setFiles(prev => prev.map(f => f.id === activeFileId ? { ...f, name: newName, language: detected.language } : f));
       }
+      return;
+    }
+
+    const extMap = {
+      python: 'py', cpp: 'cpp', c: 'c', java: 'java', javascript: 'js',
+      typescript: 'ts', rust: 'rs', go: 'go', csharp: 'cs', php: 'php',
+      ruby: 'rb', kotlin: 'kt', swift: 'swift', dart: 'dart', sql: 'sql',
+      r: 'r', bash: 'sh', scala: 'scala', lua: 'lua', haskell: 'hs',
+      perl: 'pl', assembly: 'asm', html: 'html'
+    };
+    const ext = extMap[newLang] || 'txt';
+    const parts = activeFile.name.split('.');
+    let base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
+    if (newLang === 'java' && base.toLowerCase() === 'main') base = 'Main';
+    const newName = `${base}.${ext}`;
+
+    const currentCode = (activeFile.code || '').trim();
+    const currentLang = activeFile.language || activeLanguage || 'python';
+
+    // Helper: detect if current buffer is empty, minimal comment, or a default starter
+    const isStarterOrEmpty = () => {
+      if (!currentCode) return true;
+      if (currentCode.length < 50 && (currentCode.startsWith('//') || currentCode.startsWith('#') || currentCode.startsWith('/*'))) return true;
+      if (currentCode.includes('Hello from ') && currentCode.length < 350) return true;
+      if (currentCode.includes('Elite Web Sandbox')) return true;
+      const norm = currentCode.replace(/\s+/g, ' ');
+      for (const starter of Object.values(STARTERS)) {
+        if (norm === starter.trim().replace(/\s+/g, ' ')) return true;
+      }
+      return false;
+    };
+
+    let updatedCode;
+    if (isStarterOrEmpty()) {
+      // Clean starter injection for newly selected language (prevents cross-language syntax errors)
+      updatedCode = STARTERS[newLang] || '';
     } else {
-      const extMap = {
-        python: 'py', cpp: 'cpp', c: 'c', java: 'java', javascript: 'js',
-        typescript: 'ts', rust: 'rs', go: 'go', csharp: 'cs', php: 'php',
-        ruby: 'rb', kotlin: 'kt', swift: 'swift', dart: 'dart', sql: 'sql',
-        r: 'r', bash: 'sh', scala: 'scala', lua: 'lua', haskell: 'hs',
-        perl: 'pl', assembly: 'asm', html: 'html'
-      };
-      const ext = extMap[newLang] || 'txt';
-      const parts = activeFile.name.split('.');
-      let base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
-      if (newLang === 'java' && base.toLowerCase() === 'main') base = 'Main';
-      const newName = `${base}.${ext}`;
+      // User has custom code! Transpile from currentLang -> newLang to prevent syntax errors
+      try {
+        if (currentLang !== newLang) {
+          const transpiled = transpileCode(activeFile.code, currentLang, newLang);
+          if (transpiled && !transpiled.startsWith('// Empty code buffer') && transpiled !== activeFile.code) {
+            updatedCode = transpiled;
+          } else {
+            updatedCode = STARTERS[newLang] || activeFile.code;
+          }
+        } else {
+          updatedCode = activeFile.code;
+        }
+      } catch (err) {
+        console.warn('Transpilation on language change failed, falling back to starter template:', err);
+        updatedCode = STARTERS[newLang] || activeFile.code;
+      }
+    }
 
-      // If existing code is empty or minimal, inject starter code
-      const currentCode = (activeFile.code || '').trim();
-      const shouldInjectStarter = !currentCode || currentCode.startsWith('//') || currentCode.startsWith('#') || currentCode.length < 50;
-      const updatedCode = shouldInjectStarter && STARTERS[newLang] ? STARTERS[newLang] : activeFile.code;
+    setFiles(prev => prev.map(f => f.id === activeFileId ? {
+      ...f,
+      name: newName,
+      language: newLang,
+      code: updatedCode
+    } : f));
 
-      setFiles(prev => prev.map(f => f.id === activeFileId ? { ...f, name: newName, language: newLang, code: updatedCode } : f));
+    // Instantly update Monaco Editor value to prevent editor model desynchronization
+    if (editorInstanceRef.current && updatedCode !== undefined) {
+      editorInstanceRef.current.setValue(updatedCode);
     }
   };
 
@@ -585,10 +655,14 @@ export default function App() {
     }));
   };
 
-  // Switch active tab
+  // Switch active tab and sync language
   const handleSelectFile = (fileId) => {
     setActiveFileId(fileId);
     setSelectedLine(null);
+    const targetFile = files.find(f => f.id === fileId);
+    if (targetFile) {
+      setManualLanguage(targetFile.language || 'auto');
+    }
     if (isMobile) {
       setIsSidebarOpen(false);
       setMobileActiveTab('editor');
@@ -605,10 +679,14 @@ export default function App() {
     const base = isScratch ? `scratchpad_${count}` : `untitled_${count}`;
     const newName = `${base}.${currentExt}`;
 
+    const initialCode = isScratch
+      ? `// Scratchpad session ${count}\n`
+      : (STARTER_TEMPLATES[currentLang] || `# Code file for ${currentLang}\n`);
+
     const newFile = {
       id: newId,
       name: newName,
-      code: isScratch ? `// Scratchpad session ${count}\n` : '',
+      code: initialCode,
       language: currentLang,
       isModified: false
     };
@@ -1584,6 +1662,16 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [detectedLangInfo, activeFile]);
 
+  const handleToggleTheme = useCallback(() => {
+    setTheme(prev => {
+      const nextTheme = prev === 'vs-dark' ? 'vs-light' : 'vs-dark';
+      try {
+        localStorage.setItem('elite_ide_theme', nextTheme);
+      } catch (e) {}
+      return nextTheme;
+    });
+  }, []);
+
   return (
     <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''}`}>
       {/* Top Professional IDE Header */}
@@ -1594,7 +1682,7 @@ export default function App() {
         onClearCode={handleClearCode}
         onFormatCode={handleFormatCode}
         theme={theme}
-        onToggleTheme={() => setTheme(t => t === 'vs-dark' ? 'vs-light' : 'vs-dark')}
+        onToggleTheme={handleToggleTheme}
         fontSize={fontSize}
         onChangeFontSize={setFontSize}
         code={activeFile.code}

@@ -828,10 +828,14 @@ export default function Navbar({
               <button 
                 className="nav-icon-btn" 
                 onClick={onToggleTheme} 
-                title={`Switch to ${theme === 'vs-dark' ? 'Light' : 'Dark'} Mode`}
+                title={`Theme: ${theme === 'vs-dark' ? 'Obsidian Dark' : 'Light Mode'} (Click to switch)`}
                 id="toggle-theme-button"
               >
-                {theme === 'vs-dark' ? <Sun size={16} /> : <Moon size={16} />}
+                {theme === 'vs-dark' ? (
+                  <Moon size={16} style={{ color: '#38bdf8' }} />
+                ) : (
+                  <Sun size={16} style={{ color: '#f59e0b' }} />
+                )}
               </button>
             </>
           ) : (
