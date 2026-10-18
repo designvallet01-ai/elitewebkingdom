@@ -369,6 +369,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const estWhatsAppBtn = document.getElementById('est-whatsapp-btn');
+  if (estWhatsAppBtn) {
+    estWhatsAppBtn.addEventListener('click', () => {
+      const selectedService = estService ? estService.value : 'Custom Solution';
+      const selectedScale = estScale ? estScale.value : 'Standard Scope';
+      const priceText = estResultPrice ? estResultPrice.textContent : '₹25,000+';
+      const timelineText = estResultTime ? estResultTime.textContent : '2-3 Weeks';
+
+      const msg = encodeURIComponent(
+        `Hello Gowri Narayana! 👋\nI calculated my project estimate on Elite Web Kingdom:\n` +
+        `• Service: ${selectedService}\n` +
+        `• Architecture Scope: ${selectedScale}\n` +
+        `• Estimated Investment: ${priceText}\n` +
+        `• Delivery Timeline: ${timelineText}\n\n` +
+        `Let's discuss this project!`
+      );
+      window.open(`https://wa.me/919985369590?text=${msg}`, '_blank');
+    });
+  }
+
   // --- PROJECT TRACKER LOGIC ---
   const trackerInput = document.getElementById('tracker-id-input');
   const trackBtn = document.getElementById('track-btn');

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { 
   FileCode2, 
@@ -36,10 +36,24 @@ export default function EditorPanel({
   onCursorChange
 }) {
   const editorRef = useRef(null);
-  const [copied, setCopied] = React.useState(false);
-  const [isListening, setIsListening] = React.useState(false);
-  const [showDsaSnippets, setShowDsaSnippets] = React.useState(false);
+  const dsaMenuRef = useRef(null);
+  const [copied, setCopied] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [showDsaSnippets, setShowDsaSnippets] = useState(false);
   const recognitionRef = useRef(null);
+
+  // Close DSA Arsenal dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dsaMenuRef.current && !dsaMenuRef.current.contains(e.target)) {
+        setShowDsaSnippets(false);
+      }
+    };
+    if (showDsaSnippets) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDsaSnippets]);
 
   // Insert snippet or text into Monaco editor at current cursor position
   const insertTextAtCursor = (text) => {
@@ -276,10 +290,10 @@ export default function EditorPanel({
           </button>
 
           {/* DSA Snippet Arsenal */}
-          <div className="dropdown-wrapper">
+          <div className="dropdown-wrapper" ref={dsaMenuRef} style={{ position: 'relative' }}>
             <button
-              className="tab-action-btn dsa-magic-btn"
-              onClick={() => setShowDsaSnippets(!showDsaSnippets)}
+              className={`tab-action-btn dsa-magic-btn ${showDsaSnippets ? 'active' : ''}`}
+              onClick={() => setShowDsaSnippets(prev => !prev)}
               title="Insert Competitive Programming & DSA Templates"
               id="editor-dsa-arsenal-btn"
             >
@@ -288,55 +302,124 @@ export default function EditorPanel({
             </button>
 
             {showDsaSnippets && (
-              <div className="editor-dsa-menu">
-                <div className="dsa-menu-title">1-Click DSA Arsenal</div>
+              <div className="editor-dsa-menu" style={{ zIndex: 99999 }}>
+                <div className="dsa-menu-title">
+                  <span>⚡ 1-Click DSA Arsenal</span>
+                  <span style={{ fontSize: '0.62rem', color: '#38bdf8', textTransform: 'uppercase', background: 'rgba(56, 189, 248, 0.15)', padding: '1px 5px', borderRadius: '4px' }}>
+                    {language || 'code'}
+                  </span>
+                </div>
+
+                {/* Fast I/O */}
                 <button 
                   className="dsa-menu-item"
                   onClick={() => {
-                    insertTextAtCursor(language === 'cpp' 
+                    const snip = (language === 'cpp' || language === 'c')
                       ? 'std::ios_base::sync_with_stdio(false);\nstd::cin.tie(NULL);'
-                      : 'import sys\ninput = sys.stdin.readline');
+                      : language === 'java'
+                      ? 'BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\nStringTokenizer st;'
+                      : language === 'javascript' || language === 'typescript'
+                      ? 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim().split(/\\s+/);'
+                      : 'import sys\ninput = sys.stdin.readline';
+                    insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
                 >
-                  ⚡ Fast I/O Accelerator
+                  <span>⚡ Fast I/O Accelerator</span>
+                  <span className="dsa-item-tag">I/O</span>
                 </button>
+
+                {/* Binary Search */}
                 <button 
                   className="dsa-menu-item"
                   onClick={() => {
-                    insertTextAtCursor(`def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: low = mid + 1\n        else: high = mid - 1\n    return -1`);
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? `int binarySearch(const std::vector<int>& arr, int target) {\n    int low = 0, high = (int)arr.size() - 1;\n    while (low <= high) {\n        int mid = low + (high - low) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
+                      : language === 'java'
+                      ? `public static int binarySearch(int[] arr, int target) {\n    int low = 0, high = arr.length - 1;\n    while (low <= high) {\n        int mid = low + (high - low) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
+                      : language === 'javascript' || language === 'typescript'
+                      ? `function binarySearch(arr, target) {\n    let low = 0, high = arr.length - 1;\n    while (low <= high) {\n        const mid = Math.floor((low + high) / 2);\n        if (arr[mid] === target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
+                      : `def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: low = mid + 1\n        else: high = mid - 1\n    return -1`;
+                    insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
                 >
-                  🔍 Binary Search (O(log N))
+                  <span>🔍 Binary Search</span>
+                  <span className="dsa-item-tag">O(log N)</span>
                 </button>
+
+                {/* Kadane's Algorithm */}
                 <button 
                   className="dsa-menu-item"
                   onClick={() => {
-                    insertTextAtCursor(`def kadane_max_subarray(nums):\n    max_so_far = curr_max = nums[0]\n    for x in nums[1:]:\n        curr_max = max(x, curr_max + x)\n        max_so_far = max(max_so_far, curr_max)\n    return max_so_far`);
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? `int maxSubArray(const std::vector<int>& nums) {\n    int maxSoFar = nums[0], currMax = nums[0];\n    for (size_t i = 1; i < nums.size(); ++i) {\n        currMax = std::max(nums[i], currMax + nums[i]);\n        maxSoFar = std::max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
+                      : language === 'java'
+                      ? `public static int maxSubArray(int[] nums) {\n    int maxSoFar = nums[0], currMax = nums[0];\n    for (int i = 1; i < nums.length; i++) {\n        currMax = Math.max(nums[i], currMax + nums[i]);\n        maxSoFar = Math.max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
+                      : language === 'javascript' || language === 'typescript'
+                      ? `function maxSubArray(nums) {\n    let maxSoFar = nums[0], currMax = nums[0];\n    for (let i = 1; i < nums.length; i++) {\n        currMax = Math.max(nums[i], currMax + nums[i]);\n        maxSoFar = Math.max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
+                      : `def kadane_max_subarray(nums):\n    max_so_far = curr_max = nums[0]\n    for x in nums[1:]:\n        curr_max = max(x, curr_max + x)\n        max_so_far = max(max_so_far, curr_max)\n    return max_so_far`;
+                    insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
                 >
-                  🧩 Kadane's Max Subarray
+                  <span>🧩 Kadane's Max Subarray</span>
+                  <span className="dsa-item-tag">O(N)</span>
                 </button>
+
+                {/* Sieve of Eratosthenes */}
                 <button 
                   className="dsa-menu-item"
                   onClick={() => {
-                    insertTextAtCursor(`def sieve(n):\n    primes = [True] * (n + 1)\n    primes[0] = primes[1] = False\n    for p in range(2, int(n**0.5) + 1):\n        if primes[p]:\n            for i in range(p*p, n+1, p): primes[i] = False\n    return [p for p in range(2, n+1) if primes[p]]`);
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? `std::vector<int> sieve(int n) {\n    std::vector<bool> isPrime(n + 1, true);\n    isPrime[0] = isPrime[1] = false;\n    for (int p = 2; p * p <= n; ++p) {\n        if (isPrime[p]) {\n            for (int i = p * p; i <= n; i += p) isPrime[i] = false;\n        }\n    }\n    std::vector<int> primes;\n    for (int p = 2; p <= n; ++p) if (isPrime[p]) primes.push_back(p);\n    return primes;\n}`
+                      : language === 'java'
+                      ? `public static java.util.List<Integer> sieve(int n) {\n    boolean[] isPrime = new boolean[n + 1];\n    java.util.Arrays.fill(isPrime, true);\n    isPrime[0] = isPrime[1] = false;\n    for (int p = 2; p * p <= n; p++) {\n        if (isPrime[p]) {\n            for (int i = p * p; i <= n; i += p) isPrime[i] = false;\n        }\n    }\n    java.util.List<Integer> primes = new java.util.ArrayList<>();\n    for (int p = 2; p <= n; p++) if (isPrime[p]) primes.add(p);\n    return primes;\n}`
+                      : `def sieve(n):\n    primes = [True] * (n + 1)\n    primes[0] = primes[1] = False\n    for p in range(2, int(n**0.5) + 1):\n        if primes[p]:\n            for i in range(p*p, n+1, p): primes[i] = False\n    return [p for p in range(2, n+1) if primes[p]]`;
+                    insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
                 >
-                  🔢 Sieve of Eratosthenes
+                  <span>🔢 Sieve of Eratosthenes</span>
+                  <span className="dsa-item-tag">Primes</span>
                 </button>
+
+                {/* BFS Traversal */}
                 <button 
                   className="dsa-menu-item"
                   onClick={() => {
-                    insertTextAtCursor(`from collections import deque\ndef bfs(graph, start):\n    visited, queue = set([start]), deque([start])\n    while queue:\n        curr = queue.popleft()\n        print(curr, end=" ")\n        for nxt in graph.get(curr, []):\n            if nxt not in visited:\n                visited.add(nxt)\n                queue.append(nxt)`);
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? `void bfs(int start, const std::vector<std::vector<int>>& adj) {\n    std::vector<bool> visited(adj.size(), false);\n    std::queue<int> q;\n    visited[start] = true;\n    q.push(start);\n    while (!q.empty()) {\n        int u = q.front(); q.pop();\n        for (int v : adj[u]) {\n            if (!visited[v]) {\n                visited[v] = true;\n                q.push(v);\n            }\n        }\n    }\n}`
+                      : language === 'java'
+                      ? `public static void bfs(int start, java.util.List<java.util.List<Integer>> adj) {\n    boolean[] visited = new boolean[adj.size()];\n    java.util.Queue<Integer> q = new java.util.LinkedList<>();\n    visited[start] = true;\n    q.offer(start);\n    while (!q.isEmpty()) {\n        int u = q.poll();\n        for (int v : adj.get(u)) {\n            if (!visited[v]) {\n                visited[v] = true;\n                q.offer(v);\n            }\n        }\n    }\n}`
+                      : `from collections import deque\ndef bfs(graph, start):\n    visited, queue = set([start]), deque([start])\n    while queue:\n        curr = queue.popleft()\n        for nxt in graph.get(curr, []):\n            if nxt not in visited:\n                visited.add(nxt)\n                queue.append(nxt)`;
+                    insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
                 >
-                  🌲 BFS Traversal Template
+                  <span>🌲 BFS Traversal Template</span>
+                  <span className="dsa-item-tag">Graph</span>
                 </button>
+
+                <div className="dsa-menu-divider" />
+
+                {/* Open Full Algorithm Library Modal */}
+                {onOpenTemplates && (
+                  <button
+                    className="dsa-menu-item"
+                    onClick={() => {
+                      setShowDsaSnippets(false);
+                      onOpenTemplates();
+                    }}
+                    style={{ color: '#38bdf8', fontWeight: '600' }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <BookOpen size={14} />
+                      <span>Full DSA Library...</span>
+                    </span>
+                    <span className="dsa-item-tag" style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>50+</span>
+                  </button>
+                )}
               </div>
             )}
           </div>

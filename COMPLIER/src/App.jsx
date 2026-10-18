@@ -17,6 +17,8 @@ import CollegeModeModal from './components/CollegeModeModal';
 import CollegeExamBanner from './components/CollegeExamBanner';
 import CollegeAdminPortal from './components/CollegeAdminPortal';
 import SystemLockedOverlay from './components/SystemLockedOverlay';
+import ShareCodeModal from './components/ShareCodeModal';
+import CommandPaletteModal from './components/CommandPaletteModal';
 import { 
   subscribeToCollegeEvents, 
   broadcastMessage, 
@@ -234,6 +236,8 @@ export default function App() {
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isLabReportModalOpen, setIsLabReportModalOpen] = useState(false);
   const [isTranspilerModalOpen, setIsTranspilerModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   
   // URL routing helper for /compilercollegeadmin
   const checkIsCollegeAdminUrl = () => {
@@ -326,6 +330,53 @@ export default function App() {
       return changed ? updated : prev;
     });
   }, []);
+
+  // Decode and load shared code from URL permalink if present
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sharedCodeEnc = urlParams.get('code');
+      const sharedLang = urlParams.get('lang');
+      const sharedName = urlParams.get('name');
+
+      if (sharedCodeEnc) {
+        let decodedCode = '';
+        try {
+          decodedCode = decodeURIComponent(atob(sharedCodeEnc));
+        } catch (e) {
+          decodedCode = atob(sharedCodeEnc);
+        }
+
+        if (decodedCode) {
+          const lang = sharedLang || detectLanguage(decodedCode).language || 'python';
+          const extMap = { python: 'py', cpp: 'cpp', c: 'c', java: 'java', javascript: 'js', rust: 'rs', go: 'go', sql: 'sql', html: 'html' };
+          const ext = extMap[lang] || 'txt';
+          const fileName = sharedName || `shared_${Math.random().toString(36).substring(4, 8)}.${ext}`;
+          const newFileId = 'file-shared-' + Date.now();
+
+          setFiles(prev => {
+            const newFile = {
+              id: newFileId,
+              name: fileName,
+              code: decodedCode,
+              language: lang,
+              isModified: false
+            };
+            return [newFile, ...prev];
+          });
+          setActiveFileId(newFileId);
+          setManualLanguage(lang);
+
+          setTerminalEntries([
+            { type: 'system', text: `✨ [Shared Code Loaded]: Loaded "${fileName}" (${lang.toUpperCase()}) from shared permalink.\nClick Run Code to execute!\n` }
+          ]);
+        }
+      }
+    } catch (err) {
+      console.warn('Shared link parser error:', err);
+    }
+  }, []);
+
 
   // Persist files in local storage
   useEffect(() => {
@@ -1014,11 +1065,25 @@ export default function App() {
       }
       throw new Error(`Server returned ${response.status}`);
     } catch (apiErr) {
+      // Instant in-browser JavaScript evaluation
+      if (lang === 'javascript' || lang === 'js') {
+        try {
+          const logs = [];
+          const customConsole = { log: (...args) => logs.push(args.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' ')) };
+          const fn = new Function('console', codeToRun);
+          fn(customConsole);
+          return { stdout: logs.join('\n') + '\n', stderr: '', code: 0, executionTime: 3, status: 'SUCCESS' };
+        } catch (jsErr) {
+          return { stdout: '', stderr: jsErr.message, code: 1, executionTime: 0, status: 'ERROR' };
+        }
+      }
+
       // Cloud Judge0 CE fallback
       const JUDGE0_MAP = {
         cpp: { id: 105, name: 'C++ (GCC 14.1)' },
-        c: { id: 50, name: 'C (GCC 9.2)' },
-        python: { id: 92, name: 'Python (3.11.2)' },
+        c: { id: 103, name: 'C (GCC 14.1)' },
+        python: { id: 100, name: 'Python (3.12.5)' },
+        py: { id: 100, name: 'Python (3.12.5)' },
         java: { id: 91, name: 'Java (OpenJDK 17)' },
         javascript: { id: 102, name: 'JavaScript (Node.js 22)' },
         typescript: { id: 101, name: 'TypeScript (5.6.2)' }
@@ -1432,6 +1497,9 @@ export default function App() {
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'B' || e.key === 'b')) {
         e.preventDefault();
         setIsSidebarOpen(prev => !prev);
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'K' || e.key === 'k')) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1504,6 +1572,18 @@ export default function App() {
     }
   }, []);
 
+  const handleDownloadCode = useCallback(() => {
+    const ext = detectedLangInfo?.extension || 'txt';
+    const filename = activeFile.name || `code.${ext}`;
+    const blob = new Blob([activeFile.code], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [detectedLangInfo, activeFile]);
+
   return (
     <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''}`}>
       {/* Top Professional IDE Header */}
@@ -1519,6 +1599,7 @@ export default function App() {
         onChangeFontSize={setFontSize}
         code={activeFile.code}
         activeFileName={activeFile.name}
+        onCreateFile={handleCreateFile}
         onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
@@ -1532,6 +1613,8 @@ export default function App() {
         onOpenLabReport={() => setIsLabReportModalOpen(true)}
         onOpenTranspiler={() => setIsTranspilerModalOpen(true)}
         onChangeRightPaneView={(view) => setRightPaneView(view)}
+        onOpenShareCode={() => setIsShareModalOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
       {/* College Exam Active Banner (Desktop Only) */}
@@ -1738,6 +1821,7 @@ export default function App() {
               <RecursionVisualizer
                 code={activeFile.code}
                 language={activeLanguage}
+                onApplyCode={handleCodeChange}
               />
             )}
 
@@ -1962,6 +2046,36 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Share Code Modal */}
+      <ShareCodeModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        code={activeFile.code}
+        language={activeLanguage}
+        fileName={activeFile.name}
+      />
+
+      {/* VS Code-Style Command Palette */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onRun={handleRun}
+        onClearConsole={handleClearConsole}
+        onFormatCode={handleFormatCode}
+        theme={theme}
+        onToggleTheme={() => setTheme(t => t === 'vs-dark' ? 'vs-light' : 'vs-dark')}
+        onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+        onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
+        onOpenAiExplainer={() => setIsAiModalOpen(true)}
+        onOpenLabReport={() => setIsLabReportModalOpen(true)}
+        onOpenTranspiler={() => setIsTranspilerModalOpen(true)}
+        onOpenCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'setup' })}
+        onOpenShareCode={() => setIsShareModalOpen(true)}
+        onChangeRightPaneView={(view) => setRightPaneView(view)}
+        onSelectLanguage={handleLanguageChange}
+        onDownloadCode={handleDownloadCode}
+      />
 
     </div>
   );

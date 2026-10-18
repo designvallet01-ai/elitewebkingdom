@@ -13,67 +13,162 @@ import {
   Code2, 
   Zap,
   Sliders,
-  Plus
+  Plus,
+  ArrowRight,
+  Eye,
+  Hash
 } from 'lucide-react';
+
+// Advanced Variable & Memory Parser for Python, C++, C, Java, JS
+function parseMemoryFromCode(code = '', language = 'python') {
+  if (!code || !code.trim()) {
+    return {
+      variables: [],
+      arrays: [{ name: 'arr', type: 'int[]', values: [10, 20, 30, 40, 50], address: '0x7ffcc010' }]
+    };
+  }
+
+  const variables = [];
+  const arrays = [];
+  let baseAddress = 0x7ffe0000;
+  const nextHex = (offset = 4) => {
+    baseAddress += offset;
+    return '0x' + baseAddress.toString(16);
+  };
+
+  const lines = code.split('\n');
+
+  // 1. Scan for Array / List definitions across all languages
+  // Python: arr = [1, 2, 3]
+  // C/C++: int arr[] = {1, 2, 3} or vector<int> arr = {1, 2, 3}
+  // Java: int[] arr = {1, 2, 3} or new int[]{...}
+  // JS: const arr = [1, 2, 3]
+  const arrayRegex = /(?:(?:int|float|double|char|long|String|vector<[a-zA-Z0-9_]+>|let|const|var)\s+)?([a-zA-Z_]\w*)\s*(?:\[\s*\d*\s*\])?\s*=\s*(?:\[|\{)([^\]\}]+)(?:\]|\})/g;
+  let arrMatch;
+  while ((arrMatch = arrayRegex.exec(code)) !== null) {
+    const arrName = arrMatch[1];
+    if (['if', 'for', 'while', 'return'].includes(arrName)) continue;
+    const itemsRaw = arrMatch[2];
+    const items = itemsRaw
+      .split(',')
+      .map(x => x.trim().replace(/^['"]|['"]$/g, ''))
+      .filter(x => x.length > 0)
+      .map(x => {
+        const num = Number(x);
+        return isNaN(num) ? x : num;
+      });
+
+    if (items.length > 0) {
+      arrays.push({
+        name: arrName,
+        type: typeof items[0] === 'number' ? 'int[]' : 'String[]',
+        values: items.slice(0, 16),
+        address: nextHex(32)
+      });
+    }
+  }
+
+  // 2. Scan for Primitive Variables (integers, floats, strings, booleans, pointers)
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('/*')) return;
+
+    // Python assignments: varName = value
+    const pyVarMatch = trimmed.match(/^([a-zA-Z_]\w*)\s*=\s*([^#;]+)$/);
+    if (pyVarMatch && !trimmed.includes('[') && !trimmed.includes('{') && !trimmed.includes('def ')) {
+      const varName = pyVarMatch[1];
+      const valStr = pyVarMatch[2].trim();
+      if (!['if', 'elif', 'else', 'return', 'import', 'from'].includes(varName)) {
+        let type = 'str';
+        let val = valStr;
+        if (/^-?\d+$/.test(valStr)) { type = 'int'; val = parseInt(valStr, 10); }
+        else if (/^-?\d+\.\d+$/.test(valStr)) { type = 'float'; val = parseFloat(valStr); }
+        else if (valStr === 'True' || valStr === 'False') { type = 'bool'; val = valStr; }
+        else { val = valStr.replace(/^['"]|['"]$/g, ''); }
+
+        variables.push({ name: varName, type, value: val, address: nextHex(4) });
+      }
+    }
+
+    // C / C++ / Java variable declarations: int x = 10; float f = 3.14; etc.
+    const cVarMatch = trimmed.match(/^(?:int|float|double|char|bool|long|String|auto)\s+([a-zA-Z_]\w*)\s*=\s*([^;]+);/);
+    if (cVarMatch) {
+      const varName = cVarMatch[1];
+      const valStr = cVarMatch[2].trim();
+      variables.push({
+        name: varName,
+        type: trimmed.split(/\s+/)[0],
+        value: valStr.replace(/^['"]|['"]$/g, ''),
+        address: nextHex(4)
+      });
+    }
+
+    // C / C++ Pointers: int *ptr = &x;
+    const ptrMatch = trimmed.match(/([a-zA-Z0-9_]+)\s*\*\s*([a-zA-Z_]\w*)\s*=\s*&([a-zA-Z_]\w*);/);
+    if (ptrMatch) {
+      variables.push({
+        name: ptrMatch[2],
+        type: `${ptrMatch[1]}* (Pointer)`,
+        value: `&${ptrMatch[3]}`,
+        isPointer: true,
+        pointsTo: ptrMatch[3],
+        address: nextHex(8)
+      });
+    }
+  });
+
+  // Fallback defaults if code has no declared arrays
+  if (arrays.length === 0) {
+    arrays.push({
+      name: 'arr',
+      type: 'int[]',
+      values: [15, 8, 42, 23, 4, 16],
+      address: '0x7ffce010'
+    });
+  }
+
+  return { variables, arrays };
+}
 
 export default function MemoryArrayVisualizer({
   code = '',
   language = 'python'
 }) {
-  // Extract initial array from user's code if present
-  const extractedArray = useMemo(() => {
-    const match = code.match(/(?:arr|numbers|nums|list|values|data|array)\s*=\s*\[([0-9\s,-]+)\]/i) ||
-                  code.match(/int\s+(?:arr|nums|numbers)\[\]\s*=\s*\{([0-9\s,-]+)\}/i);
-    if (match && match[1]) {
-      const parsed = match[1].split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n));
-      if (parsed.length >= 2) return parsed.slice(0, 12);
-    }
-    return [45, 12, 89, 34, 71, 23, 60, 15];
-  }, [code]);
+  const parsedMemory = useMemo(() => {
+    return parseMemoryFromCode(code, language);
+  }, [code, language]);
 
-  const [arrayData, setArrayData] = useState(extractedArray);
-  const [activePointers, setActivePointers] = useState({ i: 0, j: 1 });
-  const [comparingIndices, setComparingIndices] = useState([]);
-  const [swappingIndices, setSwappingIndices] = useState([]);
-  const [sortedIndices, setSortedIndices] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [stepSpeed, setStepSpeed] = useState(600); // ms
-  const [simAlgorithm, setSimAlgorithm] = useState('bubble'); // 'bubble' | 'binary' | 'reverse'
-  const [customInputVal, setCustomInputVal] = useState(arrayData.join(', '));
-  const [searchTarget, setSearchTarget] = useState(34);
-  const [searchStatus, setSearchStatus] = useState('');
+  const [selectedArrName, setSelectedArrName] = useState(() => parsedMemory.arrays[0]?.name || 'arr');
 
-  // Synchronize when code changes extracted array
   useEffect(() => {
-    setArrayData(extractedArray);
-    setCustomInputVal(extractedArray.join(', '));
-    resetVisualization();
-  }, [extractedArray]);
+    if (parsedMemory.arrays.length > 0 && !parsedMemory.arrays.some(a => a.name === selectedArrName)) {
+      setSelectedArrName(parsedMemory.arrays[0].name);
+    }
+  }, [parsedMemory.arrays, selectedArrName]);
 
-  const resetVisualization = () => {
-    setIsAnimating(false);
+  const activeArrayObj = parsedMemory.arrays.find(a => a.name === selectedArrName) || parsedMemory.arrays[0];
+  const [arrayData, setArrayData] = useState(() => activeArrayObj.values);
+
+  // Sync array data whenever active array changes
+  useEffect(() => {
+    setArrayData(activeArrayObj.values);
     setActivePointers({ i: 0, j: 1 });
     setComparingIndices([]);
     setSwappingIndices([]);
-    setSortedIndices([]);
-    setSearchStatus('');
-  };
+  }, [activeArrayObj]);
 
-  const handleUpdateCustomArray = () => {
-    const parsed = customInputVal.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-    if (parsed.length >= 2) {
-      setArrayData(parsed.slice(0, 14));
-      resetVisualization();
-    }
-  };
+  const [activePointers, setActivePointers] = useState({ i: 0, j: 1 });
+  const [comparingIndices, setComparingIndices] = useState([]);
+  const [swappingIndices, setSwappingIndices] = useState([]);
+  const [isSorting, setIsSorting] = useState(false);
+  const [stepSpeed, setStepSpeed] = useState(500);
 
-  // 1. Animated Bubble Sort Step Simulator
-  const runBubbleSortSimulation = async () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
+  // Animated Bubble Sort Tracer on user's current array
+  const runSortSimulation = async () => {
+    if (isSorting) return;
+    setIsSorting(true);
     const arr = [...arrayData];
     const n = arr.length;
-    const sorted = [];
 
     for (let i = 0; i < n - 1; i++) {
       for (let j = 0; j < n - i - 1; j++) {
@@ -82,7 +177,7 @@ export default function MemoryArrayVisualizer({
         setSwappingIndices([]);
         await new Promise(r => setTimeout(r, stepSpeed));
 
-        if (arr[j] > arr[j + 1]) {
+        if (Number(arr[j]) > Number(arr[j + 1])) {
           setSwappingIndices([j, j + 1]);
           const temp = arr[j];
           arr[j] = arr[j + 1];
@@ -91,217 +186,286 @@ export default function MemoryArrayVisualizer({
           await new Promise(r => setTimeout(r, stepSpeed));
         }
       }
-      sorted.push(n - i - 1);
-      setSortedIndices([...sorted]);
     }
-    setSortedIndices(arr.map((_, idx) => idx));
     setComparingIndices([]);
     setSwappingIndices([]);
-    setIsAnimating(false);
+    setIsSorting(false);
   };
 
-  // 2. Animated Binary Search Simulator
-  const runBinarySearchSimulation = async () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    // Ensure sorted first
-    const sortedArr = [...arrayData].sort((a, b) => a - b);
-    setArrayData(sortedArr);
-    resetVisualization();
-
-    let low = 0;
-    let high = sortedArr.length - 1;
-    let found = false;
-
-    while (low <= high) {
-      const mid = Math.floor((low + high) / 2);
-      setActivePointers({ low, mid, high });
-      setComparingIndices([mid]);
-      setSearchStatus(`Checking mid index ${mid} (Value: ${sortedArr[mid]})...`);
-      await new Promise(r => setTimeout(r, stepSpeed + 200));
-
-      if (sortedArr[mid] === searchTarget) {
-        setSortedIndices([mid]);
-        setSearchStatus(`🎯 Target ${searchTarget} discovered at index ${mid}!`);
-        found = true;
-        break;
-      } else if (sortedArr[mid] < searchTarget) {
-        setSearchStatus(`${sortedArr[mid]} < ${searchTarget} → Discarding left half [${low}...${mid}]`);
-        low = mid + 1;
-      } else {
-        setSearchStatus(`${sortedArr[mid]} > ${searchTarget} → Discarding right half [${mid}...${high}]`);
-        high = mid - 1;
-      }
-      await new Promise(r => setTimeout(r, stepSpeed));
-    }
-
-    if (!found) {
-      setSearchStatus(`Target ${searchTarget} was not found in the array.`);
-    }
-    setIsAnimating(false);
+  const handleResetArray = () => {
+    setIsSorting(false);
+    setArrayData(activeArrayObj.values);
+    setActivePointers({ i: 0, j: 1 });
+    setComparingIndices([]);
+    setSwappingIndices([]);
   };
-
-  const maxValue = Math.max(...arrayData, 100);
 
   return (
-    <div className="memory-visualizer-container">
-      {/* Header */}
-      <div className="mem-header">
-        <div className="mem-header-left">
-          <div className="mem-title-pill">
-            <Cpu size={15} className="text-cyan" />
-            <span>Memory Matrix & Array Simulator</span>
+    <div className="memory-workbench-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Top Header & Status */}
+      <div style={{
+        padding: '12px 16px',
+        background: 'rgba(15, 23, 42, 0.7)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '10px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', padding: '6px', borderRadius: '6px' }}>
+            <Database size={18} />
           </div>
-          <span className="mem-sub">Live memory address registers & algorithm pointer visualizer</span>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
+                3D Memory Matrix & Variable Inspector
+              </span>
+              <span style={{
+                fontSize: '0.68rem',
+                textTransform: 'uppercase',
+                background: 'rgba(6, 182, 212, 0.2)',
+                color: '#38bdf8',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                fontWeight: 700
+              }}>
+                Live Code Parsed
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>
+              {parsedMemory.variables.length} Stack Variables • {parsedMemory.arrays.length} Heap Array(s) Detected
+            </p>
+          </div>
         </div>
 
-        <div className="mem-header-actions">
-          {/* Quick Algorithm Switcher */}
-          <div className="mem-algo-tabs">
-            <button
-              className={`mem-algo-btn ${simAlgorithm === 'bubble' ? 'active' : ''}`}
-              onClick={() => { setSimAlgorithm('bubble'); resetVisualization(); }}
+        {/* Array Selector & Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {parsedMemory.arrays.length > 1 && (
+            <select
+              value={selectedArrName}
+              onChange={(e) => setSelectedArrName(e.target.value)}
+              style={{
+                background: 'rgba(15, 23, 42, 0.8)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#38bdf8',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '0.78rem',
+                fontWeight: 600
+              }}
             >
-              Bubble Sort
-            </button>
-            <button
-              className={`mem-algo-btn ${simAlgorithm === 'binary' ? 'active' : ''}`}
-              onClick={() => { setSimAlgorithm('binary'); resetVisualization(); }}
-            >
-              Binary Search
-            </button>
-          </div>
+              {parsedMemory.arrays.map(a => (
+                <option key={a.name} value={a.name}>{a.name}[] ({a.values.length} elements)</option>
+              ))}
+            </select>
+          )}
 
           <button
-            className="mem-action-btn primary"
-            onClick={simAlgorithm === 'bubble' ? runBubbleSortSimulation : runBinarySearchSimulation}
-            disabled={isAnimating}
+            type="button"
+            className="view-mode-action-btn"
+            onClick={runSortSimulation}
+            disabled={isSorting}
+            style={{
+              background: 'rgba(16, 185, 129, 0.2)',
+              color: '#34d399',
+              borderColor: 'rgba(16, 185, 129, 0.4)',
+              padding: '5px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 600,
+              fontSize: '0.78rem'
+            }}
           >
             <Play size={13} fill="currentColor" />
-            <span>{isAnimating ? 'Simulating...' : `Simulate ${simAlgorithm === 'bubble' ? 'Sort' : 'Search'}`}</span>
+            <span>{isSorting ? 'Tracing...' : 'Trace Sort'}</span>
           </button>
 
-          <button className="mem-icon-btn" onClick={resetVisualization} title="Reset Array">
-            <RotateCcw size={13} />
+          <button
+            type="button"
+            className="view-mode-action-btn"
+            onClick={handleResetArray}
+            title="Reset Array to Original State"
+            style={{ padding: '5px 8px' }}
+          >
+            <RotateCcw size={14} />
           </button>
         </div>
       </div>
 
-      {/* Main Visualizer Stage */}
-      <div className="mem-stage">
-        {/* Top Control Strip */}
-        <div className="mem-input-bar">
-          <div className="input-group">
-            <span className="input-label">Array Data:</span>
-            <input
-              type="text"
-              value={customInputVal}
-              onChange={(e) => setCustomInputVal(e.target.value)}
-              placeholder="e.g. 10, 25, 4, 89, 32"
-              className="mem-text-input"
-            />
-            <button className="mem-apply-btn" onClick={handleUpdateCustomArray}>
-              Apply
-            </button>
-          </div>
+      {/* Main Split Layout: Left is Stack Frame Variables, Right is Heap Memory Array */}
+      <div style={{ display: 'grid', gridTemplateColumns: '270px 1fr', flex: 1, overflow: 'hidden' }}>
+        {/* Left: Stack Segment (Local Variables) */}
+        <div style={{
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'rgba(15, 23, 42, 0.4)',
+          padding: '14px',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto'
+        }}>
+          <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+            📦 Stack Segment ({parsedMemory.variables.length} Variables)
+          </span>
 
-          {simAlgorithm === 'binary' && (
-            <div className="input-group">
-              <span className="input-label">Target:</span>
-              <input
-                type="number"
-                value={searchTarget}
-                onChange={(e) => setSearchTarget(parseInt(e.target.value, 10) || 0)}
-                className="mem-target-input"
-              />
-            </div>
-          )}
-
-          {searchStatus && (
-            <div className="search-status-banner">
-              <span>{searchStatus}</span>
-            </div>
-          )}
-        </div>
-
-        {/* 3D Glass Bar Chart Canvas */}
-        <div className="array-bars-canvas">
-          {arrayData.map((val, idx) => {
-            const heightPercent = Math.max(Math.round((val / maxValue) * 100), 16);
-            const isComparing = comparingIndices.includes(idx);
-            const isSwapping = swappingIndices.includes(idx);
-            const isSorted = sortedIndices.includes(idx);
-
-            let barColor = '#38bdf8';
-            if (isSwapping) barColor = '#f59e0b';
-            else if (isComparing) barColor = '#ec4899';
-            else if (isSorted) barColor = '#10b981';
-
-            return (
-              <div key={idx} className="array-column-wrapper">
-                {/* Pointer indicator tags above bar */}
-                <div className="pointer-tag-slot">
-                  {simAlgorithm === 'bubble' && (
-                    <>
-                      {activePointers.i === idx && <span className="pointer-tag i">i</span>}
-                      {activePointers.j === idx && <span className="pointer-tag j">j</span>}
-                    </>
-                  )}
-                  {simAlgorithm === 'binary' && (
-                    <>
-                      {activePointers.low === idx && <span className="pointer-tag low">L</span>}
-                      {activePointers.mid === idx && <span className="pointer-tag mid">MID</span>}
-                      {activePointers.high === idx && <span className="pointer-tag high">H</span>}
-                    </>
-                  )}
-                </div>
-
-                {/* 3D Bar */}
-                <div 
-                  className={`array-bar ${isComparing ? 'comparing' : ''} ${isSwapping ? 'swapping' : ''} ${isSorted ? 'sorted' : ''}`}
-                  style={{ 
-                    height: `${heightPercent}%`,
-                    backgroundColor: barColor,
-                    boxShadow: `0 0 16px ${barColor}55`
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {parsedMemory.variables.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 8px', color: '#64748b', fontSize: '0.8rem' }}>
+                No primitive variables declared in current code yet. Write <code>x = 10</code> or <code>int a = 5;</code> in editor.
+              </div>
+            ) : (
+              parsedMemory.variables.map((v, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: 'rgba(30, 41, 59, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
                   }}
                 >
-                  <span className="bar-val-top">{val}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.84rem', color: '#38bdf8' }}>{v.name}</span>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      color: '#cbd5e1'
+                    }}>
+                      {v.type}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.74rem' }}>
+                    <span style={{ color: '#94a3b8' }}>Value: <strong style={{ color: '#f8fafc' }}>{String(v.value)}</strong></span>
+                    <span style={{ fontFamily: 'monospace', color: '#64748b', fontSize: '0.7rem' }}>{v.address}</span>
+                  </div>
+                  {v.isPointer && (
+                    <div style={{ fontSize: '0.7rem', color: '#ec4899', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <ArrowRight size={11} /> Points to: &{v.pointsTo}
+                    </div>
+                  )}
                 </div>
-
-                {/* Index label below */}
-                <div className="bar-index-label">
-                  <span>[{idx}]</span>
-                </div>
-              </div>
-            );
-          })}
+              ))
+            )}
+          </div>
         </div>
 
-        {/* Hex Memory Address Allocation Matrix */}
-        <div className="memory-address-table">
-          <div className="table-header">
-            <span>RAM HEAP MATRIX (STACK & REGISTER ALLOCATIONS)</span>
-            <span className="table-meta">Simulated 64-bit Architecture</span>
+        {/* Right: Heap Segment (Array / Matrix Memory Blocks) */}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '16px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>Array: <code>{activeArrayObj.name}</code></span>
+                <span style={{ fontSize: '0.72rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+                  Base Address: {activeArrayObj.address}
+                </span>
+              </h4>
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                Contiguous memory allocation with 4-byte index strides
+              </span>
+            </div>
+            
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: '10px', fontSize: '0.72rem', color: '#94a3b8' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#38bdf8' }} /> Pointer (i)
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#ec4899' }} /> Pointer (j)
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#f59e0b' }} /> Comparing
+              </span>
+            </div>
           </div>
 
-          <div className="matrix-grid">
-            {arrayData.slice(0, 8).map((val, idx) => {
-              const hexAddr = `0x7ffee${(idx * 4 + 1024).toString(16).toUpperCase()}`;
+          {/* Array Memory Grid */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '8px',
+            background: 'rgba(15, 23, 42, 0.5)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '20px',
+            borderRadius: '12px'
+          }}>
+            {arrayData.map((val, idx) => {
+              const isI = activePointers.i === idx;
+              const isJ = activePointers.j === idx;
+              const isComparing = comparingIndices.includes(idx);
+              const isSwapping = swappingIndices.includes(idx);
+
+              // Compute simulated 4-byte contiguous hex address
+              const hexAddr = '0x' + (0x7ffe0000 + idx * 4).toString(16);
+
               return (
-                <div key={idx} className="matrix-cell">
-                  <div className="cell-top">
-                    <span className="cell-var">arr[{idx}]</span>
-                    <span className="cell-type">int32 (4B)</span>
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  {/* Pointer Marker above cell */}
+                  <div style={{ height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isI && isJ ? (
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#f59e0b' }}>i, j ↓</span>
+                    ) : isI ? (
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#38bdf8' }}>i ↓</span>
+                    ) : isJ ? (
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#ec4899' }}>j ↓</span>
+                    ) : null}
                   </div>
-                  <div className="cell-mid">
-                    <span className="cell-val">{val}</span>
+
+                  {/* Memory Cell */}
+                  <div style={{
+                    width: '62px',
+                    height: '62px',
+                    borderRadius: '8px',
+                    background: isSwapping 
+                      ? 'rgba(239, 68, 68, 0.35)' 
+                      : isComparing 
+                      ? 'rgba(245, 158, 11, 0.3)' 
+                      : 'rgba(30, 41, 59, 0.8)',
+                    border: isSwapping 
+                      ? '2px solid #ef4444' 
+                      : isComparing 
+                      ? '2px solid #f59e0b' 
+                      : isI 
+                      ? '2px solid #38bdf8' 
+                      : isJ 
+                      ? '2px solid #ec4899' 
+                      : '1px solid rgba(255, 255, 255, 0.12)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: (isI || isJ || isComparing) ? '0 0 14px rgba(56, 189, 248, 0.25)' : 'none',
+                    transition: 'all 0.18s ease'
+                  }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc' }}>
+                      {String(val)}
+                    </span>
                   </div>
-                  <div className="cell-bot">
-                    <code>{hexAddr}</code>
-                  </div>
+
+                  {/* Index and Byte Address below cell */}
+                  <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94a3b8' }}>
+                    [{idx}]
+                  </span>
+                  <span style={{ fontSize: '0.62rem', fontFamily: 'monospace', color: '#64748b' }}>
+                    {hexAddr}
+                  </span>
                 </div>
               );
             })}
+          </div>
+
+          {/* Quick info note */}
+          <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: '#64748b' }}>
+            <Sparkles size={14} color="#06b6d4" />
+            <span>
+              Write arrays (e.g. <code>arr = [5, 2, 9, 1]</code>) or variables in your code. This visualizer automatically updates in real-time!
+            </span>
           </div>
         </div>
       </div>

@@ -1483,6 +1483,16 @@ footer {
   background: #1FB855;
 }
 
+.floating-ide {
+  background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  color: #FFFFFF;
+}
+
+.floating-ide:hover {
+  transform: scale(1.08);
+  box-shadow: 0 10px 25px rgba(6, 182, 212, 0.45);
+}
+
 .floating-top {
   background: var(--primary-blue);
   color: #FFFFFF;
