@@ -107,7 +107,8 @@ html, body, #root {
   justify-content: space-between;
   padding: 0 1rem;
   user-select: none;
-  z-index: 10;
+  position: relative;
+  z-index: 50000;
 }
 
 .nav-left {
@@ -519,15 +520,14 @@ html, body, #root {
   left: 0;
   min-width: 250px;
   max-width: 320px;
-  background: #181a1f;
-  background: rgba(20, 24, 32, 0.98);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(18, 22, 32, 0.98);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 8px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(56, 189, 248, 0.15);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.95), 0 0 20px rgba(56, 189, 248, 0.12);
   padding: 5px;
-  z-index: 10000;
+  z-index: 100000;
   animation: menubarFadeIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

@@ -471,6 +471,8 @@ export default function Navbar({
             </nav>
           )}
 
+
+
           {/* Mobile Quick Install Button (hidden once installed) */}
           {isMobile && !isAppInstalled && (
             <button
