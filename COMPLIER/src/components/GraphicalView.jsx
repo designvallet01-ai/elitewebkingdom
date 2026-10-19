@@ -125,7 +125,8 @@ export default function GraphicalView({
   onSelectLine, 
   selectedLine,
   onUpdateCode,
-  onOpenAiExplainer
+  onOpenAiExplainer,
+  isMobile = false
 }) {
   const [tab, setTab] = useState('flowchart'); // 'flowchart' | 'ast' | 'variables'
   const [zoom, setZoom] = useState(1);
@@ -552,156 +553,282 @@ export default function GraphicalView({
 
   return (
     <div className={`graphical-container theme-${themeMode}`}>
-      {/* 1. Header Toolbar (Single Sleek Bar) */}
-      <div className="graphical-header">
-        <div className="graphical-status-info">
-          <div className="hud-metric live-sync">
-            <span className="live-dot-pulse" />
-            <span className="metric-label font-bold text-emerald">REAL-TIME SYNC</span>
-          </div>
-          <span className="hud-metric-chip">
-            Complexity: <strong style={{ color: stats.complexityColor || '#38bdf8' }}>M = {stats.cyclomaticComplexity || 1}</strong>
-          </span>
-          <span className="hud-metric-chip">
-            Nodes: <strong>{graph.nodes.length}</strong>
-          </span>
-        </div>
+      {/* 1. Top Visualizer Tabs (Flowchart, AST Tree, Variables Watcher) */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        background: '#090c13',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        padding: '4px 8px',
+        gap: '4px',
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        WebkitOverflowScrolling: 'touch',
+        flexShrink: 0
+      }}>
+        <button
+          type="button"
+          onClick={() => setTab('flowchart')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '5px 12px',
+            borderRadius: '6px',
+            border: tab === 'flowchart' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
+            background: tab === 'flowchart' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+            color: tab === 'flowchart' ? '#38bdf8' : '#94a3b8',
+            fontSize: '0.76rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0
+          }}
+        >
+          <GitFork size={13} />
+          <span>Flowchart</span>
+        </button>
 
-        {/* Action Controls for Flowchart */}
-        <div className="graph-header-actions">
-          {/* Quick Flowchart Template Library */}
-          <div className="dropdown-wrapper">
+        <button
+          type="button"
+          onClick={() => setTab('ast')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '5px 12px',
+            borderRadius: '6px',
+            border: tab === 'ast' ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid transparent',
+            background: tab === 'ast' ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
+            color: tab === 'ast' ? '#c084fc' : '#94a3b8',
+            fontSize: '0.76rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0
+          }}
+        >
+          <Layers size={13} />
+          <span>AST Tree</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTab('variables')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '5px 12px',
+            borderRadius: '6px',
+            border: tab === 'variables' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid transparent',
+            background: tab === 'variables' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+            color: tab === 'variables' ? '#34d399' : '#94a3b8',
+            fontSize: '0.76rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0
+          }}
+        >
+          <Variable size={13} />
+          <span>Variables ({variables.length})</span>
+        </button>
+
+        {!isMobile && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Complexity:</span>
+            <strong style={{ fontSize: '0.72rem', color: stats.complexityColor || '#38bdf8' }}>M = {stats.cyclomaticComplexity || 1}</strong>
+            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Nodes:</span>
+            <strong style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>{graph.nodes.length}</strong>
+          </div>
+        )}
+      </div>
+
+      {/* 2. Flowchart Action Controls Toolbar (Horizontally scrollable on mobile so NO option is hidden) */}
+      {tab === 'flowchart' && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: isMobile ? 'flex-start' : 'space-between',
+          background: '#0d111a',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '4px 8px',
+          gap: '6px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          WebkitOverflowScrolling: 'touch',
+          flexShrink: 0,
+          whiteSpace: 'nowrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+            {/* Quick Flowchart Template Library */}
+            <div className="dropdown-wrapper">
+              <button
+                type="button"
+                className="flow-action-btn"
+                onClick={() => setShowExamplesMenu(!showExamplesMenu)}
+                title="Load standard flowchart algorithm examples"
+                style={{ padding: '4px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Code2 size={13} className="text-cyan" />
+                <span>Presets</span>
+              </button>
+
+              {showExamplesMenu && (
+                <div className="flow-dropdown-menu">
+                  <div className="dropdown-menu-title">Select Flow Example</div>
+                  {FLOWCHART_EXAMPLES.map((ex) => (
+                    <button
+                      key={ex.id}
+                      type="button"
+                      className="dropdown-item"
+                      onClick={() => handleLoadExample(ex)}
+                    >
+                      <span className="item-name">{ex.name}</span>
+                      <span className="item-tag">{ex.category}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Stepper Controls */}
+            <div className="stepper-group" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <button
+                type="button"
+                className="step-icon-btn"
+                onClick={handleStepBackward}
+                title="Step Backward"
+              >
+                <SkipBack size={12} />
+              </button>
+
+              <button 
+                type="button"
+                className={`simulate-btn ${isSimulating ? 'active' : ''}`}
+                onClick={handleToggleSimulation}
+                title={isSimulating ? 'Pause Flow' : 'Auto Play Simulation'}
+                style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+              >
+                {isSimulating ? <Pause size={13} /> : <Play size={13} fill="currentColor" />}
+                <span>{isSimulating ? 'Pause' : 'Play'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="step-icon-btn"
+                onClick={handleStepForward}
+                title="Step Forward"
+              >
+                <SkipForward size={12} />
+              </button>
+
+              <button
+                type="button"
+                className="step-icon-btn reset"
+                onClick={handleResetSimulation}
+                title="Reset Pointer"
+              >
+                <RotateCcw size={12} />
+              </button>
+            </div>
+
+            {/* Speed Toggle */}
             <button
+              type="button"
+              className="speed-toggle-btn"
+              onClick={() => setSimSpeed(s => s === 1 ? 2 : s === 2 ? 0.5 : 1)}
+              title="Animation Speed"
+              style={{ padding: '3px 6px', fontSize: '0.7rem' }}
+            >
+              {simSpeed}x
+            </button>
+
+            {/* Fit View Quick Action */}
+            <button
+              type="button"
               className="flow-action-btn"
-              onClick={() => setShowExamplesMenu(!showExamplesMenu)}
-              title="Load standard flowchart algorithm examples"
+              onClick={handleFitView}
+              title="Fit to Screen"
+              style={{ padding: '4px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px' }}
             >
-              <Code2 size={13} className="text-cyan" />
-              <span className="action-btn-text">Presets</span>
+              <Maximize2 size={12} />
+              <span>Fit</span>
             </button>
 
-            {showExamplesMenu && (
-              <div className="flow-dropdown-menu">
-                <div className="dropdown-menu-title">Select Flow Example</div>
-                {FLOWCHART_EXAMPLES.map((ex) => (
-                  <button
-                    key={ex.id}
-                    className="dropdown-item"
-                    onClick={() => handleLoadExample(ex)}
+            {/* Theme Picker */}
+            <div className="dropdown-wrapper">
+              <button
+                type="button"
+                className="flow-icon-btn"
+                onClick={() => setShowThemesMenu(!showThemesMenu)}
+                title="Change Theme"
+                style={{ width: '28px', height: '28px' }}
+              >
+                <Palette size={13} />
+              </button>
+
+              {showThemesMenu && (
+                <div className="flow-dropdown-menu right-aligned">
+                  <div className="dropdown-menu-title">Aesthetic</div>
+                  <button 
+                    type="button"
+                    className={`dropdown-item ${themeMode === 'neon' ? 'active' : ''}`}
+                    onClick={() => { setThemeMode('neon'); setShowThemesMenu(false); }}
                   >
-                    <span className="item-name">{ex.name}</span>
-                    <span className="item-tag">{ex.category}</span>
+                    🌌 Neon
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
+                  <button 
+                    type="button"
+                    className={`dropdown-item ${themeMode === 'slate' ? 'active' : ''}`}
+                    onClick={() => { setThemeMode('slate'); setShowThemesMenu(false); }}
+                  >
+                    💎 Obsidian
+                  </button>
+                  <button 
+                    type="button"
+                    className={`dropdown-item ${themeMode === 'blueprint' ? 'active' : ''}`}
+                    onClick={() => { setThemeMode('blueprint'); setShowThemesMenu(false); }}
+                  >
+                    📐 Blueprint
+                  </button>
+                </div>
+              )}
+            </div>
 
-          {/* Stepper Controls */}
-          <div className="stepper-group">
+            {/* Export PNG */}
             <button
-              className="step-icon-btn"
-              onClick={handleStepBackward}
-              title="Step Backward (Previous Statement)"
-            >
-              <SkipBack size={12} />
-            </button>
-
-            <button 
-              className={`simulate-btn ${isSimulating ? 'active' : ''}`}
-              onClick={handleToggleSimulation}
-              title={isSimulating ? 'Pause Flow' : 'Auto Play Simulation'}
-            >
-              {isSimulating ? <Pause size={13} /> : <Play size={13} fill="currentColor" />}
-              <span className="sim-btn-full">{isSimulating ? 'Pause' : 'Play'}</span>
-            </button>
-
-            <button
-              className="step-icon-btn"
-              onClick={handleStepForward}
-              title="Step Forward (Next Statement)"
-            >
-              <SkipForward size={12} />
-            </button>
-
-            <button
-              className="step-icon-btn reset"
-              onClick={handleResetSimulation}
-              title="Reset Execution Pointer"
-            >
-              <RotateCcw size={12} />
-            </button>
-          </div>
-
-          {/* Speed Toggle */}
-          <button
-            className="speed-toggle-btn"
-            onClick={() => setSimSpeed(s => s === 1 ? 2 : s === 2 ? 0.5 : 1)}
-            title="Execution Animation Speed"
-          >
-            {simSpeed}x
-          </button>
-
-          {/* Theme Picker */}
-          <div className="dropdown-wrapper">
-            <button
+              type="button"
               className="flow-icon-btn"
-              onClick={() => setShowThemesMenu(!showThemesMenu)}
-              title="Change Flowchart Theme"
+              onClick={handleExportPng}
+              title="Export as PNG"
+              style={{ width: '28px', height: '28px' }}
             >
-              <Palette size={14} />
+              <Download size={13} />
             </button>
 
-            {showThemesMenu && (
-              <div className="flow-dropdown-menu right-aligned">
-                <div className="dropdown-menu-title">Flowchart Aesthetic</div>
-                <button 
-                  className={`dropdown-item ${themeMode === 'neon' ? 'active' : ''}`}
-                  onClick={() => { setThemeMode('neon'); setShowThemesMenu(false); }}
-                >
-                  🌌 Cyberpunk Neon
-                </button>
-                <button 
-                  className={`dropdown-item ${themeMode === 'slate' ? 'active' : ''}`}
-                  onClick={() => { setThemeMode('slate'); setShowThemesMenu(false); }}
-                >
-                  💎 Deep Obsidian
-                </button>
-                <button 
-                  className={`dropdown-item ${themeMode === 'blueprint' ? 'active' : ''}`}
-                  onClick={() => { setThemeMode('blueprint'); setShowThemesMenu(false); }}
-                >
-                  📐 Blueprint Tech
-                </button>
-              </div>
-            )}
+            {/* Copy Mermaid */}
+            <button
+              type="button"
+              className="flow-icon-btn"
+              onClick={handleCopyMermaid}
+              title={copiedMermaid ? 'Copied Mermaid!' : 'Copy Mermaid Code'}
+              style={{ width: '28px', height: '28px' }}
+            >
+              {copiedMermaid ? <Check size={13} className="text-emerald" /> : <Copy size={13} />}
+            </button>
           </div>
 
-          {/* Export Menu */}
-          <button
-            className="flow-icon-btn"
-            onClick={handleExportPng}
-            title="Export as High-Resolution PNG"
-          >
-            <Download size={14} />
-          </button>
-
-          <button
-            className="flow-icon-btn"
-            onClick={handleCopyMermaid}
-            title={copiedMermaid ? 'Copied Mermaid!' : 'Copy Mermaid Markdown Code'}
-          >
-            {copiedMermaid ? <Check size={14} className="text-emerald" /> : <Copy size={14} />}
-          </button>
-
-          {/* Clean Header Search Bar */}
-          <form className="header-search-form" onSubmit={handleSearchSubmit}>
+          {/* Search Node Input */}
+          <form className="header-search-form" onSubmit={handleSearchSubmit} style={{ flexShrink: 0, margin: 0 }}>
             <Search size={12} className="text-muted" />
             <input
               type="text"
               placeholder="Find node..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: isMobile ? '80px' : '90px' }}
             />
             {searchQuery && (
               <button type="button" className="clear-search" onClick={() => setSearchQuery('')}>
@@ -710,7 +837,7 @@ export default function GraphicalView({
             )}
           </form>
         </div>
-      </div>
+      )}
 
       {/* 2. Main Visualizer Body */}
       <div className="graphical-body">

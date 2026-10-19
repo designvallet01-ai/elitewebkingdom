@@ -1768,97 +1768,99 @@ export default function App() {
         {/* Right Side: View Switcher (Terminal / Graphical Flow / Web Preview) */}
         <section className={`ide-terminal-section ${isMobile && mobileActiveTab === 'editor' ? 'mobile-hidden' : ''}`}>
           {/* View Switcher Header Bar (Desktop Only) */}
-          <div className="view-mode-bar">
-            <div className="view-mode-tabs">
-              <button
-                className={`view-mode-btn ${rightPaneView === 'console' ? 'active' : ''}`}
-                onClick={() => setRightPaneView('console')}
-                id="btn-view-console"
-                title="Compiler Terminal Output"
-              >
-                <Terminal size={14} />
-                <span>Terminal</span>
-                {lastStats && (
-                  <span className={`pill-badge ${lastStats.code === 0 ? 'success' : 'error'}`} />
-                )}
-              </button>
-
-              <button
-                className={`view-mode-btn ${rightPaneView === 'graphical' ? 'active' : ''}`}
-                onClick={() => setRightPaneView('graphical')}
-                id="btn-view-graphical"
-                title="ISO Flowchart Visualizer"
-              >
-                <GitFork size={14} />
-                <span>Flowchart</span>
-              </button>
-
-              <button
-                className={`view-mode-btn ${rightPaneView === 'testcases' ? 'active' : ''}`}
-                onClick={() => setRightPaneView('testcases')}
-                id="btn-view-testcases"
-                title="Competitive Programming TestCases & Judge"
-              >
-                <FlaskConical size={14} className="text-amber-400" />
-                <span>CP Judge</span>
-              </button>
-
-              <button
-                className={`view-mode-btn ${rightPaneView === 'memory' ? 'active' : ''}`}
-                onClick={() => setRightPaneView('memory')}
-                id="btn-view-memory"
-                title="3D Array Memory Matrix & Pointers"
-              >
-                <Database size={14} className="text-cyan-400" />
-                <span>Memory</span>
-              </button>
-
-              <button
-                className={`view-mode-btn ${rightPaneView === 'recursion' ? 'active' : ''}`}
-                onClick={() => setRightPaneView('recursion')}
-                id="btn-view-recursion"
-                title="Recursive Call Stack Frames & Tree"
-              >
-                <GitCommit size={14} className="text-pink-400" />
-                <span>Recursion</span>
-              </button>
-
-              {activeLanguage === 'html' && (
+          {!isMobile && (
+            <div className="view-mode-bar">
+              <div className="view-mode-tabs">
                 <button
-                  className={`view-mode-btn ${rightPaneView === 'preview' ? 'active' : ''}`}
-                  onClick={() => setRightPaneView('preview')}
-                  id="btn-view-preview"
+                  className={`view-mode-btn ${rightPaneView === 'console' ? 'active' : ''}`}
+                  onClick={() => setRightPaneView('console')}
+                  id="btn-view-console"
+                  title="Compiler Terminal Output"
                 >
-                  <Globe size={14} />
-                  <span>Sandbox</span>
+                  <Terminal size={14} />
+                  <span>Terminal</span>
+                  {lastStats && (
+                    <span className={`pill-badge ${lastStats.code === 0 ? 'success' : 'error'}`} />
+                  )}
                 </button>
-              )}
-            </div>
 
-            <div className="view-mode-actions">
-              <button
-                type="button"
-                className="view-mode-action-btn trans-btn"
-                onClick={() => setIsTranspilerModalOpen(true)}
-                title="Polyglot Code Transpiler: Convert code to C++, Python, Java or JS"
-                id="btn-quick-transpiler"
-              >
-                <Languages size={13} className="text-cyan-400" />
-                <span>Transpile</span>
-              </button>
+                <button
+                  className={`view-mode-btn ${rightPaneView === 'graphical' ? 'active' : ''}`}
+                  onClick={() => setRightPaneView('graphical')}
+                  id="btn-view-graphical"
+                  title="ISO Flowchart Visualizer"
+                >
+                  <GitFork size={14} />
+                  <span>Flowchart</span>
+                </button>
 
-              <button
-                type="button"
-                className="view-mode-action-btn lab-btn"
-                onClick={() => setIsLabReportModalOpen(true)}
-                title="Generate Official University Lab Practical Record / Interview Sheet PDF"
-                id="btn-quick-lab-record"
-              >
-                <FileCheck2 size={13} className="text-emerald-400" />
-                <span>Lab PDF</span>
-              </button>
+                <button
+                  className={`view-mode-btn ${rightPaneView === 'testcases' ? 'active' : ''}`}
+                  onClick={() => setRightPaneView('testcases')}
+                  id="btn-view-testcases"
+                  title="Competitive Programming TestCases & Judge"
+                >
+                  <FlaskConical size={14} className="text-amber-400" />
+                  <span>CP Judge</span>
+                </button>
+
+                <button
+                  className={`view-mode-btn ${rightPaneView === 'memory' ? 'active' : ''}`}
+                  onClick={() => setRightPaneView('memory')}
+                  id="btn-view-memory"
+                  title="3D Array Memory Matrix & Pointers"
+                >
+                  <Database size={14} className="text-cyan-400" />
+                  <span>Memory</span>
+                </button>
+
+                <button
+                  className={`view-mode-btn ${rightPaneView === 'recursion' ? 'active' : ''}`}
+                  onClick={() => setRightPaneView('recursion')}
+                  id="btn-view-recursion"
+                  title="Recursive Call Stack Frames & Tree"
+                >
+                  <GitCommit size={14} className="text-pink-400" />
+                  <span>Recursion</span>
+                </button>
+
+                {activeLanguage === 'html' && (
+                  <button
+                    className={`view-mode-btn ${rightPaneView === 'preview' ? 'active' : ''}`}
+                    onClick={() => setRightPaneView('preview')}
+                    id="btn-view-preview"
+                  >
+                    <Globe size={14} />
+                    <span>Sandbox</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="view-mode-actions">
+                <button
+                  type="button"
+                  className="view-mode-action-btn trans-btn"
+                  onClick={() => setIsTranspilerModalOpen(true)}
+                  title="Polyglot Code Transpiler: Convert code to C++, Python, Java or JS"
+                  id="btn-quick-transpiler"
+                >
+                  <Languages size={13} className="text-cyan-400" />
+                  <span>Transpile</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="view-mode-action-btn lab-btn"
+                  onClick={() => setIsLabReportModalOpen(true)}
+                  title="Generate Official University Lab Practical Record / Interview Sheet PDF"
+                  id="btn-quick-lab-record"
+                >
+                  <FileCheck2 size={13} className="text-emerald-400" />
+                  <span>Lab PDF</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Right Pane Body */}
           <div className="right-pane-body">
@@ -1886,6 +1888,7 @@ export default function App() {
                 selectedLine={selectedLine}
                 onUpdateCode={handleCodeChange}
                 onOpenAiExplainer={() => setIsAiModalOpen(true)}
+                isMobile={isMobile}
               />
             )}
 
@@ -1895,6 +1898,7 @@ export default function App() {
                 language={activeLanguage}
                 onRunSingle={handleRunSingleTestCase}
                 isRunning={isRunning}
+                isMobile={isMobile}
               />
             )}
 
@@ -1902,6 +1906,7 @@ export default function App() {
               <MemoryArrayVisualizer
                 code={activeFile.code}
                 language={activeLanguage}
+                isMobile={isMobile}
               />
             )}
 
@@ -1910,6 +1915,7 @@ export default function App() {
                 code={activeFile.code}
                 language={activeLanguage}
                 onApplyCode={handleCodeChange}
+                isMobile={isMobile}
               />
             )}
 

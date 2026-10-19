@@ -3518,7 +3518,7 @@ html, body, #root {
 
   /* Hide Desktop View Mode Switcher bar on mobile */
   .view-mode-bar {
-    display: none;
+    display: none !important;
   }
 
   .right-pane-body {
@@ -3876,9 +3876,17 @@ html, body, #root {
     display: none; /* handled via navbar mobile toggle */
   }
 
+  .tab-action-btn span,
+  .tab-action-btn .action-btn-text,
   .tab-action-btn.templates span,
-  .tab-action-btn#editor-copy-btn span {
-    display: none;
+  .tab-action-btn#editor-copy-btn span,
+  .voice-dictation-btn span,
+  .dsa-magic-btn span {
+    display: none !important;
+  }
+
+  .tab-action-btn {
+    padding: 0 6px !important;
   }
 
   .editor-tab {
@@ -4213,6 +4221,84 @@ html, body, #root {
 
   .vars-grid {
     grid-template-columns: 1fr !important;
+  }
+
+  /* Modals Mobile Optimizations */
+  .ai-nav-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 4px !important;
+  }
+
+  .ai-nav-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .complexity-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .transpiler-modal-card,
+  .report-modal-card {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    max-height: 92vh !important;
+    margin: 0 auto !important;
+    border-radius: 12px !important;
+  }
+
+  .transpiler-grid {
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .config-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .console-header {
+    padding: 6px 8px !important;
+    gap: 4px !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+  }
+
+  .console-header::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .console-title {
+    font-size: 0.74rem !important;
+  }
+
+  .mobile-view-tabs {
+    height: 50px !important;
+    padding: 0 4px env(safe-area-inset-bottom, 0px) !important;
+  }
+
+  .mobile-tab-btn {
+    font-size: 0.62rem !important;
+    padding: 4px 1px !important;
+    min-width: 0 !important;
+  }
+
+  .mobile-tab-btn span {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  .app-navbar {
+    padding: 0 6px !important;
+    gap: 4px !important;
   }
 }
 

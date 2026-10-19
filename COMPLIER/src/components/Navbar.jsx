@@ -480,9 +480,9 @@ export default function Navbar({
               onClick={handleInstallApp}
               title="Install Elite IDE on your Phone"
               id="mobile-install-quick-btn"
+              aria-label="Install Elite IDE on your device"
             >
-              <Download size={13} />
-              <span>Install</span>
+              <Download size={14} />
             </button>
           )}
         </div>
@@ -751,7 +751,7 @@ export default function Navbar({
                 title="Select programming language or keep on real-time Auto-Detection"
               >
                 <option value="auto">
-                  ⚡ {isMobile ? 'Auto' : 'Auto-Detect'} {detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : ''}
+                  ⚡ {isMobile ? (detectedLangInfo?.detected ? detectedLangInfo.name : 'Auto') : `Auto-Detect ${detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : ''}`}
                 </option>
 
                 <optgroup label="🌟 Core & Systems">

@@ -132,12 +132,14 @@ function parseMemoryFromCode(code = '', language = 'python') {
 
 export default function MemoryArrayVisualizer({
   code = '',
-  language = 'python'
+  language = 'python',
+  isMobile = false
 }) {
   const parsedMemory = useMemo(() => {
     return parseMemoryFromCode(code, language);
   }, [code, language]);
 
+  const [mobileTab, setMobileTab] = useState('heap'); // 'heap' | 'stack'
   const [selectedArrName, setSelectedArrName] = useState(() => parsedMemory.arrays[0]?.name || 'arr');
 
   useEffect(() => {
@@ -204,44 +206,46 @@ export default function MemoryArrayVisualizer({
     <div className="memory-workbench-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Top Header & Status */}
       <div style={{
-        padding: '12px 16px',
+        padding: isMobile ? '8px 10px' : '12px 16px',
         background: 'rgba(15, 23, 42, 0.7)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '10px'
+        gap: '8px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', padding: '6px', borderRadius: '6px' }}>
-            <Database size={18} />
+          <div style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', padding: '5px', borderRadius: '6px' }}>
+            <Database size={16} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
-                3D Memory Matrix & Variable Inspector
+              <span style={{ fontWeight: 700, fontSize: isMobile ? '0.82rem' : '0.9rem', color: '#f8fafc' }}>
+                Memory Matrix
               </span>
               <span style={{
-                fontSize: '0.68rem',
+                fontSize: '0.66rem',
                 textTransform: 'uppercase',
                 background: 'rgba(6, 182, 212, 0.2)',
                 color: '#38bdf8',
-                padding: '2px 8px',
+                padding: '1px 7px',
                 borderRadius: '10px',
                 fontWeight: 700
               }}>
-                Live Code Parsed
+                Live Parsed
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>
-              {parsedMemory.variables.length} Stack Variables • {parsedMemory.arrays.length} Heap Array(s) Detected
-            </p>
+            {!isMobile && (
+              <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>
+                {parsedMemory.variables.length} Stack Variables • {parsedMemory.arrays.length} Heap Array(s) Detected
+              </p>
+            )}
           </div>
         </div>
 
         {/* Array Selector & Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {parsedMemory.arrays.length > 1 && (
             <select
               value={selectedArrName}
@@ -251,13 +255,14 @@ export default function MemoryArrayVisualizer({
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 color: '#38bdf8',
                 borderRadius: '6px',
-                padding: '4px 8px',
-                fontSize: '0.78rem',
-                fontWeight: 600
+                padding: '3px 6px',
+                fontSize: '0.74rem',
+                fontWeight: 600,
+                maxWidth: isMobile ? '100px' : 'none'
               }}
             >
               {parsedMemory.arrays.map(a => (
-                <option key={a.name} value={a.name}>{a.name}[] ({a.values.length} elements)</option>
+                <option key={a.name} value={a.name}>{a.name}[] ({a.values.length})</option>
               ))}
             </select>
           )}
@@ -271,15 +276,15 @@ export default function MemoryArrayVisualizer({
               background: 'rgba(16, 185, 129, 0.2)',
               color: '#34d399',
               borderColor: 'rgba(16, 185, 129, 0.4)',
-              padding: '5px 12px',
+              padding: '4px 10px',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '5px',
               fontWeight: 600,
-              fontSize: '0.78rem'
+              fontSize: '0.74rem'
             }}
           >
-            <Play size={13} fill="currentColor" />
+            <Play size={12} fill="currentColor" />
             <span>{isSorting ? 'Tracing...' : 'Trace Sort'}</span>
           </button>
 
@@ -288,25 +293,77 @@ export default function MemoryArrayVisualizer({
             className="view-mode-action-btn"
             onClick={handleResetArray}
             title="Reset Array to Original State"
-            style={{ padding: '5px 8px' }}
+            style={{ padding: '4px 7px' }}
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={13} />
           </button>
         </div>
       </div>
 
+      {/* Mobile Switcher Tabs for Stack vs Heap */}
+      {isMobile && (
+        <div style={{
+          display: 'flex',
+          background: 'rgba(10, 13, 20, 0.9)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '5px 8px',
+          gap: '6px',
+          flexShrink: 0
+        }}>
+          <button
+            type="button"
+            onClick={() => setMobileTab('heap')}
+            style={{
+              flex: 1,
+              padding: '5px 8px',
+              borderRadius: '6px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              border: 'none',
+              background: mobileTab === 'heap' ? '#0284c7' : 'rgba(255, 255, 255, 0.06)',
+              color: '#ffffff',
+              cursor: 'pointer'
+            }}
+          >
+            📊 Heap Array ({arrayData.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab('stack')}
+            style={{
+              flex: 1,
+              padding: '5px 8px',
+              borderRadius: '6px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              border: 'none',
+              background: mobileTab === 'stack' ? '#0284c7' : 'rgba(255, 255, 255, 0.06)',
+              color: '#ffffff',
+              cursor: 'pointer'
+            }}
+          >
+            📦 Stack Vars ({parsedMemory.variables.length})
+          </button>
+        </div>
+      )}
+
       {/* Main Split Layout: Left is Stack Frame Variables, Right is Heap Memory Array */}
-      <div style={{ display: 'grid', gridTemplateColumns: '270px 1fr', flex: 1, overflow: 'hidden' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : '270px 1fr',
+        flex: 1,
+        overflow: 'hidden'
+      }}>
         {/* Left: Stack Segment (Local Variables) */}
         <div style={{
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
           background: 'rgba(15, 23, 42, 0.4)',
-          padding: '14px',
-          display: 'flex',
+          padding: isMobile ? '10px 12px' : '14px',
+          display: (isMobile && mobileTab !== 'stack') ? 'none' : 'flex',
           flexDirection: 'column',
           overflowY: 'auto'
         }}>
-          <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
             📦 Stack Segment ({parsedMemory.variables.length} Variables)
           </span>
 
@@ -357,7 +414,13 @@ export default function MemoryArrayVisualizer({
         </div>
 
         {/* Right: Heap Segment (Array / Matrix Memory Blocks) */}
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '16px', overflowY: 'auto' }}>
+        <div style={{
+          display: (isMobile && mobileTab !== 'heap') ? 'none' : 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          padding: isMobile ? '10px 12px' : '16px',
+          overflowY: 'auto'
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div>
               <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>

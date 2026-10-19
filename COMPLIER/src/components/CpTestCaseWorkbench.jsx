@@ -65,7 +65,8 @@ export default function CpTestCaseWorkbench({
   code = '',
   language = 'python',
   onRunSingle,
-  isRunning = false
+  isRunning = false,
+  isMobile = false
 }) {
   const [testCases, setTestCases] = useState(() => generateSampleTestCasesForCode(code, language));
   const [activeCaseId, setActiveCaseId] = useState(1);
@@ -268,54 +269,56 @@ export default function CpTestCaseWorkbench({
     <div className="cp-workbench-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Workbench Header */}
       <div style={{
-        padding: '12px 16px',
+        padding: isMobile ? '8px 10px' : '12px 16px',
         background: 'rgba(15, 23, 42, 0.7)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '10px'
+        gap: '8px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', padding: '6px', borderRadius: '6px' }}>
-            <Sparkles size={18} />
+          <div style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', padding: '5px', borderRadius: '6px' }}>
+            <Sparkles size={16} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
-                Competitive Programming Judge Arena
+              <span style={{ fontWeight: 700, fontSize: isMobile ? '0.82rem' : '0.9rem', color: '#f8fafc' }}>
+                CP Judge Arena
               </span>
               {(passedCount > 0 || failedCount > 0) && (
                 <span style={{
-                  fontSize: '0.68rem',
+                  fontSize: '0.66rem',
                   fontWeight: 700,
                   background: failedCount === 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
                   color: failedCount === 0 ? '#34d399' : '#f87171',
-                  padding: '2px 8px',
+                  padding: '1px 7px',
                   borderRadius: '10px'
                 }}>
                   {passedCount}/{testCases.length} Passed
                 </span>
               )}
             </div>
-            <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>
-              Execute your code against edge cases, boundary conditions & multi-line test vectors
-            </p>
+            {!isMobile && (
+              <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>
+                Execute your code against edge cases, boundary conditions & multi-line test vectors
+              </p>
+            )}
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="view-mode-action-btn"
             onClick={handleSmartGenerateCases}
             title="Auto-detect code input signatures and generate test cases"
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.76rem', color: '#38bdf8' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#38bdf8', padding: '4px 8px' }}
           >
-            <Wand2 size={13} />
-            <span>Generate Cases</span>
+            <Wand2 size={12} />
+            <span>Generate</span>
           </button>
 
           <button
@@ -324,9 +327,9 @@ export default function CpTestCaseWorkbench({
             onClick={handleAutoPopulateExpected}
             disabled={isAutoGeneratingExpected || isRunning}
             title="Run code to capture actual output as expected answers"
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.76rem', color: '#34d399' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#34d399', padding: '4px 8px' }}
           >
-            <CheckCheck size={13} />
+            <CheckCheck size={12} />
             <span>{isAutoGeneratingExpected ? 'Capturing...' : 'Set Expected'}</span>
           </button>
 
@@ -339,36 +342,54 @@ export default function CpTestCaseWorkbench({
               color: '#ffffff',
               border: 'none',
               borderRadius: '6px',
-              padding: '6px 14px',
+              padding: '5px 12px',
               fontWeight: 600,
-              fontSize: '0.78rem',
+              fontSize: '0.74rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '5px',
               cursor: isExecutingAll || isRunning ? 'not-allowed' : 'pointer',
               boxShadow: '0 0 12px rgba(2, 132, 199, 0.3)'
             }}
           >
-            {isExecutingAll ? <RefreshCw size={13} className="spin" /> : <Play size={13} fill="currentColor" />}
-            <span>{isExecutingAll ? 'Evaluating Tests...' : 'Run All Cases'}</span>
+            {isExecutingAll ? <RefreshCw size={12} className="spin" /> : <Play size={12} fill="currentColor" />}
+            <span>{isExecutingAll ? 'Evaluating...' : 'Run All'}</span>
           </button>
         </div>
       </div>
 
       {/* Main Split Layout: Left is Case Tabs, Right is Editor & Execution Output */}
-      <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', flex: 1, overflow: 'hidden' }}>
-        {/* Left: Test Case Tabs */}
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        flex: 1,
+        overflow: 'hidden'
+      }}>
+        {/* Left / Top: Test Case Tabs */}
         <div style={{
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: isMobile ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
           background: 'rgba(15, 23, 42, 0.4)',
-          padding: '12px',
+          padding: isMobile ? '6px 10px' : '12px',
           display: 'flex',
-          flexDirection: 'column',
-          overflowY: 'auto'
+          flexDirection: isMobile ? 'row' : 'column',
+          alignItems: isMobile ? 'center' : 'stretch',
+          overflowX: isMobile ? 'auto' : 'hidden',
+          overflowY: isMobile ? 'hidden' : 'auto',
+          gap: '8px',
+          flexShrink: 0,
+          width: isMobile ? '100%' : '240px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
-              CASES ({testCases.length})
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: isMobile ? '0' : '10px',
+            gap: '8px',
+            flexShrink: 0
+          }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+              Cases ({testCases.length})
             </span>
             <button
               type="button"
@@ -378,19 +399,27 @@ export default function CpTestCaseWorkbench({
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: '#f8fafc',
                 borderRadius: '4px',
-                padding: '3px 8px',
-                fontSize: '0.7rem',
+                padding: '2px 6px',
+                fontSize: '0.68rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                cursor: 'pointer'
+                gap: '3px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
-              <Plus size={12} /> Add Case
+              <Plus size={11} /> Add
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'row' : 'column',
+            gap: '6px',
+            flex: isMobile ? 1 : 'none',
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? '2px' : '0'
+          }}>
             {testCases.map((tc, idx) => {
               const isActive = tc.id === activeCaseId;
               const isPassed = tc.status === 'passed';
@@ -405,29 +434,32 @@ export default function CpTestCaseWorkbench({
                     background: isActive ? 'rgba(56, 189, 248, 0.15)' : 'rgba(30, 41, 59, 0.6)',
                     border: isActive ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)',
                     borderRadius: '6px',
-                    padding: '8px 10px',
+                    padding: isMobile ? '4px 8px' : '8px 10px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    gap: '6px',
+                    flexShrink: isMobile ? 0 : 1,
+                    whiteSpace: 'nowrap',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {isPassed ? (
-                      <CheckCircle2 size={14} color="#10b981" />
+                      <CheckCircle2 size={13} color="#10b981" />
                     ) : isFailed ? (
-                      <XCircle size={14} color="#ef4444" />
+                      <XCircle size={13} color="#ef4444" />
                     ) : isRun ? (
-                      <RefreshCw size={13} className="spin" color="#38bdf8" />
+                      <RefreshCw size={12} className="spin" color="#38bdf8" />
                     ) : (
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#64748b' }} />
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#64748b' }} />
                     )}
                     <div>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: isActive ? '#38bdf8' : '#f8fafc', display: 'block' }}>
-                        {tc.name}
+                      <span style={{ fontSize: '0.74rem', fontWeight: 600, color: isActive ? '#38bdf8' : '#f8fafc', display: 'block' }}>
+                        {isMobile ? `C${idx + 1}` : tc.name}
                       </span>
-                      {tc.executionTime !== null && (
+                      {tc.executionTime !== null && !isMobile && (
                         <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{tc.executionTime}ms</span>
                       )}
                     </div>
@@ -440,7 +472,7 @@ export default function CpTestCaseWorkbench({
                       style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px' }}
                       title="Delete Test Case"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={12} />
                     </button>
                   )}
                 </div>
@@ -449,10 +481,10 @@ export default function CpTestCaseWorkbench({
           </div>
         </div>
 
-        {/* Right: Active Test Case Details, Input/Expected/Actual */}
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '16px', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Right / Bottom: Active Test Case Details, Input/Expected/Actual */}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: isMobile ? '10px' : '16px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input
                 type="text"
                 value={activeCase.name}
@@ -462,19 +494,20 @@ export default function CpTestCaseWorkbench({
                   border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '6px',
                   color: '#f8fafc',
-                  padding: '4px 8px',
-                  fontSize: '0.85rem',
-                  fontWeight: 600
+                  padding: '3px 7px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  maxWidth: isMobile ? '130px' : '220px'
                 }}
               />
               {activeCase.status === 'passed' && (
-                <span style={{ fontSize: '0.74rem', color: '#34d399', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <CheckCircle2 size={14} /> Passed
+                <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <CheckCircle2 size={13} /> Passed
                 </span>
               )}
               {activeCase.status === 'failed' && (
-                <span style={{ fontSize: '0.74rem', color: '#f87171', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <XCircle size={14} /> Output Mismatch
+                <span style={{ fontSize: '0.72rem', color: '#f87171', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <XCircle size={13} /> Mismatch
                 </span>
               )}
             </div>
@@ -488,65 +521,72 @@ export default function CpTestCaseWorkbench({
                 border: '1px solid rgba(16, 185, 129, 0.4)',
                 color: '#34d399',
                 borderRadius: '6px',
-                padding: '5px 12px',
-                fontSize: '0.78rem',
+                padding: '4px 10px',
+                fontSize: '0.75rem',
                 fontWeight: 600,
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '5px',
                 cursor: 'pointer'
               }}
             >
-              <Play size={12} fill="currentColor" /> Run This Case
+              <Play size={11} fill="currentColor" /> Run Case
             </button>
           </div>
 
-          {/* Input & Expected Dual Pane */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          {/* Input & Expected Dual Pane (Stacked on Mobile) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+            gap: isMobile ? '8px' : '12px',
+            marginBottom: '10px'
+          }}>
             {/* Standard Input (Stdin) */}
             <div>
-              <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '3px' }}>
                 Standard Input (Stdin):
               </label>
               <textarea
                 value={activeCase.input}
                 onChange={(e) => handleUpdateActiveCase('input', e.target.value)}
                 placeholder="Enter input parameters (e.g. 5 or 10 20)..."
-                rows={5}
+                rows={isMobile ? 3 : 5}
                 style={{
                   width: '100%',
                   background: 'rgba(15, 23, 42, 0.6)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '6px',
                   color: '#f8fafc',
-                  padding: '8px',
+                  padding: '7px',
                   fontFamily: 'monospace',
-                  fontSize: '0.8rem',
-                  resize: 'vertical'
+                  fontSize: '0.78rem',
+                  resize: 'vertical',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
 
             {/* Expected Output */}
             <div>
-              <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '3px' }}>
                 Expected Output:
               </label>
               <textarea
                 value={activeCase.expected}
                 onChange={(e) => handleUpdateActiveCase('expected', e.target.value)}
                 placeholder="Expected program output to verify correctness..."
-                rows={5}
+                rows={isMobile ? 3 : 5}
                 style={{
                   width: '100%',
                   background: 'rgba(15, 23, 42, 0.6)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   borderRadius: '6px',
                   color: '#f8fafc',
-                  padding: '8px',
+                  padding: '7px',
                   fontFamily: 'monospace',
-                  fontSize: '0.8rem',
-                  resize: 'vertical'
+                  fontSize: '0.78rem',
+                  resize: 'vertical',
+                  boxSizing: 'border-box'
                 }}
               />
             </div>
@@ -554,21 +594,21 @@ export default function CpTestCaseWorkbench({
 
           {/* Actual Program Output */}
           <div>
-            <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
               <span>Actual Program Output:</span>
               {activeCase.executionTime !== null && (
-                <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Time: {activeCase.executionTime} ms</span>
+                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Time: {activeCase.executionTime} ms</span>
               )}
             </label>
             <div style={{
               background: 'rgba(0, 0, 0, 0.4)',
               border: activeCase.status === 'passed' ? '1px solid rgba(16, 185, 129, 0.4)' : activeCase.status === 'failed' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '6px',
-              padding: '10px 12px',
+              padding: '8px 10px',
               fontFamily: 'monospace',
-              fontSize: '0.82rem',
+              fontSize: '0.78rem',
               color: activeCase.status === 'failed' ? '#f87171' : '#f8fafc',
-              minHeight: '80px',
+              minHeight: isMobile ? '60px' : '80px',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-all'
             }}>

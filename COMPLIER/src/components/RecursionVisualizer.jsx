@@ -220,7 +220,8 @@ int main() {
 export default function RecursionVisualizer({
   code = '',
   language = 'python',
-  onApplyCode = null
+  onApplyCode = null,
+  isMobile = false
 }) {
   // 1. Detect recursive functions directly in user's active code
   const detectedFunctions = useMemo(() => {
@@ -230,6 +231,7 @@ export default function RecursionVisualizer({
   const hasUserRecursion = detectedFunctions.length > 0;
   const activeFunc = hasUserRecursion ? detectedFunctions[0] : null;
 
+  const [mobileRecTab, setMobileRecTab] = useState('stack'); // 'stack' | 'tree'
   const [inputValN, setInputValN] = useState(4);
   const [activeStep, setActiveStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -404,51 +406,53 @@ export default function RecursionVisualizer({
     <div className="recursion-workbench-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Dynamic Header & Status Banner */}
       <div style={{
-        padding: '12px 16px',
+        padding: isMobile ? '8px 10px' : '12px 16px',
         background: 'rgba(15, 23, 42, 0.7)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '10px'
+        gap: '8px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
             background: hasUserRecursion ? 'rgba(236, 72, 153, 0.15)' : 'rgba(56, 189, 248, 0.15)',
             color: hasUserRecursion ? '#f472b6' : '#38bdf8',
-            padding: '6px',
+            padding: '5px',
             borderRadius: '6px'
           }}>
-            <GitCommit size={18} />
+            <GitCommit size={16} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f8fafc' }}>
-                {hasUserRecursion ? `Live Function: ${activeFunc.name}()` : 'Recursion Call Stack & Tree Engine'}
+              <span style={{ fontWeight: 700, fontSize: isMobile ? '0.82rem' : '0.9rem', color: '#f8fafc' }}>
+                {hasUserRecursion ? `Live: ${activeFunc.name}()` : 'Recursion Engine'}
               </span>
               <span style={{
-                fontSize: '0.68rem',
+                fontSize: '0.66rem',
                 textTransform: 'uppercase',
                 background: hasUserRecursion ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
                 color: hasUserRecursion ? '#34d399' : '#fbbf24',
-                padding: '2px 8px',
+                padding: '1px 7px',
                 borderRadius: '10px',
                 fontWeight: 700
               }}>
-                {hasUserRecursion ? 'User Code Detected' : 'Template Mode'}
+                {hasUserRecursion ? 'Detected' : 'Presets'}
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>
-              {hasUserRecursion 
-                ? `Tracing "${activeFunc.name}" with ${activeFunc.callCount} recursive call(s) • Base Case: ${activeFunc.baseCase}`
-                : 'Write a recursive function in editor or pick an algorithm below to trace execution frames'}
-            </p>
+            {!isMobile && (
+              <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8' }}>
+                {hasUserRecursion 
+                  ? `Tracing "${activeFunc.name}" with ${activeFunc.callCount} recursive call(s) • Base Case: ${activeFunc.baseCase}`
+                  : 'Write a recursive function in editor or pick an algorithm below to trace execution frames'}
+              </p>
+            )}
           </div>
         </div>
 
         {/* Dynamic Controls: Parameter Input & Stepper */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255, 255, 255, 0.04)', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Param n:</span>
             <input 
@@ -530,20 +534,21 @@ export default function RecursionVisualizer({
       {/* If user has no recursive function yet, show smart template loader chips */}
       {!hasUserRecursion && (
         <div style={{
-          padding: '8px 16px',
+          padding: isMobile ? '6px 10px' : '8px 16px',
           background: 'rgba(245, 158, 11, 0.08)',
           borderBottom: '1px solid rgba(245, 158, 11, 0.2)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          flexWrap: 'wrap',
+          flexWrap: isMobile ? 'nowrap' : 'wrap',
+          overflowX: isMobile ? 'auto' : 'visible',
           gap: '8px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#fbbf24' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: '#fbbf24', flexShrink: 0 }}>
             <Sparkles size={14} />
-            <span>Load a recursive starter template directly into your editor:</span>
+            <span>{isMobile ? 'Templates:' : 'Load a recursive starter template directly into your editor:'}</span>
           </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
             {Object.entries(RECURSION_TEMPLATES).map(([key, tpl]) => (
               <button
                 key={key}
@@ -557,7 +562,8 @@ export default function RecursionVisualizer({
                   padding: '3px 8px',
                   fontSize: '0.72rem',
                   fontWeight: 600,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 + {tpl.title.split(' ')[0]}
@@ -567,121 +573,180 @@ export default function RecursionVisualizer({
         </div>
       )}
 
-      {/* Main Split Layout: Left is LIFO Call Stack, Right is Call Tree & Narration */}
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', flex: 1, overflow: 'hidden' }}>
-        {/* Left Column: LIFO Call Stack Frames */}
+      {/* Mobile Stack vs Tree Tab Switcher */}
+      {isMobile && (
         <div style={{
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          background: 'rgba(15, 23, 42, 0.4)',
-          padding: '14px',
           display: 'flex',
-          flexDirection: 'column',
-          overflowY: 'auto'
+          background: 'rgba(15, 23, 42, 0.9)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: '4px 8px',
+          gap: '6px',
+          flexShrink: 0
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              🥞 LIFO Call Stack ({currentStepData.stack.length} Frames)
-            </span>
-            <span style={{ fontSize: '0.72rem', color: '#38bdf8' }}>
-              Depth: {currentStepData.stack.length > 0 ? currentStepData.stack[currentStepData.stack.length - 1].depth : 0}
-            </span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setMobileRecTab('stack')}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              borderRadius: '6px',
+              border: 'none',
+              background: mobileRecTab === 'stack' ? 'rgba(236, 72, 153, 0.25)' : 'transparent',
+              color: mobileRecTab === 'stack' ? '#f472b6' : '#94a3b8',
+              cursor: 'pointer'
+            }}
+          >
+            🥞 Stack ({currentStepData.stack.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileRecTab('tree')}
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              borderRadius: '6px',
+              border: 'none',
+              background: mobileRecTab === 'tree' ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
+              color: mobileRecTab === 'tree' ? '#38bdf8' : '#94a3b8',
+              cursor: 'pointer'
+            }}
+          >
+            🌳 Tree Simulation
+          </button>
+        </div>
+      )}
 
-          <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '6px', flex: 1, minHeight: '120px' }}>
-            {currentStepData.stack.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px 8px', color: '#64748b', fontSize: '0.8rem' }}>
-                Stack is currently empty (All frames resolved)
-              </div>
-            ) : (
-              currentStepData.stack.map((frame, idx) => {
-                const isTop = idx === currentStepData.stack.length - 1;
-                return (
-                  <div
-                    key={frame.id}
-                    style={{
-                      background: isTop ? 'rgba(236, 72, 153, 0.2)' : 'rgba(30, 41, 59, 0.7)',
-                      border: isTop ? '1px solid rgba(236, 72, 153, 0.5)' : '1px solid rgba(255, 255, 255, 0.08)',
-                      borderRadius: '8px',
-                      padding: '8px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      boxShadow: isTop ? '0 0 12px rgba(236, 72, 153, 0.25)' : 'none',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.84rem', color: isTop ? '#f472b6' : '#f1f5f9' }}>
-                        {frame.func}
-                      </div>
-                      <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
-                        Depth {frame.depth} • Param: {frame.val}
-                      </span>
-                    </div>
-                    {isTop && (
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#ec4899', color: '#ffffff', padding: '1px 5px', borderRadius: '4px' }}>
-                        TOP
-                      </span>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Stack Footprint Metrics */}
+      {/* Main Split Layout: Left is LIFO Call Stack, Right is Call Tree & Narration */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : '280px 1fr',
+        flex: 1,
+        overflow: 'hidden'
+      }}>
+        {/* Left Column: LIFO Call Stack Frames */}
+        {(!isMobile || mobileRecTab === 'stack') && (
           <div style={{
-            marginTop: '12px',
-            padding: '10px',
-            background: 'rgba(0, 0, 0, 0.25)',
-            borderRadius: '6px',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
-            fontSize: '0.74rem',
-            color: '#94a3b8',
+            borderRight: isMobile ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'rgba(15, 23, 42, 0.4)',
+            padding: isMobile ? '10px' : '14px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '4px'
+            overflowY: 'auto',
+            height: '100%'
           }}>
-            <div><strong>Max Stack Depth:</strong> {traceData.maxDepth} levels</div>
-            <div><strong>Total Invocations:</strong> {traceData.totalCalls} calls</div>
-            <div><strong>Space Complexity:</strong> O(Depth) = O({traceData.maxDepth})</div>
-          </div>
-        </div>
-
-        {/* Right Column: Interactive Call Tree Visualization & Live Action Log */}
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-          {/* Action Step Bar */}
-          <div style={{
-            padding: '10px 16px',
-            background: 'rgba(30, 41, 59, 0.5)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{
-                background: currentStepData.type === 'base_case' ? '#10b981' : currentStepData.type === 'push' ? '#ec4899' : '#0284c7',
-                color: '#ffffff',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                padding: '2px 6px',
-                borderRadius: '4px',
-                textTransform: 'uppercase'
-              }}>
-                Step {activeStep + 1}/{traceData.steps.length}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                🥞 LIFO Call Stack ({currentStepData.stack.length} Frames)
               </span>
-              <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#f8fafc' }}>
-                {currentStepData.action}
+              <span style={{ fontSize: '0.72rem', color: '#38bdf8' }}>
+                Depth: {currentStepData.stack.length > 0 ? currentStepData.stack[currentStepData.stack.length - 1].depth : 0}
               </span>
             </div>
 
-            {currentStepData.result !== undefined && (
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399' }}>
-                Return: {currentStepData.result}
-              </span>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '6px', flex: 1, minHeight: '120px' }}>
+              {currentStepData.stack.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px 8px', color: '#64748b', fontSize: '0.8rem' }}>
+                  Stack is currently empty (All frames resolved)
+                </div>
+              ) : (
+                currentStepData.stack.map((frame, idx) => {
+                  const isTop = idx === currentStepData.stack.length - 1;
+                  return (
+                    <div
+                      key={frame.id}
+                      style={{
+                        background: isTop ? 'rgba(236, 72, 153, 0.2)' : 'rgba(30, 41, 59, 0.7)',
+                        border: isTop ? '1px solid rgba(236, 72, 153, 0.5)' : '1px solid rgba(255, 255, 255, 0.08)',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        boxShadow: isTop ? '0 0 12px rgba(236, 72, 153, 0.25)' : 'none',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.84rem', color: isTop ? '#f472b6' : '#f1f5f9' }}>
+                          {frame.func}
+                        </div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                          Depth {frame.depth} • Param: {frame.val}
+                        </span>
+                      </div>
+                      {isTop && (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#ec4899', color: '#ffffff', padding: '1px 5px', borderRadius: '4px' }}>
+                          TOP
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Stack Footprint Metrics */}
+            <div style={{
+              marginTop: '12px',
+              padding: '10px',
+              background: 'rgba(0, 0, 0, 0.25)',
+              borderRadius: '6px',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              fontSize: '0.74rem',
+              color: '#94a3b8',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}>
+              <div><strong>Max Stack Depth:</strong> {traceData.maxDepth} levels</div>
+              <div><strong>Total Invocations:</strong> {traceData.totalCalls} calls</div>
+              <div><strong>Space Complexity:</strong> O(Depth) = O({traceData.maxDepth})</div>
+            </div>
           </div>
+        )}
+
+        {/* Right Column: Interactive Call Tree Visualization & Live Action Log */}
+        {(!isMobile || mobileRecTab === 'tree') && (
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+            {/* Action Step Bar */}
+            <div style={{
+              padding: isMobile ? '8px 12px' : '10px 16px',
+              background: 'rgba(30, 41, 59, 0.5)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '8px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <span style={{
+                  background: currentStepData.type === 'base_case' ? '#10b981' : currentStepData.type === 'push' ? '#ec4899' : '#0284c7',
+                  color: '#ffffff',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  textTransform: 'uppercase',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0
+                }}>
+                  Step {activeStep + 1}/{traceData.steps.length}
+                </span>
+                <span style={{ fontSize: isMobile ? '0.76rem' : '0.84rem', fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {currentStepData.action}
+                </span>
+              </div>
+
+              {currentStepData.result !== undefined && (
+                <span style={{ fontSize: isMobile ? '0.72rem' : '0.8rem', fontWeight: 700, color: '#34d399', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  Return: {currentStepData.result}
+                </span>
+              )}
+            </div>
 
           {/* SVG Tree Display */}
           <div style={{ flex: 1, overflow: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -742,6 +807,7 @@ export default function RecursionVisualizer({
             )}
           </div>
         </div>
+      )}
       </div>
     </div>
   );
