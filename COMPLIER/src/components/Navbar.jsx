@@ -514,7 +514,7 @@ export default function Navbar({
 
         <div className="nav-right">
           {/* Automatic Language Detection Badge & Interactive Engine Selector */}
-          <div className="auto-lang-selector-wrapper flex items-center gap-1.5">
+          <div className="auto-lang-selector-wrapper">
             <div className="auto-lang-pill" title="Programming language is identified automatically from your code in real-time">
               <Zap size={13} className="zap-icon" />
               {!isMobile && <span className="auto-label">{selectedLanguage === 'auto' ? 'Auto:' : 'Lang:'}</span>}
@@ -561,12 +561,11 @@ export default function Navbar({
             <button
               type="button"
               onClick={onOpenLanguageModal}
-              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5 transition-all shadow-sm"
+              className="nav-lang-hub-btn"
               title="Open Universal 116+ Language & Compiler Matrix Modal"
             >
-              <Globe size={13} />
-              <span className="hidden sm:inline">116+ Languages</span>
-              <span className="sm:hidden font-mono">116+</span>
+              <Globe size={13} className="hub-globe-icon" />
+              <span>116+ Languages</span>
             </button>
           </div>
 
