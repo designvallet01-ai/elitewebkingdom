@@ -150,11 +150,12 @@ export default function ConsolePanel({
       <div className="console-header">
         <div className="terminal-header-title">
           <TerminalIcon size={15} />
-          <span>Real IDLE Interactive Terminal</span>
+          <span>Interactive Cloud Terminal</span>
+          <span className="terminal-shell-tag">bash</span>
           {isRunning ? (
             <span className="live-pulse-badge">
               <span className="pulse-dot"></span>
-              LIVE ACTIVE
+              RUNNING
             </span>
           ) : lastStats ? (
             <span className={`tab-badge ${isSuccess ? 'success' : 'error'}`} />
@@ -262,6 +263,26 @@ export default function ConsolePanel({
 
         <div className="terminal-stream">
           {terminalEntries.map((entry, idx) => {
+            if (entry.type === 'cmd') {
+              return (
+                <div key={idx} className="terminal-cmd-row">
+                  <span className="terminal-prompt-user">developer@elite-ide</span>
+                  <span className="terminal-prompt-colon">:</span>
+                  <span className="terminal-prompt-path">~/workspace</span>
+                  <span className="terminal-prompt-dollar">$ </span>
+                  <span className="terminal-prompt-cmd">{entry.text}</span>
+                </div>
+              );
+            }
+            if (entry.type === 'process-exit') {
+              return (
+                <div key={idx} className={`terminal-process-exit ${entry.exitCode === 0 ? 'exit-success' : 'exit-fail'}`}>
+                  <span className="exit-code-badge">exit code: {entry.exitCode}</span>
+                  <span className="exit-time-badge">{entry.time}ms</span>
+                  {entry.runner && <span className="exit-runner-badge">({entry.runner})</span>}
+                </div>
+              );
+            }
             if (entry.type === 'stdout') {
               return <span key={idx} className="stdout-text">{entry.text}</span>;
             }

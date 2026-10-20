@@ -843,6 +843,50 @@ export default function App() {
   const handleClearConsole = useCallback(() => {
     setTerminalEntries([]);
     setLastStats(null);
+  }, []);  // Generate authentic developer shell compilation/execution commands
+  const getShellExecutionCommand = useCallback((lang, fileName) => {
+    const cleanLang = (lang || 'python').toLowerCase();
+    const name = fileName || (cleanLang === 'cpp' ? 'main.cpp' : cleanLang === 'c' ? 'main.c' : cleanLang === 'java' ? 'Main.java' : cleanLang === 'javascript' ? 'main.js' : cleanLang === 'typescript' ? 'main.ts' : cleanLang === 'rust' ? 'main.rs' : cleanLang === 'go' ? 'main.go' : 'main.py');
+    const base = name.split('.')[0] || 'main';
+
+    switch (cleanLang) {
+      case 'cpp': return `g++ -O3 -Wall ${name} -o ${base} && ./${base}`;
+      case 'c': return `gcc -O3 -Wall ${name} -o ${base} && ./${base}`;
+      case 'python':
+      case 'py': return `python3 -u ${name}`;
+      case 'java': return `javac ${base}.java && java ${base}`;
+      case 'javascript':
+      case 'js': return `node ${name}`;
+      case 'typescript':
+      case 'ts': return `ts-node ${name}`;
+      case 'rust':
+      case 'rs': return `rustc -O ${name} -o ${base} && ./${base}`;
+      case 'go':
+      case 'golang': return `go run ${name}`;
+      case 'csharp':
+      case 'cs': return `mcs ${name} && mono ${base}.exe`;
+      case 'php': return `php ${name}`;
+      case 'ruby':
+      case 'rb': return `ruby ${name}`;
+      case 'kotlin':
+      case 'kt': return `kotlinc ${name} -include-runtime -d ${base}.jar && java -jar ${base}.jar`;
+      case 'swift': return `swift ${name}`;
+      case 'dart': return `dart run ${name}`;
+      case 'sql':
+      case 'sqlite': return `sqlite3 :memory: < ${name}`;
+      case 'bash':
+      case 'sh': return `bash ${name}`;
+      case 'lua': return `lua ${name}`;
+      case 'r': return `Rscript ${name}`;
+      case 'scala': return `scala ${name}`;
+      case 'haskell':
+      case 'hs': return `runhaskell ${name}`;
+      case 'perl':
+      case 'pl': return `perl ${name}`;
+      case 'assembly':
+      case 'asm': return `nasm -f elf64 ${name} -o ${base}.o && ld ${base}.o -o ${base} && ./${base}`;
+      default: return `./run.sh ${name}`;
+    }
   }, []);
 
   // Robust Cloud & Local Code Runner with Stdin Support
@@ -850,9 +894,10 @@ export default function App() {
     setIsRunning(true);
     setRightPaneView('console');
     setLastStats(null);
+    const shellCmd = getShellExecutionCommand(lang, activeFile?.name);
     if (!inlineContext) {
       setTerminalEntries([
-        { type: 'system', text: `[Elite Engine]: Compiling & executing ${lang.toUpperCase()} code in cloud sandbox...\n` }
+        { type: 'cmd', text: shellCmd }
       ]);
     }
 
@@ -861,7 +906,8 @@ export default function App() {
       if (lang === 'html') {
         setRightPaneView('preview');
         setTerminalEntries([
-          { type: 'system', text: '[Web Preview]: Rendering HTML, CSS & JavaScript in live browser canvas...\n' }
+          { type: 'cmd', text: 'vite preview --port 5173' },
+          { type: 'system', text: '[Web Preview]: Rendering HTML, CSS & JavaScript in live DOM canvas...\n' }
         ]);
         setLastStats({ code: 0, executionTime: 5, status: 'SUCCESS', runner: 'Browser DOM Sandbox' });
         setIsRunning(false);
@@ -873,9 +919,15 @@ export default function App() {
         try {
           const localResult = await executeInBrowserNode(codeToRun, customStdin);
           setTerminalEntries([
-            { type: 'system', text: `[Browser Node V8 Virtual Engine]: Executing JavaScript with sub-millisecond latency...\n` },
+            { type: 'cmd', text: `node ${activeFile?.name || 'main.js'}` },
             ...(localResult.stdout ? [{ type: 'stdout', text: localResult.stdout + '\n' }] : []),
-            ...(localResult.stderr ? [{ type: 'stderr', text: localResult.stderr + '\n' }] : [])
+            ...(localResult.stderr ? [{ type: 'stderr', text: localResult.stderr + '\n' }] : []),
+            {
+              type: 'process-exit',
+              exitCode: localResult.code || 0,
+              time: localResult.executionTime || 1,
+              runner: 'Browser Node V8 Virtual Engine (<5ms)'
+            }
           ]);
           setLastStats(localResult);
           setIsRunning(false);
@@ -938,6 +990,7 @@ export default function App() {
           elixir: { id: 57, name: 'Elixir (1.9)' },
           fortran: { id: 59, name: 'Fortran (GFortran 9.2)' }
         };
+
         const target = JUDGE0_MAP[lang] || JUDGE0_MAP['python'];
         let src = codeToRun;
         if (lang === 'java' && !src.includes('class ')) {
@@ -962,7 +1015,10 @@ export default function App() {
         };
       }
 
-      const entries = [];
+      const entries = [
+        { type: 'cmd', text: shellCmd }
+      ];
+
       if (inlineContext && inlineContext.answeredPrompts?.length) {
         // Authentically construct terminal stream: display prompt line + user response, then program output
         let remainingStdout = (data.stdout || '').replace(/\r\n/g, '\n');
@@ -992,9 +1048,12 @@ export default function App() {
       if (!data.stdout && !data.stderr) {
         entries.push({ type: 'system', text: '[Execution completed with no console output]\n' });
       }
+
       entries.push({
-        type: 'system',
-        text: `\r\n[Process completed in ${data.executionTime || 0}ms with exit code ${data.code || 0}]\r\n`
+        type: 'process-exit',
+        exitCode: data.code || 0,
+        time: data.executionTime || 0,
+        runner: data.runner || 'Cloud Sandbox'
       });
 
       setTerminalEntries(entries);
@@ -1095,7 +1154,7 @@ export default function App() {
       setRightPaneView('console');
       setLastStats(null);
       setTerminalEntries([
-        { type: 'system', text: `[Elite Engine]: Compiling & executing ${activeLanguage.toUpperCase()} code...\n` }
+        { type: 'cmd', text: getShellExecutionCommand(activeLanguage, activeFile?.name) }
       ]);
       setAwaitingPrompt({
         prompts,

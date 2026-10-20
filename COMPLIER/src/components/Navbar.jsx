@@ -508,241 +508,6 @@ export default function Navbar({
             <span>{isRunning ? 'Running...' : (isMobile ? 'Run' : 'Run Code')}</span>
             {!isMobile && <kbd className="kbd-shortcut">Ctrl+↵</kbd>}
           </button>
-
-          {/* Studio Hub (Right next to Run button) */}
-          {!isMobile && (
-            <div className="nav-options-menu-wrapper" ref={mainMenuRef} style={{ position: 'relative' }}>
-              <button
-                className={`nav-menu-pill-btn ${isMainMenuOpen ? 'active' : ''}`}
-                onClick={() => setIsMainMenuOpen(prev => !prev)}
-                title="Pro Studio Hub & Quick Command Palette"
-                id="nav-options-menu-btn"
-              >
-                <Sparkles size={14} className="text-purple" />
-                <span>Studio Hub</span>
-                <ChevronDown size={13} className={`chevron-trans ${isMainMenuOpen ? 'rotated' : ''}`} />
-              </button>
-
-              {isMainMenuOpen && (
-                <div className="flow-dropdown-menu nav-unified-dropdown mega-menu">
-                  {/* Command Hub Banner */}
-                  <div className="mega-menu-banner" style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.07)', marginBottom: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.76rem', fontWeight: '700', color: '#f8fafc', letterSpacing: '0.5px' }}>
-                      <Sparkles size={14} className="text-purple" />
-                      <span>ELITE STUDIO COMMAND HUB</span>
-                    </div>
-                    <span style={{ fontSize: '0.64rem', fontFamily: 'monospace', background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>PRO IDE v2.6</span>
-                  </div>
-
-                  {/* Left Column: Code & Workbench */}
-                  <div className="mega-menu-column">
-                    {/* Section 1: Code Actions */}
-                    <div className="dropdown-category">
-                      <div className="dropdown-menu-title">⚡ CODE & EDITOR</div>
-                      <button className="dropdown-item" onClick={() => { onFormatCode(); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <AlignLeft size={15} className="text-cyan" />
-                          <span className="item-name">Format Document</span>
-                        </span>
-                        <span className="item-tag">Shift+Alt+F</span>
-                      </button>
-
-                      <button className="dropdown-item" onClick={() => { onClearCode(); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <Trash2 size={15} className="text-red" />
-                          <span className="item-name">Clear Editor Buffer</span>
-                        </span>
-                        <span className="item-tag">CLEAR</span>
-                      </button>
-
-                      <button className="dropdown-item" onClick={() => { handleDownload(); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <Download size={15} className="text-emerald" />
-                          <span className="item-name">Download File ({activeFileName || 'code'})</span>
-                        </span>
-                        <span className="item-tag green">Ctrl+S</span>
-                      </button>
-
-                      <button className="dropdown-item" onClick={() => { fileInputRef.current?.click(); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <Upload size={15} className="text-sky" />
-                          <span className="item-name">Open / Upload File...</span>
-                        </span>
-                        <span className="item-tag">Ctrl+O</span>
-                      </button>
-
-                      {onOpenShareCode && (
-                        <button className="dropdown-item" onClick={() => { onOpenShareCode(); setIsMainMenuOpen(false); }}>
-                          <span className="tool-item-inner">
-                            <Share2 size={15} className="text-cyan" />
-                            <span className="item-name">Share Code (URL / WhatsApp)</span>
-                          </span>
-                          <span className="item-tag cyan">SHARE</span>
-                        </button>
-                      )}
-
-                      {/* Font size picker inside dropdown */}
-                      <div className="dropdown-item font-picker-row" onClick={(e) => e.stopPropagation()}>
-                        <span className="tool-item-inner">
-                          <Type size={15} className="text-slate" />
-                          <span className="item-name">Font Size</span>
-                        </span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          {[12, 14, 16, 18].map(sz => (
-                            <button
-                              key={sz}
-                              type="button"
-                              className={`font-chip ${fontSize === sz ? 'active' : ''}`}
-                              onClick={() => onChangeFontSize(sz)}
-                            >
-                              {sz}px
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Section 2: Visualizers & Workbench */}
-                    {onChangeRightPaneView && (
-                      <div className="dropdown-category">
-                        <div className="dropdown-menu-title" style={{ marginTop: '4px' }}>🔬 WORKBENCH & VISUALIZERS</div>
-                        <button className="dropdown-item" onClick={() => { onChangeRightPaneView('console'); setIsMainMenuOpen(false); }}>
-                          <span className="tool-item-inner">
-                            <Terminal size={15} className="text-emerald" />
-                            <span className="item-name">Compiler Output Terminal</span>
-                          </span>
-                          <span className="item-tag green">STDOUT</span>
-                        </button>
-
-                        <button className="dropdown-item" onClick={() => { onChangeRightPaneView('graphical'); setIsMainMenuOpen(false); }}>
-                          <span className="tool-item-inner">
-                            <GitFork size={15} className="text-sky" />
-                            <span className="item-name">Flowchart Visualizer</span>
-                          </span>
-                          <span className="item-tag cyan">ISO</span>
-                        </button>
-
-                        <button className="dropdown-item" onClick={() => { onChangeRightPaneView('testcases'); setIsMainMenuOpen(false); }}>
-                          <span className="tool-item-inner">
-                            <FlaskConical size={15} className="text-amber" />
-                            <span className="item-name">CP Judge Workbench</span>
-                          </span>
-                          <span className="item-tag amber">JUDGE</span>
-                        </button>
-
-                        <button className="dropdown-item" onClick={() => { onChangeRightPaneView('memory'); setIsMainMenuOpen(false); }}>
-                          <span className="tool-item-inner">
-                            <Database size={15} className="text-cyan" />
-                            <span className="item-name">Memory Array Matrix & Pointers</span>
-                          </span>
-                          <span className="item-tag cyan">HEX</span>
-                        </button>
-
-                        <button className="dropdown-item" onClick={() => { onChangeRightPaneView('recursion'); setIsMainMenuOpen(false); }}>
-                          <span className="tool-item-inner">
-                            <GitCommit size={15} className="text-pink" />
-                            <span className="item-name">Recursion Tree & Call Stack</span>
-                          </span>
-                          <span className="item-tag pink">TREE</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Column: AI, Academics & System */}
-                  <div className="mega-menu-column">
-                    {/* Section 3: AI & Smart Polyglot Tools */}
-                    <div className="dropdown-category">
-                      <div className="dropdown-menu-title">🧠 AI & SMART ENGINES</div>
-                      <button className="dropdown-item" onClick={() => { onOpenAiExplainer(); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <Sparkles size={15} className="text-purple" />
-                          <span className="item-name">AI Logic & Big-O Auditor</span>
-                        </span>
-                        <span className="item-tag purple">AI</span>
-                      </button>
-
-                      <button className="dropdown-item" onClick={() => { onOpenTemplates(); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <BookOpen size={15} className="text-amber" />
-                          <span className="item-name">Algorithms & DSA Library</span>
-                        </span>
-                        <span className="item-tag amber">LIB</span>
-                      </button>
-
-                      <button className="dropdown-item" onClick={() => { onOpenTranspiler(); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <Languages size={15} className="text-cyan" />
-                          <span className="item-name">Polyglot Code Transpiler</span>
-                        </span>
-                        <span className="item-tag cyan">CONVERT</span>
-                      </button>
-                    </div>
-
-                    {/* Section 4: Academic Certification & Exam Mode */}
-                    <div className="dropdown-category">
-                      <div className="dropdown-menu-title" style={{ marginTop: '4px' }}>🎓 UNIVERSITY & EXAM</div>
-                      {onOpenLabReport && (
-                        <button className="dropdown-item" onClick={() => { onOpenLabReport(); setIsMainMenuOpen(false); }}>
-                          <span className="tool-item-inner">
-                            <FileCheck2 size={15} className="text-emerald" />
-                            <span className="item-name">Lab Practical Record PDF</span>
-                          </span>
-                          <span className="item-tag green">PDF</span>
-                        </button>
-                      )}
-
-                      <button className="dropdown-item" onClick={() => { (isCollegeMode ? onExitCollegeMode() : onOpenCollegeMode()); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <Laptop size={15} className="text-amber" />
-                          <span className="item-name">{isCollegeMode ? 'Exit Lab Session' : 'College Exam Kiosk Mode'}</span>
-                        </span>
-                        <span className="item-tag amber">LOCK</span>
-                      </button>
-                    </div>
-
-                    {/* Section 5: Navigation & System */}
-                    <div className="dropdown-category">
-                      <div className="dropdown-menu-title" style={{ marginTop: '4px' }}>⚙️ SYSTEM & PREFERENCES</div>
-                      {onOpenCommandPalette && (
-                        <button className="dropdown-item" onClick={() => { onOpenCommandPalette(); setIsMainMenuOpen(false); }}>
-                          <span className="tool-item-inner">
-                            <Search size={15} className="text-amber" />
-                            <span className="item-name">Command Palette</span>
-                          </span>
-                          <span className="item-tag">Ctrl+K</span>
-                        </button>
-                      )}
-
-                      <button className="dropdown-item" onClick={() => { setShowShortcutsModal(true); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          <Keyboard size={15} className="text-sky" />
-                          <span className="item-name">Keyboard Shortcuts</span>
-                        </span>
-                        <span className="item-tag">Ctrl+/</span>
-                      </button>
-
-                      <button className="dropdown-item" onClick={() => { onToggleTheme(); setIsMainMenuOpen(false); }}>
-                        <span className="tool-item-inner">
-                          {theme === 'vs-dark' ? <Sun size={15} className="text-amber" /> : <Moon size={15} className="text-sky" />}
-                          <span className="item-name">Switch to {theme === 'vs-dark' ? 'Light' : 'Dark'} Mode</span>
-                        </span>
-                        <span className="item-tag">THEME</span>
-                      </button>
-
-                      <a href="/" className="dropdown-item" style={{ textDecoration: 'none' }}>
-                        <span className="tool-item-inner">
-                          <ArrowLeft size={15} className="text-slate" />
-                          <span className="item-name">Return to Main Website</span>
-                        </span>
-                        <span className="item-tag">HOME</span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="nav-right">
@@ -806,6 +571,32 @@ export default function Navbar({
           {/* Desktop controls */}
           {!isMobile ? (
             <>
+              {/* Quick Git Version Control */}
+              {onOpenGitControl && (
+                <button 
+                  className="nav-icon-btn" 
+                  onClick={onOpenGitControl} 
+                  title="Git Version Control & Repository Clone (Ctrl + Shift + G)"
+                  id="git-control-button"
+                  style={{ color: '#ec4899' }}
+                >
+                  <FolderGit2 size={16} />
+                </button>
+              )}
+
+              {/* Quick AI Architecture & Big-O Auditor */}
+              {onOpenAiExplainer && (
+                <button 
+                  className="nav-icon-btn" 
+                  onClick={onOpenAiExplainer} 
+                  title="AI Big-O Complexity & Logic Auditor"
+                  id="ai-doctor-button"
+                  style={{ color: '#c084fc' }}
+                >
+                  <Sparkles size={16} />
+                </button>
+              )}
+
               {/* Quick Share Code */}
               {onOpenShareCode && (
                 <button 
@@ -816,19 +607,6 @@ export default function Navbar({
                   style={{ color: '#38bdf8' }}
                 >
                   <Share2 size={16} />
-                </button>
-              )}
-
-              {/* Quick Git Version Control */}
-              {onOpenGitControl && (
-                <button 
-                  className="nav-icon-btn" 
-                  onClick={onOpenGitControl} 
-                  title="Version Control & GitHub Matrix"
-                  id="git-control-button"
-                  style={{ color: '#ec4899' }}
-                >
-                  <FolderGit2 size={16} />
                 </button>
               )}
 
