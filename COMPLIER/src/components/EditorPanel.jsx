@@ -146,7 +146,7 @@ export default function EditorPanel({
     // Track cursor line changes in real time for live flowchart synchronization
     editor.onDidChangeCursorPosition((e) => {
       if (onCursorChange && e.position) {
-        onCursorChange(e.position.lineNumber);
+        onCursorChange(e.position.lineNumber, e.position.column);
       }
     });
   };

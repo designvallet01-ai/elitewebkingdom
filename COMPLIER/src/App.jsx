@@ -21,6 +21,8 @@ import ShareCodeModal from './components/ShareCodeModal';
 import CommandPaletteModal from './components/CommandPaletteModal';
 import AiErrorFixModal from './components/AiErrorFixModal';
 import GitControlModal from './components/GitControlModal';
+import ActivityBar from './components/ActivityBar';
+import StatusBar from './components/StatusBar';
 import { diagnoseAndHealError } from './services/aiErrorHealer';
 import { executeInBrowserNode } from './services/clientNodeRunner';
 import { 
@@ -266,6 +268,7 @@ export default function App() {
   const [isGitModalOpen, setIsGitModalOpen] = useState(false);
   const [isAiHealerModalOpen, setIsAiHealerModalOpen] = useState(false);
   const [aiHealingData, setAiHealingData] = useState(null);
+  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   
   // URL routing helper for /compilercollegeadmin
   const checkIsCollegeAdminUrl = () => {
@@ -1801,6 +1804,29 @@ export default function App() {
 
       {/* Main Workspace: Split Pane on Desktop, Tabbed Switcher on Mobile */}
       <main className="ide-workspace">
+        {/* Desktop VS Code-Grade Activity Bar */}
+        {!isMobile && (
+          <ActivityBar
+            isSidebarOpen={isSidebarOpen}
+            onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+            onOpenGit={() => setIsGitModalOpen(true)}
+            onOpenAiHealer={() => {
+              const currentCode = activeFile ? activeFile.code : '';
+              const currentLang = activeFile ? activeFile.language : manualLanguage;
+              const stderrText = terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '');
+              const stdoutText = terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n');
+              const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText);
+              setAiHealingData(diagnosis);
+              setIsAiHealerModalOpen(true);
+            }}
+            onOpenAlgorithms={() => setIsAlgorithmModalOpen(true)}
+            onOpenTranspiler={() => setIsTranspilerModalOpen(true)}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+            onOpenShortcuts={() => setIsCommandPaletteOpen(true)}
+            hasError={lastStats && (lastStats.code !== 0 || lastStats.status === 'RUNTIME_ERROR' || lastStats.status === 'COMPILE_ERROR')}
+          />
+        )}
+
         {/* Mobile Backdrop for Sidebar Drawer */}
         {isMobile && isSidebarOpen && (
           <div 
@@ -1845,7 +1871,10 @@ export default function App() {
             onMountEditor={(editor) => {
               editorInstanceRef.current = editor;
             }}
-            onCursorChange={(line) => setSelectedLine(line)}
+            onCursorChange={(line, col) => {
+              setSelectedLine(line);
+              if (col) setCursorPos({ line, col });
+            }}
           />
         </section>
 
@@ -2314,6 +2343,29 @@ export default function App() {
           ]);
         }}
       />
+
+      {/* Desktop Professional Status Bar */}
+      {!isMobile && (
+        <StatusBar
+          cursorLine={cursorPos.line}
+          cursorCol={cursorPos.col}
+          language={activeLanguage}
+          langName={detectedLangInfo?.name || 'Python 3.12'}
+          lastStats={lastStats}
+          onOpenGit={() => setIsGitModalOpen(true)}
+          onOpenAiHealer={() => {
+            const currentCode = activeFile ? activeFile.code : '';
+            const currentLang = activeFile ? activeFile.language : manualLanguage;
+            const stderrText = terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '');
+            const stdoutText = terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n');
+            const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText);
+            setAiHealingData(diagnosis);
+            setIsAiHealerModalOpen(true);
+          }}
+          onOpenTerminal={() => setRightPaneView('console')}
+          theme={theme}
+        />
+      )}
 
     </div>
   );
