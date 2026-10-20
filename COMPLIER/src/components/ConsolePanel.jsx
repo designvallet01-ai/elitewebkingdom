@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Terminal as TerminalIcon, 
   Copy, 
@@ -12,7 +12,8 @@ import {
   CornerDownLeft, 
   Play, 
   Sparkles,
-  ClipboardPaste
+  ClipboardPaste,
+  Wrench
 } from 'lucide-react';
 
 export default function ConsolePanel({
@@ -26,7 +27,9 @@ export default function ConsolePanel({
   activeLanguage = 'python',
   isMobile = false,
   awaitingPrompt = null,
-  onInlinePromptSubmit = null
+  onInlinePromptSubmit = null,
+  onOpenAiHealer = null,
+  files = []
 }) {
   const [copied, setCopied] = useState(false);
   const [currentInput, setCurrentInput] = useState('');
@@ -119,7 +122,7 @@ export default function ConsolePanel({
   };
 
   // Detect if the output failed due to missing stdin (EOFError in Python, NoSuchElementException in Java, etc.)
-  const hasEofError = React.useMemo(() => {
+  const hasEofError = useMemo(() => {
     return terminalEntries.some(e => 
       (e.type === 'stderr' || e.type === 'stdout') && (
         e.text.includes('EOFError') || 
@@ -129,6 +132,14 @@ export default function ConsolePanel({
       )
     );
   }, [terminalEntries]);
+
+  // Detect if any execution exception / compile error occurred
+  const hasAnyError = useMemo(() => {
+    return (
+      (lastStats && (lastStats.status === 'RUNTIME_ERROR' || lastStats.status === 'COMPILE_ERROR' || lastStats.code !== 0)) ||
+      terminalEntries.some(e => e.type === 'stderr' && e.text && e.text.trim().length > 0)
+    );
+  }, [lastStats, terminalEntries]);
 
   const isSuccess = lastStats && lastStats.code === 0;
   const isError = lastStats && lastStats.code !== 0;
@@ -151,6 +162,24 @@ export default function ConsolePanel({
         </div>
 
         <div className="console-actions">
+          {/* Autonomous AI Auto-Fixer Button */}
+          {hasAnyError && onOpenAiHealer && (
+            <button
+              className="console-action-btn ai-heal-btn"
+              onClick={onOpenAiHealer}
+              title="Auto-Fix error with Autonomous AI Agent"
+              style={{
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25))',
+                border: '1px solid rgba(168, 85, 247, 0.5)',
+                color: '#c084fc',
+                fontWeight: '600'
+              }}
+            >
+              <Sparkles size={13} className="text-amber-400 animate-pulse" />
+              <span>Fix with AI</span>
+            </button>
+          )}
+
           {isRunning && (
             <button
               className="console-action-btn stop-btn"
@@ -226,7 +255,7 @@ export default function ConsolePanel({
             <p className="empty-desc">
               Write your code in the editor and click <kbd>Run Code</kbd> or press <kbd>Ctrl + Enter</kbd>.
               <br />
-              Supports live interactive inputs (<kbd>input()</kbd>, <kbd>cin</kbd>, <kbd>scanf</kbd>) just like real Python IDLE!
+              Supports live interactive inputs (<kbd>input()</kbd>, <kbd>cin</kbd>, <kbd>scanf</kbd>) with Autonomous AI Error Healing!
             </p>
           </div>
         )}
@@ -247,6 +276,48 @@ export default function ConsolePanel({
             }
             return <span key={idx}>{entry.text}</span>;
           })}
+
+          {/* Inline AI Healer Banner if an error occurred */}
+          {hasAnyError && onOpenAiHealer && (
+            <div className="terminal-ai-repair-banner" style={{
+              margin: '12px 0',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              background: 'rgba(99, 102, 241, 0.12)',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={16} style={{ color: '#fbbf24' }} />
+                <span style={{ fontSize: '0.8rem', color: '#e0e7ff', fontWeight: 500 }}>
+                  Autonomous AI Agent diagnosed an execution exception.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenAiHealer}
+                style={{
+                  padding: '5px 12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  background: '#6366f1',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <Wrench size={12} />
+                <span>Auto-Fix with AI</span>
+              </button>
+            </div>
+          )}
 
           {/* If running and awaiting input, show inline cursor */}
           {isRunning && !awaitingPrompt && (

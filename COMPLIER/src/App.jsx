@@ -19,6 +19,10 @@ import CollegeAdminPortal from './components/CollegeAdminPortal';
 import SystemLockedOverlay from './components/SystemLockedOverlay';
 import ShareCodeModal from './components/ShareCodeModal';
 import CommandPaletteModal from './components/CommandPaletteModal';
+import AiErrorFixModal from './components/AiErrorFixModal';
+import GitControlModal from './components/GitControlModal';
+import { diagnoseAndHealError } from './services/aiErrorHealer';
+import { executeInBrowserNode } from './services/clientNodeRunner';
 import { 
   subscribeToCollegeEvents, 
   broadcastMessage, 
@@ -259,6 +263,9 @@ export default function App() {
   const [isTranspilerModalOpen, setIsTranspilerModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isGitModalOpen, setIsGitModalOpen] = useState(false);
+  const [isAiHealerModalOpen, setIsAiHealerModalOpen] = useState(false);
+  const [aiHealingData, setAiHealingData] = useState(null);
   
   // URL routing helper for /compilercollegeadmin
   const checkIsCollegeAdminUrl = () => {
@@ -859,6 +866,23 @@ export default function App() {
         setLastStats({ code: 0, executionTime: 5, status: 'SUCCESS', runner: 'Browser DOM Sandbox' });
         setIsRunning(false);
         return;
+      }
+
+      // 2. Client-side Node.js / JavaScript Virtual Engine (Strategy 1)
+      if ((lang === 'javascript' || lang === 'js') && (!customStdin || !customStdin.trim())) {
+        try {
+          const localResult = await executeInBrowserNode(codeToRun, customStdin);
+          setTerminalEntries([
+            { type: 'system', text: `[Browser Node V8 Virtual Engine]: Executing JavaScript with sub-millisecond latency...\n` },
+            ...(localResult.stdout ? [{ type: 'stdout', text: localResult.stdout + '\n' }] : []),
+            ...(localResult.stderr ? [{ type: 'stderr', text: localResult.stderr + '\n' }] : [])
+          ]);
+          setLastStats(localResult);
+          setIsRunning(false);
+          return;
+        } catch (localErr) {
+          console.warn('Browser Node runner fallback to Cloud:', localErr);
+        }
       }
 
       let data;
@@ -1703,6 +1727,7 @@ export default function App() {
         onChangeRightPaneView={(view) => setRightPaneView(view)}
         onOpenShareCode={() => setIsShareModalOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenGitControl={() => setIsGitModalOpen(true)}
       />
 
       {/* College Exam Active Banner (Desktop Only) */}
@@ -1877,6 +1902,16 @@ export default function App() {
                 isMobile={isMobile}
                 awaitingPrompt={awaitingPrompt}
                 onInlinePromptSubmit={handleInlinePromptSubmit}
+                onOpenAiHealer={() => {
+                  const currentCode = activeFile ? activeFile.code : '';
+                  const currentLang = activeFile ? activeFile.language : manualLanguage;
+                  const stderrText = terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '');
+                  const stdoutText = terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n');
+                  const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText);
+                  setAiHealingData(diagnosis);
+                  setIsAiHealerModalOpen(true);
+                }}
+                files={files}
               />
             )}
 
@@ -2169,6 +2204,56 @@ export default function App() {
         onChangeRightPaneView={(view) => setRightPaneView(view)}
         onSelectLanguage={handleLanguageChange}
         onDownloadCode={handleDownloadCode}
+      />
+
+      {/* Autonomous Multi-Model AI Code Healer Modal */}
+      <AiErrorFixModal
+        isOpen={isAiHealerModalOpen}
+        onClose={() => setIsAiHealerModalOpen(false)}
+        healingData={aiHealingData}
+        onApplyFix={(fixedCode) => {
+          if (!fixedCode || !activeFile) return;
+          handleCodeChange(fixedCode);
+          if (editorInstanceRef.current) {
+            editorInstanceRef.current.setValue(fixedCode);
+          }
+          setTerminalEntries(prev => [
+            ...prev,
+            { type: 'system', text: '\n[AI Code Doctor]: Clean AST repaired code successfully applied to editor!\n' }
+          ]);
+        }}
+        onApplyAndRun={(fixedCode) => {
+          if (!fixedCode || !activeFile) return;
+          handleCodeChange(fixedCode);
+          if (editorInstanceRef.current) {
+            editorInstanceRef.current.setValue(fixedCode);
+          }
+          setTerminalEntries(prev => [
+            ...prev,
+            { type: 'system', text: '\n[AI Code Doctor]: Applied fix! Re-initiating execution pipeline...\n' }
+          ]);
+          setTimeout(() => {
+            handleRun();
+          }, 150);
+        }}
+      />
+
+      {/* GitHub Version Control & Codespaces Modal */}
+      <GitControlModal
+        isOpen={isGitModalOpen}
+        onClose={() => setIsGitModalOpen(false)}
+        files={files}
+        activeFile={activeFile}
+        onUpdateFileCode={(code) => handleCodeChange(code)}
+        onAddFiles={(newFiles) => {
+          if (!newFiles || !newFiles.length) return;
+          setFiles(prev => [...prev, ...newFiles]);
+          setActiveFileId(newFiles[0].id);
+          setTerminalEntries(prev => [
+            ...prev,
+            { type: 'system', text: `\n[Git Engine]: Cloned ${newFiles.length} file(s) into workspace successfully!\n` }
+          ]);
+        }}
       />
 
     </div>

@@ -12,6 +12,7 @@ import {
   Sparkles, 
   BookOpen, 
   FolderTree,
+  FolderGit2,
   ArrowLeft,
   Globe,
   MoreVertical,
@@ -66,7 +67,8 @@ export default function Navbar({
   onOpenTranspiler,
   onChangeRightPaneView,
   onOpenShareCode,
-  onOpenCommandPalette
+  onOpenCommandPalette,
+  onOpenGitControl
 }) {
   const fileInputRef = useRef(null);
   const menubarRef = useRef(null);
@@ -422,6 +424,12 @@ export default function Navbar({
                       <span className="flyout-left"><Languages size={14} className="text-cyan" /><span>Polyglot Code Transpiler</span></span>
                       <kbd className="flyout-kbd cyan">CONVERT</kbd>
                     </button>
+                    {onOpenGitControl && (
+                      <button className="flyout-item" onClick={() => { onOpenGitControl(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><FolderGit2 size={14} className="text-pink" /><span>Version Control (Git Matrix)</span></span>
+                        <kbd className="flyout-kbd pink">GIT</kbd>
+                      </button>
+                    )}
                     <div className="flyout-divider" />
                     {onOpenLabReport && (
                       <button className="flyout-item" onClick={() => { onOpenLabReport(); setActiveMenu(null); }}>
@@ -808,6 +816,19 @@ export default function Navbar({
                   style={{ color: '#38bdf8' }}
                 >
                   <Share2 size={16} />
+                </button>
+              )}
+
+              {/* Quick Git Version Control */}
+              {onOpenGitControl && (
+                <button 
+                  className="nav-icon-btn" 
+                  onClick={onOpenGitControl} 
+                  title="Version Control & GitHub Matrix"
+                  id="git-control-button"
+                  style={{ color: '#ec4899' }}
+                >
+                  <FolderGit2 size={16} />
                 </button>
               )}
 
