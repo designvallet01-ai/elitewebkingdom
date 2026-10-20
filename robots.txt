@@ -5,17 +5,26 @@
 
 User-agent: *
 Allow: /
+Allow: /compiler/
+Allow: /compilercollegeadmin
 Disallow: /admin/
 Disallow: /admin/*
 Disallow: /api/
 
 User-agent: Googlebot
 Allow: /
+Allow: /compiler/
+Allow: /compilercollegeadmin
 Disallow: /admin/
+Disallow: /api/
 
 User-agent: Bingbot
 Allow: /
+Allow: /compiler/
+Allow: /compilercollegeadmin
 Disallow: /admin/
+Disallow: /api/
 
-# XML Sitemap Location
+# XML Sitemap Locations
 Sitemap: https://www.elitewebkingdom.in/sitemap.xml
+Sitemap: https://www.elitewebkingdom.in/compiler/sitemap.xml

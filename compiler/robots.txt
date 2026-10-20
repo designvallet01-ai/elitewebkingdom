@@ -1,0 +1,17 @@
+# Robots.txt for Elite IDE Online Compiler
+# Elite Web Kingdom (https://www.elitewebkingdom.in/compiler/)
+
+User-agent: *
+Allow: /compiler/
+Disallow: /api/
+
+User-agent: Googlebot
+Allow: /compiler/
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /compiler/
+Disallow: /api/
+
+Sitemap: https://www.elitewebkingdom.in/compiler/sitemap.xml
+Sitemap: https://www.elitewebkingdom.in/sitemap.xml

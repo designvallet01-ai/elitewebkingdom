@@ -5,7 +5,7 @@
   <!-- 1. Home / Core Platform -->
   <url>
     <loc>https://www.elitewebkingdom.in/</loc>
-    <lastmod>2026-09-05</lastmod>
+    <lastmod>2026-10-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -23,7 +23,7 @@
   <!-- 2. Elite IDE - Professional Online Compiler & Developer Studio -->
   <url>
     <loc>https://www.elitewebkingdom.in/compiler/</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-20</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -38,10 +38,23 @@
     </image:image>
   </url>
 
-  <!-- 2. Work Showcase & Software Downloads Store -->
+  <!-- 3. Elite College Admin Portal -->
+  <url>
+    <loc>https://www.elitewebkingdom.in/compilercollegeadmin</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://www.elitewebkingdom.in/compiler/icon-512.png</image:loc>
+      <image:title>Elite College Admin Portal - Centralized Lab Kiosk Control</image:title>
+      <image:caption>Faculty and lab administrator dashboard for real-time exam monitoring and system lock</image:caption>
+    </image:image>
+  </url>
+
+  <!-- 4. Work Showcase & Software Downloads Store -->
   <url>
     <loc>https://www.elitewebkingdom.in/store/</loc>
-    <lastmod>2026-09-05</lastmod>
+    <lastmod>2026-10-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -50,39 +63,39 @@
     </image:image>
   </url>
 
-  <!-- 3. Team Portal -->
+  <!-- 5. Team Portal -->
   <url>
     <loc>https://www.elitewebkingdom.in/team</loc>
-    <lastmod>2026-09-05</lastmod>
+    <lastmod>2026-10-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 
-  <!-- 4. Dedicated Service Pages -->
+  <!-- 6. Dedicated Service Pages -->
   <url>
     <loc>https://www.elitewebkingdom.in/web-development</loc>
-    <lastmod>2026-09-05</lastmod>
+    <lastmod>2026-10-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://www.elitewebkingdom.in/mobile-app-development</loc>
-    <lastmod>2026-09-05</lastmod>
+    <lastmod>2026-10-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://www.elitewebkingdom.in/software-development</loc>
-    <lastmod>2026-09-05</lastmod>
+    <lastmod>2026-10-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://www.elitewebkingdom.in/ecommerce-development</loc>
-    <lastmod>2026-09-05</lastmod>
+    <lastmod>2026-10-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
