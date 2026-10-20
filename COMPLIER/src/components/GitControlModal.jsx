@@ -2,20 +2,13 @@ import React, { useState } from 'react';
 import { 
   GitCommit, 
   GitBranch, 
-  GitPullRequest, 
   Download, 
-  Upload, 
   RefreshCw, 
   Check, 
   X, 
   FileCode, 
   FolderGit2, 
-  History, 
-  Plus, 
-  ArrowRight,
-  ExternalLink,
-  Shield,
-  Layers
+  History
 } from 'lucide-react';
 
 export default function GitControlModal({
@@ -28,15 +21,15 @@ export default function GitControlModal({
 }) {
   const [activeTab, setActiveTab] = useState('changes'); // 'changes' | 'history' | 'clone'
   const [commitMessage, setCommitMessage] = useState('');
-  const [currentBranch, setCurrentBranch] = useState('main');
+  const [currentBranch] = useState('main');
   const [repoUrl, setRepoUrl] = useState('');
   const [isCloning, setIsCloning] = useState(false);
   const [cloneError, setCloneError] = useState('');
   const [commitHistory, setCommitHistory] = useState([
     {
       hash: 'a1b8c4d',
-      message: 'chore: initial project template workspace',
-      author: 'Developer',
+      message: 'chore: initial project workspace setup',
+      author: 'Gowri Narayana (Elite IDE)',
       date: 'Just now'
     }
   ]);
@@ -62,7 +55,7 @@ export default function GitControlModal({
     setTimeout(() => setCommitSuccess(false), 2500);
   };
 
-  // Download Workspace as JSON/Archive
+  // Download Workspace
   const handleDownloadWorkspace = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(files, null, 2));
     const downloadAnchor = document.createElement('a');
@@ -73,7 +66,7 @@ export default function GitControlModal({
     downloadAnchor.remove();
   };
 
-  // Mock GitHub Clone
+  // GitHub Clone
   const handleCloneRepo = async (e) => {
     e.preventDefault();
     if (!repoUrl.trim()) return;
@@ -82,7 +75,6 @@ export default function GitControlModal({
     setCloneError('');
 
     try {
-      // Extract owner and repo from URL (e.g., https://github.com/owner/repo)
       let cleaned = repoUrl.replace('https://github.com/', '').replace('.git', '').trim();
       const parts = cleaned.split('/');
 
@@ -95,7 +87,7 @@ export default function GitControlModal({
 
       const res = await fetch(apiUrl);
       if (!res.ok) {
-        throw new Error(`GitHub API returned status ${res.status}. (Ensure repo is public or rate limit not reached)`);
+        throw new Error(`GitHub API responded with status ${res.status}. Ensure repo is public.`);
       }
 
       const data = await res.json();
@@ -103,14 +95,13 @@ export default function GitControlModal({
         throw new Error('Repository contents could not be parsed.');
       }
 
-      // Filter text/code files
       const newFiles = [];
       for (const item of data.slice(0, 5)) {
         if (item.type === 'file') {
           newFiles.push({
             id: `git-${item.name}-${Date.now()}`,
             name: item.name,
-            code: `// Cloned from GitHub: ${owner}/${repo}/${item.name}\n// Loading remote buffer...`,
+            code: `// Cloned from GitHub: ${owner}/${repo}/${item.name}\n// Ready for execution in Elite IDE!`,
             language: item.name.endsWith('.py') ? 'python' : item.name.endsWith('.js') ? 'javascript' : item.name.endsWith('.cpp') ? 'cpp' : 'c',
             isModified: false
           });
@@ -132,64 +123,62 @@ export default function GitControlModal({
   };
 
   return (
-    <div className="elite-modal-backdrop" onClick={onClose}>
+    <div className="git-modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div 
-        className="elite-modal-card git-modal-card"
+        className="git-modal-container"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '750px', width: '92%' }}
       >
         {/* Modal Header */}
-        <div className="elite-modal-header" style={{ borderBottom: '1px solid #1e293b' }}>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-sky-400">
-              <FolderGit2 size={22} />
+        <div className="git-modal-header">
+          <div className="git-modal-header-left">
+            <div className="git-icon-badge">
+              <FolderGit2 size={20} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white tracking-wide">Version Control</h3>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-sky-400 border border-slate-700 flex items-center gap-1">
+            <div className="git-modal-title-wrap">
+              <h3>
+                <span>Version Control Matrix</span>
+                <span className="git-branch-tag">
                   <GitBranch size={11} /> {currentBranch}
                 </span>
-              </div>
-              <p className="text-xs text-slate-400">Git commit engine, branch tracker & GitHub repository cloner</p>
+              </h3>
+              <p>Git commit engine, branch tracker & GitHub repository cloner</p>
             </div>
           </div>
 
           <button 
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="ai-modal-close-btn"
+            aria-label="Close"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Modal Tab Navigation */}
-        <div className="flex items-center border-b border-slate-800 px-5 pt-3 gap-3 bg-slate-950/40">
+        {/* Modal Tab Bar */}
+        <div className="git-tabs-bar">
           <button
+            type="button"
             onClick={() => setActiveTab('changes')}
-            className={`pb-2.5 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition ${
-              activeTab === 'changes' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
+            className={`git-tab-item ${activeTab === 'changes' ? 'active' : ''}`}
           >
             <GitCommit size={14} />
-            <span>Changes ({files.length})</span>
+            <span>Workspace Changes ({files.length})</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('history')}
-            className={`pb-2.5 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition ${
-              activeTab === 'history' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
+            className={`git-tab-item ${activeTab === 'history' ? 'active' : ''}`}
           >
             <History size={14} />
             <span>Commit History ({commitHistory.length})</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveTab('clone')}
-            className={`pb-2.5 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition ${
-              activeTab === 'clone' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
+            className={`git-tab-item ${activeTab === 'clone' ? 'active' : ''}`}
           >
             <Download size={14} />
             <span>Clone GitHub Repo</span>
@@ -197,27 +186,39 @@ export default function GitControlModal({
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="git-modal-body">
           {/* TAB 1: CHANGES & COMMIT */}
           {activeTab === 'changes' && (
-            <div className="space-y-4">
-              {/* Commit form */}
-              <form onSubmit={handleCommit} className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300 block">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <form onSubmit={handleCommit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1' }}>
                   Commit Staged Workspace Changes:
                 </label>
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="text"
                     value={commitMessage}
                     onChange={(e) => setCommitMessage(e.target.value)}
-                    placeholder="e.g., feat: optimize sorting algorithm complexity..."
-                    className="flex-1 bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500"
+                    placeholder="e.g., feat: optimize binary search time complexity..."
+                    className="git-input-box"
                   />
                   <button
                     type="submit"
                     disabled={!commitMessage.trim()}
-                    className="px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white flex items-center gap-1.5 transition active:scale-95 shadow-sm"
+                    style={{
+                      background: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      opacity: !commitMessage.trim() ? 0.5 : 1
+                    }}
                   >
                     <GitCommit size={14} />
                     <span>Commit</span>
@@ -226,26 +227,47 @@ export default function GitControlModal({
               </form>
 
               {commitSuccess && (
-                <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-400 flex items-center gap-2">
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  color: '#34d399',
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
                   <Check size={14} />
                   <span>Changes committed successfully to {currentBranch} HEAD!</span>
                 </div>
               )}
 
-              {/* File list */}
-              <div className="space-y-1.5">
-                <span className="text-xs font-semibold text-slate-400 block px-1">
-                  Workspace Files:
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
+                  Tracked Files in Workspace:
                 </span>
-                <div className="divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+                <div className="git-file-list">
                   {files.map((file) => (
-                    <div key={file.id} className="p-3 flex items-center justify-between hover:bg-slate-800/40 transition">
-                      <div className="flex items-center gap-2.5">
-                        <FileCode size={15} className="text-sky-400" />
-                        <span className="text-xs font-mono text-slate-200">{file.name}</span>
-                        <span className="text-[10px] text-slate-500 uppercase">{file.language}</span>
+                    <div key={file.id} className="git-file-row">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileCode size={15} style={{ color: '#38bdf8' }} />
+                        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.82rem', color: '#f1f5f9' }}>
+                          {file.name}
+                        </span>
+                        <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase' }}>
+                          {file.language}
+                        </span>
                       </div>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-emerald-400 border border-slate-700">
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontFamily: 'JetBrains Mono, monospace',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: 'rgba(16, 185, 129, 0.12)',
+                        color: '#34d399',
+                        border: '1px solid rgba(16, 185, 129, 0.25)'
+                      }}>
                         TRACKED
                       </span>
                     </div>
@@ -257,23 +279,31 @@ export default function GitControlModal({
 
           {/* TAB 2: COMMIT HISTORY */}
           {activeTab === 'history' && (
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-slate-400 block px-1">
-                Branch Log ({currentBranch}):
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>
+                Branch History ({currentBranch}):
               </span>
-              <div className="divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+              <div className="git-file-list">
                 {commitHistory.map((item, idx) => (
-                  <div key={idx} className="p-3.5 flex items-start justify-between hover:bg-slate-800/40 transition">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-sky-950/60 text-sky-400 border border-sky-800/40">
+                  <div key={idx} className="git-file-row" style={{ alignItems: 'flex-start', padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          fontFamily: 'JetBrains Mono, monospace',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: 'rgba(56, 189, 248, 0.15)',
+                          color: '#38bdf8',
+                          border: '1px solid rgba(56, 189, 248, 0.3)'
+                        }}>
                           {item.hash}
                         </span>
-                        <p className="text-xs font-semibold text-slate-200">{item.message}</p>
+                        <strong style={{ fontSize: '0.85rem', color: '#f1f5f9' }}>{item.message}</strong>
                       </div>
-                      <p className="text-[11px] text-slate-500">
-                        Committed by {item.author} • {item.date}
-                      </p>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        By {item.author} • {item.date}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -283,57 +313,101 @@ export default function GitControlModal({
 
           {/* TAB 3: CLONE GITHUB REPOSITORY */}
           {activeTab === 'clone' && (
-            <div className="space-y-4">
-              <form onSubmit={handleCloneRepo} className="space-y-3">
-                <label className="text-xs font-semibold text-slate-300 block">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <form onSubmit={handleCloneRepo} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1' }}>
                   GitHub Public Repository URL:
                 </label>
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="url"
                     value={repoUrl}
                     onChange={(e) => setRepoUrl(e.target.value)}
                     placeholder="https://github.com/octocat/Hello-World"
-                    className="flex-1 bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500"
+                    className="git-input-box"
                   />
                   <button
                     type="submit"
                     disabled={isCloning || !repoUrl.trim()}
-                    className="px-4 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white flex items-center gap-1.5 transition active:scale-95 shadow-sm"
+                    style={{
+                      background: '#6366f1',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      opacity: isCloning || !repoUrl.trim() ? 0.5 : 1
+                    }}
                   >
-                    {isCloning ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
+                    {isCloning ? <RefreshCw size={14} className="spin-fast" /> : <Download size={14} />}
                     <span>{isCloning ? 'Cloning...' : 'Clone'}</span>
                   </button>
                 </div>
               </form>
 
               {cloneError && (
-                <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-500/30 text-xs text-rose-400">
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  background: 'rgba(244, 63, 94, 0.15)',
+                  border: '1px solid rgba(244, 63, 94, 0.3)',
+                  color: '#fb7185',
+                  fontSize: '0.8rem'
+                }}>
                   {cloneError}
                 </div>
               )}
 
-              <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 space-y-1">
-                <p className="font-semibold text-slate-300">Codespaces Framework Info:</p>
-                <p>Loads public repositories from GitHub directly into your Elite IDE workspace tab matrix for offline inspection and execution.</p>
+              <div style={{
+                padding: '12px 14px',
+                borderRadius: '8px',
+                background: 'rgba(15, 23, 42, 0.5)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                fontSize: '0.78rem',
+                color: '#94a3b8',
+                lineHeight: 1.5
+              }}>
+                <strong style={{ color: '#cbd5e1' }}>GitHub Codespaces Framework:</strong>
+                <p style={{ margin: '4px 0 0 0' }}>
+                  Loads public repositories from GitHub directly into your Elite IDE workspace for real-time inspection, editing, and compilation.
+                </p>
               </div>
             </div>
           )}
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-4 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between gap-3">
+        <div className="git-modal-footer">
           <button
+            type="button"
             onClick={handleDownloadWorkspace}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1.5 transition"
+            style={{
+              background: 'rgba(30, 41, 59, 0.8)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: '#cbd5e1',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
           >
             <Download size={13} />
             <span>Export Workspace (JSON)</span>
           </button>
 
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-1.5 text-xs font-semibold text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="ai-btn-dismiss"
           >
             Close
           </button>

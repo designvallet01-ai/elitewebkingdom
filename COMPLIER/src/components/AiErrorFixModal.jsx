@@ -4,13 +4,9 @@ import {
   Wrench, 
   Check, 
   X, 
-  AlertTriangle, 
   Play, 
-  ArrowRight, 
   Copy, 
   FileCode2,
-  Cpu,
-  Layers,
   ShieldCheck
 } from 'lucide-react';
 
@@ -21,7 +17,6 @@ export default function AiErrorFixModal({
   onApplyFix,
   onApplyAndRun
 }) {
-  const [selectedModel, setSelectedModel] = useState('Gemini 1.5 Pro (Recommended)');
   const [copied, setCopied] = useState(false);
 
   if (!isOpen || !healingData) return null;
@@ -32,123 +27,108 @@ export default function AiErrorFixModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const severityColor = 
-    healingData.severity === 'CRITICAL' ? 'border-rose-500/50 bg-rose-950/30 text-rose-400' :
-    healingData.severity === 'HIGH' ? 'border-amber-500/50 bg-amber-950/30 text-amber-400' :
-    'border-sky-500/50 bg-sky-950/30 text-sky-400';
+  const severityClass = (healingData.severity || 'medium').toLowerCase();
 
   return (
-    <div className="elite-modal-backdrop" onClick={onClose}>
+    <div className="ai-healer-overlay" onClick={onClose} role="dialog" aria-modal="true">
       <div 
-        className="elite-modal-card ai-healer-card"
+        className="ai-healer-container"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '780px', width: '92%' }}
       >
         {/* Modal Header */}
-        <div className="elite-modal-header" style={{ borderBottom: '1px solid #1e293b' }}>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-600/30 border border-indigo-500/30 text-indigo-400">
-              <Sparkles size={22} className="animate-pulse" />
+        <div className="ai-healer-header">
+          <div className="ai-healer-header-left">
+            <div className="ai-healer-icon-badge">
+              <Sparkles size={20} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white tracking-wide">Elite AI Code Doctor</h3>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  AUTONOMOUS AGENT
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">Root-cause diagnosis & 1-click AST repair engine</p>
+            <div className="ai-healer-title-wrap">
+              <h3>
+                <span>Elite AI Code Doctor</span>
+                <span className="ai-pill-tag">Autonomous Agent</span>
+              </h3>
+              <p>Root-cause diagnosis & 1-click AST clean code repair</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="text-xs bg-slate-900 border border-slate-700 text-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-indigo-500"
-            >
-              <option>Gemini 1.5 Pro (Recommended)</option>
-              <option>Claude 3.5 Sonnet</option>
-              <option>DeepSeek Coder V2</option>
-              <option>GPT-4o Agent</option>
-            </select>
-            <button 
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-              title="Close modal"
-            >
-              <X size={18} />
-            </button>
-          </div>
+          <button 
+            onClick={onClose}
+            className="ai-modal-close-btn"
+            title="Close modal"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        {/* Modal Content Body */}
-        <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        {/* Modal Body */}
+        <div className="ai-healer-body">
           {/* Diagnostic Badge Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div className="flex items-center gap-2.5">
-              <span className={`text-xs font-bold px-2.5 py-1 rounded-md border ${severityColor}`}>
+          <div className="ai-diagnostic-strip">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className={`ai-severity-badge ${severityClass}`}>
                 {healingData.severity || 'ERROR'}
               </span>
-              <span className="text-sm font-semibold text-slate-200">
+              <strong style={{ fontSize: '0.9rem', color: '#f8fafc' }}>
                 {healingData.errorType}
-              </span>
+              </strong>
             </div>
 
             {healingData.problemLine && (
-              <span className="text-xs font-mono px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                Found on Line #{healingData.problemLine}
+              <span className="ai-line-locator">
+                Detected at Line #{healingData.problemLine}
               </span>
             )}
           </div>
 
           {/* Root Cause Explanations (Dual English + Telugu) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-              <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider block mb-1">
-                Root Cause (English)
-              </span>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {healingData.rootCauseEn}
-              </p>
+          <div className="ai-causes-grid">
+            <div className="ai-cause-card">
+              <span className="ai-cause-label en">Root Cause (English)</span>
+              <p>{healingData.rootCauseEn}</p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80">
-              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
-                సమస్య వివరణ (Telugu)
-              </span>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                {healingData.rootCauseTe}
-              </p>
+            <div className="ai-cause-card">
+              <span className="ai-cause-label te">సమస్య వివరణ (Telugu)</span>
+              <p>{healingData.rootCauseTe}</p>
             </div>
           </div>
 
-          {/* Fix Summary */}
-          <div className="p-3 rounded-xl bg-indigo-950/30 border border-indigo-500/20 text-xs text-indigo-200 flex items-start gap-2.5">
-            <ShieldCheck size={16} className="text-indigo-400 shrink-0 mt-0.5" />
+          {/* Fix Action Plan */}
+          <div className="ai-action-plan-box">
+            <ShieldCheck size={18} style={{ color: '#818cf8', flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <strong className="text-indigo-300">Action Plan: </strong>
+              <strong style={{ color: '#c7d2fe' }}>Repair Strategy: </strong>
               <span>{healingData.fixSummaryEn} ({healingData.fixSummaryTe})</span>
             </div>
           </div>
 
           {/* Repaired Code Preview */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-              <span className="font-semibold flex items-center gap-1.5">
-                <FileCode2 size={14} className="text-amber-400" />
-                Proposed Repaired Code (AST Diff applied)
+          <div className="ai-repaired-code-block">
+            <div className="ai-code-header">
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                <FileCode2 size={14} style={{ color: '#fbbf24' }} />
+                Clean Repaired Code (AST Diff Applied)
               </span>
               <button 
+                type="button"
                 onClick={handleCopyFixedCode}
-                className="text-xs flex items-center gap-1 text-slate-400 hover:text-white transition"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '0.75rem'
+                }}
               >
-                {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
+                {copied ? <Check size={12} style={{ color: '#34d399' }} /> : <Copy size={12} />}
+                <span>{copied ? 'Copied!' : 'Copy'}</span>
               </button>
             </div>
 
-            <div className="relative rounded-xl border border-slate-800 bg-slate-950 p-3 max-h-56 overflow-auto font-mono text-xs text-slate-200 leading-relaxed shadow-inner">
+            <div className="ai-code-scroll">
               <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {healingData.fixedCode}
               </pre>
@@ -157,27 +137,30 @@ export default function AiErrorFixModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-4 bg-slate-900/90 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div className="ai-healer-footer">
           <button
+            type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            className="ai-btn-dismiss"
           >
             Dismiss
           </button>
 
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
+              type="button"
               onClick={() => {
                 onApplyFix(healingData.fixedCode);
                 onClose();
               }}
-              className="px-4 py-2 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5 transition active:scale-95 shadow-sm"
+              className="ai-btn-apply"
             >
               <Wrench size={14} />
               <span>Apply Fix to Editor</span>
             </button>
 
             <button
+              type="button"
               onClick={() => {
                 if (onApplyAndRun) {
                   onApplyAndRun(healingData.fixedCode);
@@ -186,7 +169,7 @@ export default function AiErrorFixModal({
                 }
                 onClose();
               }}
-              className="px-4 py-2 text-xs font-bold rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-emerald-950"
+              className="ai-btn-apply-run"
             >
               <Play size={13} fill="currentColor" />
               <span>Apply & Re-Run Instantly ↵</span>
