@@ -13,8 +13,8 @@ import {
   Mic,
   MicOff,
   Wand2,
-  Zap
 } from 'lucide-react';
+import { getLanguageById } from '../services/languagesRegistry';
 
 export default function EditorPanel({
   files = [],
@@ -157,33 +157,11 @@ export default function EditorPanel({
     setTimeout(() => setCopied(false), 1500);
   };
 
-  // Map language IDs to Monaco editor languages (25+ world languages)
+  // Map language IDs to Monaco editor languages (115+ languages supported)
   const getMonacoLang = (lang) => {
-    switch (lang) {
-      case 'cpp': return 'cpp';
-      case 'c': return 'c';
-      case 'python': return 'python';
-      case 'java': return 'java';
-      case 'javascript': return 'javascript';
-      case 'typescript': return 'typescript';
-      case 'rust': return 'rust';
-      case 'go': return 'go';
-      case 'csharp': return 'csharp';
-      case 'php': return 'php';
-      case 'ruby': return 'ruby';
-      case 'kotlin': return 'kotlin';
-      case 'swift': return 'swift';
-      case 'dart': return 'dart';
-      case 'sql': return 'sql';
-      case 'r': return 'r';
-      case 'bash': return 'shell';
-      case 'scala': return 'scala';
-      case 'lua': return 'lua';
-      case 'haskell': return 'haskell';
-      case 'perl': return 'perl';
-      case 'html': return 'html';
-      default: return 'plaintext';
-    }
+    const matched = getLanguageById(lang);
+    if (matched && matched.monaco) return matched.monaco;
+    return 'plaintext';
   };
 
   const getLanguageColor = (lang) => {

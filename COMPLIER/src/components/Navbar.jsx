@@ -39,6 +39,7 @@ import {
   Menu,
   FileText
 } from 'lucide-react';
+import { ALL_LANGUAGES, LANGUAGE_CATEGORIES } from '../services/languagesRegistry';
 
 export default function Navbar({
   detectedLangInfo,
@@ -527,40 +528,19 @@ export default function Navbar({
                   ⚡ {isMobile ? (detectedLangInfo?.detected ? detectedLangInfo.name : 'Auto') : `Auto-Detect ${detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : ''}`}
                 </option>
 
-                <optgroup label="🌟 Core & Systems">
-                  <option value="python">🐍 Python 3.12</option>
-                  <option value="cpp">⚙️ C++ (GCC 14)</option>
-                  <option value="c">🔧 C (GCC 14)</option>
-                  <option value="java">☕ Java (JDK 17)</option>
-                  <option value="javascript">⚡ JavaScript (Node 22)</option>
-                  <option value="typescript">📘 TypeScript 5.6</option>
-                  <option value="rust">🦀 Rust 1.85</option>
-                  <option value="go">🐹 Go 1.23</option>
-                  <option value="csharp">🔷 C# (Mono 6.6)</option>
-                </optgroup>
-
-                <optgroup label="🌐 Web, Mobile & Backend">
-                  <option value="php">🐘 PHP 8.3</option>
-                  <option value="ruby">💎 Ruby 2.7</option>
-                  <option value="kotlin">📱 Kotlin 2.1</option>
-                  <option value="swift">🍎 Swift 5.2</option>
-                  <option value="dart">🎯 Dart 2.19</option>
-                  <option value="html">🌐 HTML / DOM Sandbox</option>
-                </optgroup>
-
-                <optgroup label="📊 Data, DB & Shell">
-                  <option value="sql">🗄️ SQL (SQLite 3)</option>
-                  <option value="r">📊 R 4.4</option>
-                  <option value="bash">💻 Bash Shell</option>
-                </optgroup>
-
-                <optgroup label="🔬 Functional & Advanced">
-                  <option value="scala">🔴 Scala 3.4</option>
-                  <option value="lua">🌙 Lua 5.3</option>
-                  <option value="haskell">λ Haskell (GHC)</option>
-                  <option value="perl">🐪 Perl 5.28</option>
-                  <option value="assembly">⚡ Assembly (NASM)</option>
-                </optgroup>
+                {LANGUAGE_CATEGORIES.map(cat => {
+                  const items = ALL_LANGUAGES.filter(l => l.category === cat.id);
+                  if (!items.length) return null;
+                  return (
+                    <optgroup key={cat.id} label={cat.name}>
+                      {items.map(l => (
+                        <option key={l.id} value={l.id}>
+                          {l.icon} {l.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
               </select>
               {detectedLangInfo?.detected && !isMobile && (
                 <span className="extension-badge live-detected">.{detectedLangInfo.extension}</span>

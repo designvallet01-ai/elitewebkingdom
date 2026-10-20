@@ -34,24 +34,12 @@ import {
 } from './services/collegeService';
 import { detectLanguage } from './services/languageDetector';
 import { transpileCode } from './services/transpilerEngine';
+import { ALL_LANGUAGES, STARTER_TEMPLATES, EXTENSION_MAP, getLanguageById } from './services/languagesRegistry';
 import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages } from 'lucide-react';
 
 const STORAGE_FILES_KEY = 'elite_ide_workspace_files_v2';
 const STORAGE_ACTIVE_KEY = 'elite_ide_active_file_id_v2';
 const STORAGE_SIDEBAR_KEY = 'elite_ide_sidebar_open_v2';
-
-const STARTER_TEMPLATES = {
-  cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello from C++ (GCC 14)!" << std::endl;\n    return 0;\n}',
-  c: '#include <stdio.h>\n\nint main() {\n    printf("Hello from C (GCC 14)!\\n");\n    return 0;\n}',
-  python: 'print("Hello from Python 3.12!")',
-  java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java 17!");\n    }\n}',
-  javascript: 'console.log("Hello from JavaScript (Node 22)!");',
-  typescript: 'const greeting: string = "Hello from TypeScript 5.6!";\nconsole.log(greeting);',
-  rust: 'fn main() {\n    println!("Hello from Rust 1.85!");\n}',
-  go: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello from Go 1.23!")\n}',
-  csharp: 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from C# (.NET)!");\n    }\n}',
-  php: '<?php\necho "Hello from PHP 8.3!\\n";'
-};
 
 const DEFAULT_INITIAL_FILES = [
   {
@@ -438,60 +426,18 @@ export default function App() {
 
   // Language detection: real-time automatic detection from code with manual override option
   const detectedLangInfo = useMemo(() => {
-    const ext = activeFile.name.split('.').pop()?.toLowerCase();
     const contentDetection = detectLanguage(activeFile.code);
-
-    const extMap = {
-      py: { language: 'python', name: 'Python 3', extension: 'py', monaco: 'python' },
-      python: { language: 'python', name: 'Python 3', extension: 'py', monaco: 'python' },
-      cpp: { language: 'cpp', name: 'C++ (G++ 14)', extension: 'cpp', monaco: 'cpp' },
-      cc: { language: 'cpp', name: 'C++ (G++ 14)', extension: 'cpp', monaco: 'cpp' },
-      cxx: { language: 'cpp', name: 'C++ (G++ 14)', extension: 'cpp', monaco: 'cpp' },
-      c: { language: 'c', name: 'C (GCC 14)', extension: 'c', monaco: 'c' },
-      java: { language: 'java', name: 'Java (JDK 17)', extension: 'java', monaco: 'java' },
-      js: { language: 'javascript', name: 'JavaScript (Node 22)', extension: 'js', monaco: 'javascript' },
-      javascript: { language: 'javascript', name: 'JavaScript (Node 22)', extension: 'js', monaco: 'javascript' },
-      ts: { language: 'typescript', name: 'TypeScript (5.6)', extension: 'ts', monaco: 'typescript' },
-      typescript: { language: 'typescript', name: 'TypeScript (5.6)', extension: 'ts', monaco: 'typescript' },
-      rs: { language: 'rust', name: 'Rust (1.85)', extension: 'rs', monaco: 'rust' },
-      rust: { language: 'rust', name: 'Rust (1.85)', extension: 'rs', monaco: 'rust' },
-      go: { language: 'go', name: 'Go (1.23)', extension: 'go', monaco: 'go' },
-      golang: { language: 'go', name: 'Go (1.23)', extension: 'go', monaco: 'go' },
-      cs: { language: 'csharp', name: 'C# (Mono 6.6)', extension: 'cs', monaco: 'csharp' },
-      csharp: { language: 'csharp', name: 'C# (Mono 6.6)', extension: 'cs', monaco: 'csharp' },
-      php: { language: 'php', name: 'PHP (8.3)', extension: 'php', monaco: 'php' },
-      rb: { language: 'ruby', name: 'Ruby (2.7)', extension: 'rb', monaco: 'ruby' },
-      ruby: { language: 'ruby', name: 'Ruby (2.7)', extension: 'rb', monaco: 'ruby' },
-      kt: { language: 'kotlin', name: 'Kotlin (2.1)', extension: 'kt', monaco: 'kotlin' },
-      kotlin: { language: 'kotlin', name: 'Kotlin (2.1)', extension: 'kt', monaco: 'kotlin' },
-      swift: { language: 'swift', name: 'Swift (5.2)', extension: 'swift', monaco: 'swift' },
-      dart: { language: 'dart', name: 'Dart (2.19)', extension: 'dart', monaco: 'dart' },
-      sql: { language: 'sql', name: 'SQL (SQLite 3)', extension: 'sql', monaco: 'sql' },
-      sqlite: { language: 'sql', name: 'SQL (SQLite 3)', extension: 'sql', monaco: 'sql' },
-      r: { language: 'r', name: 'R (4.4)', extension: 'r', monaco: 'r' },
-      sh: { language: 'bash', name: 'Bash Shell', extension: 'sh', monaco: 'shell' },
-      bash: { language: 'bash', name: 'Bash Shell', extension: 'sh', monaco: 'shell' },
-      scala: { language: 'scala', name: 'Scala (3.4)', extension: 'scala', monaco: 'scala' },
-      lua: { language: 'lua', name: 'Lua (5.3)', extension: 'lua', monaco: 'lua' },
-      hs: { language: 'haskell', name: 'Haskell (GHC)', extension: 'hs', monaco: 'haskell' },
-      haskell: { language: 'haskell', name: 'Haskell (GHC)', extension: 'hs', monaco: 'haskell' },
-      pl: { language: 'perl', name: 'Perl (5.28)', extension: 'pl', monaco: 'perl' },
-      perl: { language: 'perl', name: 'Perl (5.28)', extension: 'pl', monaco: 'perl' },
-      asm: { language: 'assembly', name: 'Assembly (NASM)', extension: 'asm', monaco: 'plaintext' },
-      assembly: { language: 'assembly', name: 'Assembly (NASM)', extension: 'asm', monaco: 'plaintext' },
-      html: { language: 'html', name: 'HTML / Web Sandbox', extension: 'html', monaco: 'html' }
-    };
+    const parts = (activeFile.name || '').split('.');
+    const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
 
     // If user explicitly selected a language from the dropdown
     if (manualLanguage !== 'auto') {
-      const selected = extMap[manualLanguage] || {
-        language: manualLanguage,
-        name: manualLanguage,
-        extension: manualLanguage,
-        monaco: manualLanguage
-      };
+      const selected = getLanguageById(manualLanguage);
       return {
-        ...selected,
+        language: selected.id,
+        name: selected.name,
+        extension: selected.extension,
+        monaco: selected.monaco || 'plaintext',
         filename: activeFile.name,
         detected: true,
         isManual: true
@@ -508,14 +454,20 @@ export default function App() {
       };
     }
 
-    // 2. If no syntax markers found yet (e.g. empty or generic comments), fallback to file extension if recognized
-    if (ext && extMap[ext]) {
-      return {
-        ...extMap[ext],
-        filename: activeFile.name,
-        detected: false,
-        isManual: false
-      };
+    // 2. Fallback to file extension if recognized in registry
+    if (ext) {
+      const extMatch = ALL_LANGUAGES.find(l => l.extension.toLowerCase() === ext);
+      if (extMatch) {
+        return {
+          language: extMatch.id,
+          name: extMatch.name,
+          extension: extMatch.extension,
+          monaco: extMatch.monaco || 'plaintext',
+          filename: activeFile.name,
+          detected: false,
+          isManual: false
+        };
+      }
     }
 
     // 3. Fallback default
@@ -528,59 +480,27 @@ export default function App() {
 
   const activeLanguage = detectedLangInfo.language;
 
-  // Language change handler (from dropdown selector)
+  // Language change handler (from dropdown selector) supporting 115+ languages
   const handleLanguageChange = (newLang) => {
     setManualLanguage(newLang);
-
-    const STARTERS = {
-      cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello from C++ (GCC 14)!" << std::endl;\n    return 0;\n}',
-      c: '#include <stdio.h>\n\nint main() {\n    printf("Hello from C (GCC 14)!\\n");\n    return 0;\n}',
-      python: 'print("Hello from Python 3.12!")',
-      java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from Java 17!");\n    }\n}',
-      javascript: 'console.log("Hello from JavaScript (Node 22)!");',
-      typescript: 'const greeting: string = "Hello from TypeScript 5.6!";\nconsole.log(greeting);',
-      rust: 'fn main() {\n    println!("Hello from Rust 1.85!");\n}',
-      go: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello from Go 1.23!")\n}',
-      csharp: 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello from C# (.NET)!");\n    }\n}',
-      php: '<?php\necho "Hello from PHP 8.3!\\n";',
-      ruby: 'puts "Hello from Ruby 2.7!"',
-      kotlin: 'fun main() {\n    println("Hello from Kotlin 2.1!")\n}',
-      swift: 'print("Hello from Swift 5.2!")',
-      dart: 'void main() {\n  print("Hello from Dart 2.19!");\n}',
-      sql: 'CREATE TABLE heroes (id INTEGER PRIMARY KEY, name TEXT, role TEXT);\nINSERT INTO heroes VALUES (1, "Aryabhata", "Mathematician"), (2, "Turing", "Computer Scientist");\nSELECT * FROM heroes;',
-      r: 'cat("Hello from R 4.4!\\n")',
-      bash: 'echo "Hello from Bash Shell!"',
-      scala: 'object Main extends App {\n  println("Hello from Scala 3.4!")\n}',
-      lua: 'print("Hello from Lua 5.3!")',
-      haskell: 'main = putStrLn "Hello from Haskell (GHC)!"',
-      perl: 'print "Hello from Perl 5.28!\\n";',
-      assembly: 'section .data\n    msg db "Hello from Assembly (NASM)!", 10\n    len equ $ - msg\n\nsection .text\n    global _start\n\n_start:\n    mov edx, len\n    mov ecx, msg\n    mov ebx, 1\n    mov eax, 4\n    int 0x80\n\n    mov eax, 1\n    int 0x80',
-      html: '<!DOCTYPE html>\n<html>\n<head>\n  <style>body { font-family: sans-serif; background: #0f172a; color: #38bdf8; padding: 2rem; }</style>\n</head>\n<body>\n  <h1>Elite Web Sandbox</h1>\n  <p>Live interactive browser DOM canvas.</p>\n</body>\n</html>'
-    };
 
     if (newLang === 'auto') {
       const detected = detectLanguage(activeFile.code);
       if (detected.detected) {
         const parts = activeFile.name.split('.');
         const base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
-        const properBase = (detected.language === 'java' && base.toLowerCase() === 'main') ? 'Main' : base;
+        const properBase = (detected.language.startsWith('java') && base.toLowerCase() === 'main') ? 'Main' : base;
         const newName = `${properBase}.${detected.extension}`;
         setFiles(prev => prev.map(f => f.id === activeFileId ? { ...f, name: newName, language: detected.language } : f));
       }
       return;
     }
 
-    const extMap = {
-      python: 'py', cpp: 'cpp', c: 'c', java: 'java', javascript: 'js',
-      typescript: 'ts', rust: 'rs', go: 'go', csharp: 'cs', php: 'php',
-      ruby: 'rb', kotlin: 'kt', swift: 'swift', dart: 'dart', sql: 'sql',
-      r: 'r', bash: 'sh', scala: 'scala', lua: 'lua', haskell: 'hs',
-      perl: 'pl', assembly: 'asm', html: 'html'
-    };
-    const ext = extMap[newLang] || 'txt';
+    const matched = getLanguageById(newLang);
+    const ext = matched.extension || 'txt';
     const parts = activeFile.name.split('.');
     let base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
-    if (newLang === 'java' && base.toLowerCase() === 'main') base = 'Main';
+    if (newLang.startsWith('java') && base.toLowerCase() === 'main') base = 'Main';
     const newName = `${base}.${ext}`;
 
     const currentCode = (activeFile.code || '').trim();
@@ -593,7 +513,7 @@ export default function App() {
       if (currentCode.includes('Hello from ') && currentCode.length < 350) return true;
       if (currentCode.includes('Elite Web Sandbox')) return true;
       const norm = currentCode.replace(/\s+/g, ' ');
-      for (const starter of Object.values(STARTERS)) {
+      for (const starter of Object.values(STARTER_TEMPLATES)) {
         if (norm === starter.trim().replace(/\s+/g, ' ')) return true;
       }
       return false;
@@ -601,24 +521,22 @@ export default function App() {
 
     let updatedCode;
     if (isStarterOrEmpty()) {
-      // Clean starter injection for newly selected language (prevents cross-language syntax errors)
-      updatedCode = STARTERS[newLang] || '';
+      updatedCode = STARTER_TEMPLATES[newLang] || matched.starter || '';
     } else {
-      // User has custom code! Transpile from currentLang -> newLang to prevent syntax errors
       try {
         if (currentLang !== newLang) {
           const transpiled = transpileCode(activeFile.code, currentLang, newLang);
           if (transpiled && !transpiled.startsWith('// Empty code buffer') && transpiled !== activeFile.code) {
             updatedCode = transpiled;
           } else {
-            updatedCode = STARTERS[newLang] || activeFile.code;
+            updatedCode = STARTER_TEMPLATES[newLang] || matched.starter || activeFile.code;
           }
         } else {
           updatedCode = activeFile.code;
         }
       } catch (err) {
         console.warn('Transpilation on language change failed, falling back to starter template:', err);
-        updatedCode = STARTERS[newLang] || activeFile.code;
+        updatedCode = STARTER_TEMPLATES[newLang] || matched.starter || activeFile.code;
       }
     }
 
@@ -629,8 +547,7 @@ export default function App() {
       code: updatedCode
     } : f));
 
-    // Instantly update Monaco Editor value to prevent editor model desynchronization
-    if (editorInstanceRef.current && updatedCode !== undefined) {
+    if (editorInstanceRef.current && updatedCode) {
       editorInstanceRef.current.setValue(updatedCode);
     }
   };
@@ -846,50 +763,18 @@ export default function App() {
   const handleClearConsole = useCallback(() => {
     setTerminalEntries([]);
     setLastStats(null);
-  }, []);  // Generate authentic developer shell compilation/execution commands
+  }, []);  // Generate authentic developer shell compilation/execution commands for 115+ languages
   const getShellExecutionCommand = useCallback((lang, fileName) => {
-    const cleanLang = (lang || 'python').toLowerCase();
-    const name = fileName || (cleanLang === 'cpp' ? 'main.cpp' : cleanLang === 'c' ? 'main.c' : cleanLang === 'java' ? 'Main.java' : cleanLang === 'javascript' ? 'main.js' : cleanLang === 'typescript' ? 'main.ts' : cleanLang === 'rust' ? 'main.rs' : cleanLang === 'go' ? 'main.go' : 'main.py');
-    const base = name.split('.')[0] || 'main';
-
-    switch (cleanLang) {
-      case 'cpp': return `g++ -O3 -Wall ${name} -o ${base} && ./${base}`;
-      case 'c': return `gcc -O3 -Wall ${name} -o ${base} && ./${base}`;
-      case 'python':
-      case 'py': return `python3 -u ${name}`;
-      case 'java': return `javac ${base}.java && java ${base}`;
-      case 'javascript':
-      case 'js': return `node ${name}`;
-      case 'typescript':
-      case 'ts': return `ts-node ${name}`;
-      case 'rust':
-      case 'rs': return `rustc -O ${name} -o ${base} && ./${base}`;
-      case 'go':
-      case 'golang': return `go run ${name}`;
-      case 'csharp':
-      case 'cs': return `mcs ${name} && mono ${base}.exe`;
-      case 'php': return `php ${name}`;
-      case 'ruby':
-      case 'rb': return `ruby ${name}`;
-      case 'kotlin':
-      case 'kt': return `kotlinc ${name} -include-runtime -d ${base}.jar && java -jar ${base}.jar`;
-      case 'swift': return `swift ${name}`;
-      case 'dart': return `dart run ${name}`;
-      case 'sql':
-      case 'sqlite': return `sqlite3 :memory: < ${name}`;
-      case 'bash':
-      case 'sh': return `bash ${name}`;
-      case 'lua': return `lua ${name}`;
-      case 'r': return `Rscript ${name}`;
-      case 'scala': return `scala ${name}`;
-      case 'haskell':
-      case 'hs': return `runhaskell ${name}`;
-      case 'perl':
-      case 'pl': return `perl ${name}`;
-      case 'assembly':
-      case 'asm': return `nasm -f elf64 ${name} -o ${base}.o && ld ${base}.o -o ${base} && ./${base}`;
-      default: return `./run.sh ${name}`;
+    const matched = getLanguageById(lang);
+    if (matched && matched.shellCmd) {
+      if (fileName) {
+        return matched.shellCmd.replace(/main\.[a-z0-9]+/g, fileName).replace(/Main\.[a-z0-9]+/g, fileName);
+      }
+      return matched.shellCmd;
     }
+    const cleanLang = (lang || 'python').toLowerCase();
+    const name = fileName || 'main.txt';
+    return `./run.sh ${name}`;
   }, []);
 
   // Robust Cloud & Local Code Runner with Stdin Support
@@ -952,59 +837,23 @@ export default function App() {
         }
         data = await response.json();
       } catch (apiErr) {
-        console.warn('Local /api/run unavailable, engaging direct Cloud Judge0 fallback:', apiErr);
-        // Direct Judge0 CE fallback for 25+ world languages
-        const JUDGE0_MAP = {
-          cpp: { id: 105, name: 'C++ (GCC 14.1)' },
-          c: { id: 103, name: 'C (GCC 14.1)' },
-          python: { id: 100, name: 'Python (3.12.5)' },
-          py: { id: 100, name: 'Python (3.12.5)' },
-          java: { id: 91, name: 'Java (JDK 17)' },
-          javascript: { id: 102, name: 'JavaScript (Node.js 22)' },
-          js: { id: 102, name: 'JavaScript (Node.js 22)' },
-          typescript: { id: 101, name: 'TypeScript (5.6.2)' },
-          ts: { id: 101, name: 'TypeScript (5.6.2)' },
-          rust: { id: 108, name: 'Rust (1.85)' },
-          rs: { id: 108, name: 'Rust (1.85)' },
-          go: { id: 107, name: 'Go (1.23)' },
-          golang: { id: 107, name: 'Go (1.23)' },
-          csharp: { id: 51, name: 'C# (Mono 6.6)' },
-          cs: { id: 51, name: 'C# (Mono 6.6)' },
-          php: { id: 98, name: 'PHP (8.3.11)' },
-          ruby: { id: 72, name: 'Ruby (2.7)' },
-          rb: { id: 72, name: 'Ruby (2.7)' },
-          kotlin: { id: 111, name: 'Kotlin (2.1.10)' },
-          kt: { id: 111, name: 'Kotlin (2.1.10)' },
-          swift: { id: 83, name: 'Swift (5.2)' },
-          dart: { id: 90, name: 'Dart (2.19)' },
-          sql: { id: 82, name: 'SQL (SQLite 3)' },
-          sqlite: { id: 82, name: 'SQL (SQLite 3)' },
-          r: { id: 99, name: 'R (4.4.1)' },
-          bash: { id: 46, name: 'Bash (5.0)' },
-          sh: { id: 46, name: 'Bash (5.0)' },
-          scala: { id: 112, name: 'Scala (3.4.2)' },
-          lua: { id: 64, name: 'Lua (5.3.5)' },
-          haskell: { id: 61, name: 'Haskell (GHC 8.8)' },
-          hs: { id: 61, name: 'Haskell (GHC 8.8)' },
-          perl: { id: 85, name: 'Perl (5.28)' },
-          pl: { id: 85, name: 'Perl (5.28)' },
-          assembly: { id: 45, name: 'Assembly (NASM 2.14)' },
-          asm: { id: 45, name: 'Assembly (NASM 2.14)' },
-          elixir: { id: 57, name: 'Elixir (1.9)' },
-          fortran: { id: 59, name: 'Fortran (GFortran 9.2)' }
-        };
+        const matched = getLanguageById(lang);
+        const clusterUrl = (matched && matched.isExtraCe)
+          ? 'https://extra-ce.judge0.com/submissions?wait=true'
+          : 'https://ce.judge0.com/submissions?wait=true';
+        const langId = (matched && matched.judge0Id) ? matched.judge0Id : 100;
+        const langName = (matched && matched.name) ? matched.name : lang;
 
-        const target = JUDGE0_MAP[lang] || JUDGE0_MAP['python'];
         let src = codeToRun;
-        if (lang === 'java' && !src.includes('class ')) {
+        if (lang.startsWith('java') && !src.includes('class ')) {
           src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
-        } else if ((lang === 'csharp' || lang === 'cs') && !src.includes('class ')) {
+        } else if ((lang.startsWith('cs') || lang === 'csharp') && !src.includes('class ')) {
           src = `using System;\nclass Program {\n    static void Main() {\n${src}\n    }\n}`;
         }
-        const directRes = await fetch('https://ce.judge0.com/submissions?wait=true', {
+        const directRes = await fetch(clusterUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language_id: target.id, source_code: src, stdin: customStdin || '' })
+          body: JSON.stringify({ language_id: langId, source_code: src, stdin: customStdin || '' })
         });
         const judgeData = await directRes.json();
         const isSuccess = judgeData.status?.id === 3;
@@ -1014,7 +863,7 @@ export default function App() {
           code: isSuccess ? 0 : 1,
           executionTime: judgeData.time ? Math.round(parseFloat(judgeData.time) * 1000) : 15,
           status: isSuccess ? 'SUCCESS' : (judgeData.status?.id === 6 ? 'COMPILE_ERROR' : 'RUNTIME_ERROR'),
-          runner: `Elite Cloud (${target.name})`
+          runner: `Elite Cloud (${langName})`
         };
       }
 
