@@ -1,5 +1,5 @@
 // Intelligent Real-time Programming Language Detector
-// Automatically identifies 25+ world languages based on syntax markers, imports, keywords, and idioms.
+// Automatically identifies 116+ world languages based on syntax markers, imports, keywords, and idioms.
 
 export const SUPPORTED_LANGUAGES = [
   { id: 'auto', name: 'Auto-Detect (Smart Real-Time)', icon: '⚡' },

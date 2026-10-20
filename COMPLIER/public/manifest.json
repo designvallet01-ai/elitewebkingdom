@@ -2,7 +2,7 @@
   "id": "/compiler/",
   "name": "Elite IDE - Professional Online Compiler & Developer Studio",
   "short_name": "Elite IDE",
-  "description": "High-performance online compiler, cloud developer studio, and college lab examination kiosk supporting 30+ programming languages.",
+  "description": "High-performance online compiler, cloud developer studio, and college lab examination kiosk supporting 116+ programming languages.",
   "start_url": "/compiler/",
   "scope": "/compiler/",
   "display": "standalone",
