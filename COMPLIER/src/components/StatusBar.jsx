@@ -18,6 +18,7 @@ export default function StatusBar({
   onOpenGit,
   onOpenAiHealer,
   onOpenTerminal,
+  onOpenLanguageModal,
   theme = 'vs-dark'
 }) {
   const hasError = lastStats && (lastStats.code !== 0 || lastStats.status === 'RUNTIME_ERROR' || lastStats.status === 'COMPILE_ERROR');
@@ -76,11 +77,17 @@ export default function StatusBar({
           <span>UTF-8</span>
         </div>
 
-        {/* Programming Language */}
-        <div className="status-bar-item lang-mode" title={`Language Mode: ${langName}`}>
+        {/* Programming Language (Click to open 116+ Matrix) */}
+        <button 
+          type="button"
+          className="status-bar-item lang-mode cursor-pointer hover:bg-slate-700/60 transition-colors" 
+          onClick={onOpenLanguageModal}
+          title={`Active Language: ${langName} • Click to open Universal 116+ Languages Hub`}
+        >
           <Zap size={11} className="text-amber-400" />
           <span>{langName}</span>
-        </div>
+          <span className="ml-1.5 px-1 py-0.2 rounded text-[10px] font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">116+</span>
+        </button>
 
         {/* Prettier / Formatter Status */}
         <div className="status-bar-item prettier-status" title="Formatting Engine: Online">

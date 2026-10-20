@@ -69,7 +69,8 @@ export default function Navbar({
   onChangeRightPaneView,
   onOpenShareCode,
   onOpenCommandPalette,
-  onOpenGitControl
+  onOpenGitControl,
+  onOpenLanguageModal
 }) {
   const fileInputRef = useRef(null);
   const menubarRef = useRef(null);
@@ -513,19 +514,28 @@ export default function Navbar({
 
         <div className="nav-right">
           {/* Automatic Language Detection Badge & Interactive Engine Selector */}
-          <div className="auto-lang-selector-wrapper">
+          <div className="auto-lang-selector-wrapper flex items-center gap-1.5">
             <div className="auto-lang-pill" title="Programming language is identified automatically from your code in real-time">
               <Zap size={13} className="zap-icon" />
               {!isMobile && <span className="auto-label">{selectedLanguage === 'auto' ? 'Auto:' : 'Lang:'}</span>}
               <select
                 value={selectedLanguage}
-                onChange={(e) => onSelectLanguage && onSelectLanguage(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value === '__open_hub__') {
+                    onOpenLanguageModal?.();
+                  } else if (onSelectLanguage) {
+                    onSelectLanguage(e.target.value);
+                  }
+                }}
                 className="lang-select-dropdown"
                 id="language-select-dropdown"
-                title="Select programming language or keep on real-time Auto-Detection"
+                title="Select programming language or browse all 116+ compilers"
               >
                 <option value="auto">
                   ⚡ {isMobile ? (detectedLangInfo?.detected ? detectedLangInfo.name : 'Auto') : `Auto-Detect ${detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : ''}`}
+                </option>
+                <option value="__open_hub__">
+                  🌐 ✨ Open 116+ Languages Matrix...
                 </option>
 
                 {LANGUAGE_CATEGORIES.map(cat => {
@@ -546,6 +556,18 @@ export default function Navbar({
                 <span className="extension-badge live-detected">.{detectedLangInfo.extension}</span>
               )}
             </div>
+
+            {/* Dedicated 116+ Languages Hub Button */}
+            <button
+              type="button"
+              onClick={onOpenLanguageModal}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5 transition-all shadow-sm"
+              title="Open Universal 116+ Language & Compiler Matrix Modal"
+            >
+              <Globe size={13} />
+              <span className="hidden sm:inline">116+ Languages</span>
+              <span className="sm:hidden font-mono">116+</span>
+            </button>
           </div>
 
           {/* Desktop controls */}

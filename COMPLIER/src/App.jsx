@@ -23,6 +23,7 @@ import AiErrorFixModal from './components/AiErrorFixModal';
 import GitControlModal from './components/GitControlModal';
 import ActivityBar from './components/ActivityBar';
 import StatusBar from './components/StatusBar';
+import LanguageMatrixModal from './components/LanguageMatrixModal';
 import { diagnoseAndHealError } from './services/aiErrorHealer';
 import { executeInBrowserNode } from './services/clientNodeRunner';
 import { 
@@ -255,6 +256,7 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isGitModalOpen, setIsGitModalOpen] = useState(false);
   const [isAiHealerModalOpen, setIsAiHealerModalOpen] = useState(false);
+  const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
   const [aiHealingData, setAiHealingData] = useState(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   
@@ -1639,6 +1641,7 @@ export default function App() {
         onOpenShareCode={() => setIsShareModalOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenGitControl={() => setIsGitModalOpen(true)}
+        onOpenLanguageModal={() => setIsLanguageModalOpen(true)}
       />
 
       {/* College Exam Active Banner (Desktop Only) */}
@@ -2212,9 +2215,18 @@ export default function App() {
             setIsAiHealerModalOpen(true);
           }}
           onOpenTerminal={() => setRightPaneView('console')}
+          onOpenLanguageModal={() => setIsLanguageModalOpen(true)}
           theme={theme}
         />
       )}
+
+      {/* Universal 116+ Languages & Compiler Hub Modal */}
+      <LanguageMatrixModal
+        isOpen={isLanguageModalOpen}
+        onClose={() => setIsLanguageModalOpen(false)}
+        currentLanguage={activeLanguage}
+        onSelectLanguage={handleLanguageChange}
+      />
 
     </div>
   );
