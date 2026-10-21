@@ -4076,11 +4076,12 @@ html, body, #root {
   /* Mobile Backdrop Overlay */
   .sidebar-backdrop {
     position: fixed;
-    inset: 0;
+    top: var(--header-height);
+    inset: var(--header-height) 0 0 0;
     background-color: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
-    z-index: 998;
+    z-index: 54000;
     animation: fadeInOverlay 0.2s ease-out;
   }
 
@@ -4092,13 +4093,14 @@ html, body, #root {
   /* Mobile Sidebar Drawer Overlay */
   .workspace-sidebar {
     position: fixed;
-    top: 0;
+    top: var(--header-height);
     left: 0;
     bottom: 0;
-    width: 290px;
+    width: 280px;
     max-width: 85vw;
-    height: 100%;
-    z-index: 999;
+    height: calc(100% - var(--header-height));
+    height: calc(100dvh - var(--header-height));
+    z-index: 55000;
     box-shadow: 4px 0 35px rgba(0, 0, 0, 0.85);
     animation: slideInDrawer 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   }
