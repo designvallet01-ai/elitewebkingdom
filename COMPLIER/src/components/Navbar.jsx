@@ -557,16 +557,18 @@ export default function Navbar({
               )}
             </div>
 
-            {/* Dedicated 116+ Languages Hub Button */}
-            <button
-              type="button"
-              onClick={onOpenLanguageModal}
-              className="nav-lang-hub-btn"
-              title="Open Universal 116+ Language & Compiler Matrix Modal"
-            >
-              <Globe size={13} className="hub-globe-icon" />
-              <span>116+ Languages</span>
-            </button>
+            {/* Dedicated 116+ Languages Hub Button (Desktop only; on mobile accessed via dropdown & tools sheet) */}
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={onOpenLanguageModal}
+                className="nav-lang-hub-btn"
+                title="Open Universal 116+ Language & Compiler Matrix Modal"
+              >
+                <Globe size={13} className="hub-globe-icon" />
+                <span>116+ Languages</span>
+              </button>
+            )}
           </div>
 
           {/* Desktop controls */}
@@ -733,6 +735,14 @@ export default function Navbar({
                   >
                     <AlignLeft size={16} />
                     <span>Format Code</span>
+                  </button>
+
+                  <button 
+                    className="sheet-grid-btn text-cyan" 
+                    onClick={() => { onOpenLanguageModal?.(); setIsMobileMenuOpen(false); }}
+                  >
+                    <Globe size={16} />
+                    <span>116+ Languages</span>
                   </button>
 
                   <button 

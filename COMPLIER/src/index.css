@@ -4120,6 +4120,13 @@ html, body, #root {
     gap: 0.35rem;
     justify-content: space-between;
     flex-shrink: 0;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .nav-lang-hub-btn {
+    display: none !important;
   }
 
   .nav-left {
@@ -4146,6 +4153,12 @@ html, body, #root {
   .brand-title {
     font-size: 0.85rem;
     white-space: nowrap;
+  }
+
+  @media (max-width: 380px) {
+    .brand-title {
+      display: none;
+    }
   }
 
   .auto-lang-selector-wrapper {
