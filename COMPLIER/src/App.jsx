@@ -865,8 +865,13 @@ export default function App() {
           throw new Error(`Server status ${response.status}`);
         }
         data = await response.json();
+
+        // If server cluster returned load notice, immediately trigger direct client execution
+        if (data?.runner === 'Elite Cloud Queue' || data?.stderr?.includes('Server cluster')) {
+          throw new Error('Server load reached, running direct engine');
+        }
       } catch (apiErr) {
-        console.warn('API /api/run notice, activating direct high-speed failover:', apiErr);
+        console.warn('Activating direct high-speed engine:', apiErr.message);
         const WANDBOX_MAP = {
           python: 'cpython-3.12.7',
           py: 'cpython-3.12.7',

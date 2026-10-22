@@ -184,7 +184,7 @@ async function handler(req, res) {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4500); // 4.5s safe limit
+      const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s safe limit for GCC/Java cloud builds
 
       const wandboxRes = await fetch('https://wandbox.org/api/compile.json', {
         method: 'POST',
