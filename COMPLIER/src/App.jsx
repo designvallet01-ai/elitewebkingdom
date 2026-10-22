@@ -851,7 +851,7 @@ export default function App() {
       let data;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s safe timeout for cloud compilation
 
         const response = await fetch('/api/run', {
           method: 'POST',
