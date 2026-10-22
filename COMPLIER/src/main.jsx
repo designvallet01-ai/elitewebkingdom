@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './styles/sTierFeatures.css'
 import App from './App.jsx'
 
 // Register Service Worker for PWA installation & standalone performance

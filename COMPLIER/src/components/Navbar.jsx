@@ -37,7 +37,14 @@ import {
   Share2,
   Search,
   Menu,
-  FileText
+  FileText,
+  Swords,
+  Trophy,
+  Layers,
+  TrendingUp,
+  Rocket,
+  ShieldAlert,
+  FileSpreadsheet
 } from 'lucide-react';
 import { ALL_LANGUAGES, LANGUAGE_CATEGORIES } from '../services/languagesRegistry';
 
@@ -70,11 +77,20 @@ export default function Navbar({
   onOpenShareCode,
   onOpenCommandPalette,
   onOpenGitControl,
-  onOpenLanguageModal
+  onOpenLanguageModal,
+  onOpenUniversalJudge,
+  onOpenSpeedArena,
+  onOpenLeaderboards,
+  onOpenFullStackWorkspace,
+  onOpenEphemeralTerminal,
+  onOpenComplexityVisualizer,
+  onOpenServerlessDeploy,
+  onOpenSmartProctoring,
+  onOpenBatchGrading
 }) {
   const fileInputRef = useRef(null);
   const menubarRef = useRef(null);
-  const [activeMenu, setActiveMenu] = useState(null); // 'file' | 'edit' | 'view' | 'run' | 'tools' | 'help' | null
+  const [activeMenu, setActiveMenu] = useState(null); // 'file' | 'edit' | 'view' | 'run' | 'arena' | 'sandboxes' | 'tools' | 'help' | null
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMainMenuOpen, setIsMainMenuOpen] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -415,24 +431,80 @@ export default function Navbar({
                 {activeMenu === 'tools' && (
                   <div className="menubar-flyout-menu">
                     <button className="flyout-item" onClick={() => { onOpenAiExplainer(); setActiveMenu(null); }}>
-                      <span className="flyout-left"><Sparkles size={14} className="text-purple" /><span>AI Big-O & Logic Auditor</span></span>
+                      <span className="flyout-left"><Sparkles size={14} className="text-purple" /><span>AI Logic & Debugger</span></span>
                       <kbd className="flyout-kbd purple">AI</kbd>
                     </button>
+                    {onOpenComplexityVisualizer && (
+                      <button className="flyout-item" onClick={() => { onOpenComplexityVisualizer(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><TrendingUp size={14} className="text-cyan" /><span>Time & Space Complexity Visualizer</span></span>
+                        <kbd className="flyout-kbd cyan">BIG-O</kbd>
+                      </button>
+                    )}
+                    {onOpenUniversalJudge && (
+                      <button className="flyout-item" onClick={() => { onOpenUniversalJudge(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><Globe size={14} className="text-amber" /><span>Universal Virtual Judge (OJ)</span></span>
+                        <kbd className="flyout-kbd amber">OJ</kbd>
+                      </button>
+                    )}
+                    {onOpenSpeedArena && (
+                      <button className="flyout-item" onClick={() => { onOpenSpeedArena(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><Swords size={14} className="text-pink" /><span>1v1 Speed Coding Arenas</span></span>
+                        <kbd className="flyout-kbd pink">DUEL</kbd>
+                      </button>
+                    )}
+                    {onOpenLeaderboards && (
+                      <button className="flyout-item" onClick={() => { onOpenLeaderboards(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><Trophy size={14} className="text-amber" /><span>Leaderboards & Contests</span></span>
+                        <kbd className="flyout-kbd amber">RANK</kbd>
+                      </button>
+                    )}
+                    <div className="flyout-divider" />
+                    {onOpenFullStackWorkspace && (
+                      <button className="flyout-item" onClick={() => { onOpenFullStackWorkspace(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><Layers size={14} className="text-sky" /><span>Full-Stack Cloud Workspaces</span></span>
+                        <kbd className="flyout-kbd cyan">STACK</kbd>
+                      </button>
+                    )}
+                    {onOpenEphemeralTerminal && (
+                      <button className="flyout-item" onClick={() => { onOpenEphemeralTerminal(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><Terminal size={14} className="text-emerald" /><span>Ephemeral Cloud Terminal</span></span>
+                        <kbd className="flyout-kbd green">CLI</kbd>
+                      </button>
+                    )}
+                    {onOpenServerlessDeploy && (
+                      <button className="flyout-item" onClick={() => { onOpenServerlessDeploy(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><Rocket size={14} className="text-emerald" /><span>Serverless Deployer (Vercel)</span></span>
+                        <kbd className="flyout-kbd green">DEPLOY</kbd>
+                      </button>
+                    )}
+                    <div className="flyout-divider" />
                     <button className="flyout-item" onClick={() => { onOpenTemplates(); setActiveMenu(null); }}>
-                      <span className="flyout-left"><BookOpen size={14} className="text-amber" /><span>Algorithms & DSA Library</span></span>
+                      <span className="flyout-left"><BookOpen size={14} className="text-amber" /><span>Algorithms & Templates</span></span>
                       <kbd className="flyout-kbd amber">LIB</kbd>
                     </button>
                     <button className="flyout-item" onClick={() => { onOpenTranspiler(); setActiveMenu(null); }}>
-                      <span className="flyout-left"><Languages size={14} className="text-cyan" /><span>Polyglot Code Transpiler</span></span>
+                      <span className="flyout-left"><Languages size={14} className="text-cyan" /><span>Code Transpiler</span></span>
                       <kbd className="flyout-kbd cyan">CONVERT</kbd>
                     </button>
                     {onOpenGitControl && (
                       <button className="flyout-item" onClick={() => { onOpenGitControl(); setActiveMenu(null); }}>
-                        <span className="flyout-left"><FolderGit2 size={14} className="text-pink" /><span>Version Control (Git Matrix)</span></span>
+                        <span className="flyout-left"><FolderGit2 size={14} className="text-pink" /><span>Version Control (Git)</span></span>
                         <kbd className="flyout-kbd pink">GIT</kbd>
                       </button>
                     )}
                     <div className="flyout-divider" />
+                    {onOpenSmartProctoring && (
+                      <button className="flyout-item" onClick={() => { onOpenSmartProctoring(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><ShieldAlert size={14} className="text-pink" /><span>AI Smart Proctoring Hub</span></span>
+                        <kbd className="flyout-kbd pink">GAZE</kbd>
+                      </button>
+                    )}
+                    {onOpenBatchGrading && (
+                      <button className="flyout-item" onClick={() => { onOpenBatchGrading(); setActiveMenu(null); }}>
+                        <span className="flyout-left"><FileSpreadsheet size={14} className="text-emerald" /><span>Automated Batch Grading Engine</span></span>
+                        <kbd className="flyout-kbd green">EXCEL</kbd>
+                      </button>
+                    )}
                     {onOpenLabReport && (
                       <button className="flyout-item" onClick={() => { onOpenLabReport(); setActiveMenu(null); }}>
                         <span className="flyout-left"><FileCheck2 size={14} className="text-emerald" /><span>Lab Practical Record (PDF)</span></span>

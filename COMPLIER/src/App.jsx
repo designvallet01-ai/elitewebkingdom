@@ -24,8 +24,20 @@ import GitControlModal from './components/GitControlModal';
 import ActivityBar from './components/ActivityBar';
 import StatusBar from './components/StatusBar';
 import LanguageMatrixModal from './components/LanguageMatrixModal';
+import UniversalJudgeModal from './components/UniversalJudgeModal';
+import SpeedCodingArenaModal from './components/SpeedCodingArenaModal';
+import LeaderboardBadgesModal from './components/LeaderboardBadgesModal';
+import FullStackWorkspaceModal from './components/FullStackWorkspaceModal';
+import EmbeddedMiniBrowser from './components/EmbeddedMiniBrowser';
+import EphemeralTerminalModal from './components/EphemeralTerminalModal';
+import AiOneClickDebuggerModal from './components/AiOneClickDebuggerModal';
+import ComplexityVisualizerModal from './components/ComplexityVisualizerModal';
+import ServerlessDeploymentModal from './components/ServerlessDeploymentModal';
+import AiSmartProctoringModal from './components/AiSmartProctoringModal';
+import BatchGradingModal from './components/BatchGradingModal';
 import { diagnoseAndHealError } from './services/aiErrorHealer';
 import { executeInBrowserNode } from './services/clientNodeRunner';
+import { recordExecutionTelemetry } from './services/liveLeaderboardService';
 import { 
   subscribeToCollegeEvents, 
   broadcastMessage, 
@@ -257,6 +269,15 @@ export default function App() {
   const [isGitModalOpen, setIsGitModalOpen] = useState(false);
   const [isAiHealerModalOpen, setIsAiHealerModalOpen] = useState(false);
   const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+  const [isUniversalJudgeOpen, setIsUniversalJudgeOpen] = useState(false);
+  const [isSpeedArenaOpen, setIsSpeedArenaOpen] = useState(false);
+  const [isLeaderboardBadgesOpen, setIsLeaderboardBadgesOpen] = useState(false);
+  const [isFullStackWorkspaceOpen, setIsFullStackWorkspaceOpen] = useState(false);
+  const [isEphemeralTerminalOpen, setIsEphemeralTerminalOpen] = useState(false);
+  const [isComplexityVisualizerOpen, setIsComplexityVisualizerOpen] = useState(false);
+  const [isServerlessDeployOpen, setIsServerlessDeployOpen] = useState(false);
+  const [isSmartProctoringOpen, setIsSmartProctoringOpen] = useState(false);
+  const [isBatchGradingOpen, setIsBatchGradingOpen] = useState(false);
   const [aiHealingData, setAiHealingData] = useState(null);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   
@@ -829,45 +850,76 @@ export default function App() {
 
       let data;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
         const response = await fetch('/api/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language: lang, code: codeToRun, stdin: customStdin || '' })
+          body: JSON.stringify({ language: lang, code: codeToRun, stdin: customStdin || '' }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
           throw new Error(`Server status ${response.status}`);
         }
         data = await response.json();
       } catch (apiErr) {
-        const matched = getLanguageById(lang);
-        const clusterUrl = (matched && matched.isExtraCe)
-          ? 'https://extra-ce.judge0.com/submissions?wait=true'
-          : 'https://ce.judge0.com/submissions?wait=true';
-        const langId = (matched && matched.judge0Id) ? matched.judge0Id : 100;
-        const langName = (matched && matched.name) ? matched.name : lang;
-
-        let src = codeToRun;
-        if (lang.startsWith('java') && !src.includes('class ')) {
-          src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
-        } else if ((lang.startsWith('cs') || lang === 'csharp') && !src.includes('class ')) {
-          src = `using System;\nclass Program {\n    static void Main() {\n${src}\n    }\n}`;
-        }
-        const directRes = await fetch(clusterUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ language_id: langId, source_code: src, stdin: customStdin || '' })
-        });
-        const judgeData = await directRes.json();
-        const isSuccess = judgeData.status?.id === 3;
-        data = {
-          stdout: judgeData.stdout || '',
-          stderr: judgeData.compile_output || judgeData.stderr || (isSuccess ? '' : judgeData.status?.description || ''),
-          code: isSuccess ? 0 : 1,
-          executionTime: judgeData.time ? Math.round(parseFloat(judgeData.time) * 1000) : 15,
-          status: isSuccess ? 'SUCCESS' : (judgeData.status?.id === 6 ? 'COMPILE_ERROR' : 'RUNTIME_ERROR'),
-          runner: `Elite Cloud (${langName})`
+        console.warn('API /api/run notice, activating direct high-speed failover:', apiErr);
+        const WANDBOX_MAP = {
+          python: 'cpython-3.12.7',
+          py: 'cpython-3.12.7',
+          cpp: 'gcc-13.2.0',
+          c: 'gcc-13.2.0-c',
+          java: 'openjdk-jdk-22+36',
+          javascript: 'nodejs-20.17.0',
+          js: 'nodejs-20.17.0',
+          rust: 'rust-1.82.0',
+          go: 'go-1.23.2'
         };
+        const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.7';
+        try {
+          let src = codeToRun;
+          if (lang.startsWith('java') && !src.includes('class ')) {
+            src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+          }
+          const directRes = await fetch('https://wandbox.org/api/compile.json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ compiler: wbCompiler, code: src, stdin: customStdin || '' })
+          });
+          if (directRes.ok) {
+            const wbData = await directRes.json();
+            const statusCode = parseInt(wbData.status || '0', 10);
+            const isSuccess = statusCode === 0;
+            data = {
+              stdout: wbData.program_output || wbData.program_message || '',
+              stderr: wbData.compiler_error || wbData.compiler_message || wbData.program_error || '',
+              code: statusCode,
+              executionTime: 25,
+              status: isSuccess ? 'SUCCESS' : 'RUNTIME_ERROR',
+              runner: `Elite Direct Engine (${wbCompiler})`
+            };
+          } else {
+            throw new Error(`Wandbox status ${directRes.status}`);
+          }
+        } catch (wbErr) {
+          data = {
+            stdout: '',
+            stderr: `Execution gateway notice: ${apiErr.message || 'Server load limit'}. Direct fallback active.\n`,
+            code: 1,
+            executionTime: 0,
+            status: 'RUNTIME_ERROR',
+            runner: 'Elite Fallback Guard'
+          };
+        }
       }
+
+      // Record real execution telemetry for authentic streaks & badges
+      try {
+        recordExecutionTelemetry(lang, data?.code === 0, codeToRun);
+      } catch (e) {}
 
       const entries = [
         { type: 'cmd', text: shellCmd }
@@ -1093,35 +1145,44 @@ export default function App() {
         }
       }
 
-      // Cloud Judge0 CE fallback
-      const JUDGE0_MAP = {
-        cpp: { id: 105, name: 'C++ (GCC 14.1)' },
-        c: { id: 103, name: 'C (GCC 14.1)' },
-        python: { id: 100, name: 'Python (3.12.5)' },
-        py: { id: 100, name: 'Python (3.12.5)' },
-        java: { id: 91, name: 'Java (OpenJDK 17)' },
-        javascript: { id: 102, name: 'JavaScript (Node.js 22)' },
-        typescript: { id: 101, name: 'TypeScript (5.6.2)' }
+      // High-speed direct Wandbox fallback
+      const WANDBOX_MAP = {
+        python: 'cpython-3.12.7',
+        py: 'cpython-3.12.7',
+        cpp: 'gcc-13.2.0',
+        c: 'gcc-13.2.0-c',
+        java: 'openjdk-jdk-22+36',
+        javascript: 'nodejs-20.17.0',
+        js: 'nodejs-20.17.0',
+        rust: 'rust-1.82.0',
+        go: 'go-1.23.2'
       };
-      const target = JUDGE0_MAP[lang] || JUDGE0_MAP['python'];
-      let src = codeToRun;
-      if (lang === 'java' && !src.includes('class ')) {
-        src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+      const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.7';
+      try {
+        let src = codeToRun;
+        if (lang.startsWith('java') && !src.includes('class ')) {
+          src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+        }
+        const directRes = await fetch('https://wandbox.org/api/compile.json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ compiler: wbCompiler, code: src, stdin: stdinInput || '' })
+        });
+        if (directRes.ok) {
+          const wbData = await directRes.json();
+          const statusCode = parseInt(wbData.status || '0', 10);
+          return {
+            stdout: wbData.program_output || wbData.program_message || '',
+            stderr: wbData.compiler_error || wbData.compiler_message || wbData.program_error || '',
+            code: statusCode,
+            executionTime: 20,
+            status: statusCode === 0 ? 'SUCCESS' : 'RUNTIME_ERROR'
+          };
+        }
+      } catch (directErr) {
+        console.warn('Direct test case runner notice:', directErr);
       }
-      const directRes = await fetch('https://ce.judge0.com/submissions?wait=true', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language_id: target.id, source_code: src, stdin: stdinInput || '' })
-      });
-      const judgeData = await directRes.json();
-      const isSuccess = judgeData.status?.id === 3;
-      return {
-        stdout: judgeData.stdout || '',
-        stderr: judgeData.compile_output || judgeData.stderr || (isSuccess ? '' : judgeData.status?.description || ''),
-        code: isSuccess ? 0 : 1,
-        executionTime: judgeData.time ? Math.round(parseFloat(judgeData.time) * 1000) : 15,
-        status: isSuccess ? 'SUCCESS' : (judgeData.status?.id === 6 ? 'COMPILE_ERROR' : 'RUNTIME_ERROR')
-      };
+      return { stdout: '', stderr: 'Execution notice: server load limit reached. Please retry.', code: 1, executionTime: 0 };
     }
   }, [activeLanguage, activeFile.code]);
 
@@ -1642,6 +1703,15 @@ export default function App() {
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenGitControl={() => setIsGitModalOpen(true)}
         onOpenLanguageModal={() => setIsLanguageModalOpen(true)}
+        onOpenUniversalJudge={() => setIsUniversalJudgeOpen(true)}
+        onOpenSpeedArena={() => setIsSpeedArenaOpen(true)}
+        onOpenLeaderboards={() => setIsLeaderboardBadgesOpen(true)}
+        onOpenFullStackWorkspace={() => setIsFullStackWorkspaceOpen(true)}
+        onOpenEphemeralTerminal={() => setIsEphemeralTerminalOpen(true)}
+        onOpenComplexityVisualizer={() => setIsComplexityVisualizerOpen(true)}
+        onOpenServerlessDeploy={() => setIsServerlessDeployOpen(true)}
+        onOpenSmartProctoring={() => setIsSmartProctoringOpen(true)}
+        onOpenBatchGrading={() => setIsBatchGradingOpen(true)}
       />
 
       {/* College Exam Active Banner (Desktop Only) */}
@@ -1671,10 +1741,9 @@ export default function App() {
               setAiHealingData(diagnosis);
               setIsAiHealerModalOpen(true);
             }}
-            onOpenAlgorithms={() => setIsAlgorithmModalOpen(true)}
-            onOpenTranspiler={() => setIsTranspilerModalOpen(true)}
             onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
             onOpenShortcuts={() => setIsCommandPaletteOpen(true)}
+            onOpenTerminal={() => setRightPaneView('console')}
             hasError={lastStats && (lastStats.code !== 0 || lastStats.status === 'RUNTIME_ERROR' || lastStats.status === 'COMPILE_ERROR')}
           />
         )}
@@ -1895,7 +1964,11 @@ export default function App() {
             )}
 
             {rightPaneView === 'preview' && (
-              <WebPreview code={activeFile.code} isRunning={isRunning} />
+              <EmbeddedMiniBrowser 
+                files={files} 
+                activeCode={activeFile.code} 
+                isRunning={isRunning} 
+              />
             )}
           </div>
         </section>
@@ -2146,8 +2219,8 @@ export default function App() {
         onDownloadCode={handleDownloadCode}
       />
 
-      {/* Autonomous Multi-Model AI Code Healer Modal */}
-      <AiErrorFixModal
+      {/* AI-Powered One-Click Fix Debugger & Code Doctor Modal */}
+      <AiOneClickDebuggerModal
         isOpen={isAiHealerModalOpen}
         onClose={() => setIsAiHealerModalOpen(false)}
         healingData={aiHealingData}
@@ -2159,7 +2232,7 @@ export default function App() {
           }
           setTerminalEntries(prev => [
             ...prev,
-            { type: 'system', text: '\n[AI Code Doctor]: Clean AST repaired code successfully applied to editor!\n' }
+            { type: 'system', text: '\n✨ [AI One-Click Fix]: Clean AST repaired patch applied to editor!\n' }
           ]);
         }}
         onApplyAndRun={(fixedCode) => {
@@ -2170,7 +2243,7 @@ export default function App() {
           }
           setTerminalEntries(prev => [
             ...prev,
-            { type: 'system', text: '\n[AI Code Doctor]: Applied fix! Re-initiating execution pipeline...\n' }
+            { type: 'system', text: '\n⚡ [AI One-Click Fix]: Applied patch! Re-running code pipeline...\n' }
           ]);
           setTimeout(() => {
             handleRun();
@@ -2226,6 +2299,105 @@ export default function App() {
         onClose={() => setIsLanguageModalOpen(false)}
         currentLanguage={activeLanguage}
         onSelectLanguage={handleLanguageChange}
+      />
+
+      {/* S-Tier 1: Universal Virtual Judge (OJ System) */}
+      <UniversalJudgeModal
+        isOpen={isUniversalJudgeOpen}
+        onClose={() => setIsUniversalJudgeOpen(false)}
+        activeLanguage={activeLanguage}
+        currentCode={activeFile.code}
+        onLoadProblemIntoEditor={({ code, language, problem }) => {
+          if (!activeFile) return;
+          handleCodeChange(code);
+          if (editorInstanceRef.current) {
+            editorInstanceRef.current.setValue(code);
+          }
+          if (language && language !== manualLanguage) {
+            setManualLanguage(language);
+          }
+          setRightPaneView('testcases');
+          setTerminalEntries(prev => [
+            ...prev,
+            { type: 'system', text: `\n✨ [Virtual Judge]: Problem "${problem.title}" (${problem.platformName}) loaded into editor.\n` }
+          ]);
+        }}
+      />
+
+      {/* S-Tier 1: 1v1 Speed Coding Arenas */}
+      <SpeedCodingArenaModal
+        isOpen={isSpeedArenaOpen}
+        onClose={() => setIsSpeedArenaOpen(false)}
+        activeLanguage={activeLanguage}
+      />
+
+      {/* S-Tier 1: Global Leaderboards, Streaks & Coding Badges */}
+      <LeaderboardBadgesModal
+        isOpen={isLeaderboardBadgesOpen}
+        onClose={() => setIsLeaderboardBadgesOpen(false)}
+      />
+
+      {/* S-Tier 2: Full-Stack Cloud Workspace Architectures */}
+      <FullStackWorkspaceModal
+        isOpen={isFullStackWorkspaceOpen}
+        onClose={() => setIsFullStackWorkspaceOpen(false)}
+        onApplyWorkspaceFiles={(newFiles) => {
+          if (!newFiles || !newFiles.length) return;
+          setFiles(newFiles);
+          setActiveFileId(newFiles[0].id);
+          const lang = newFiles[0].language || 'javascript';
+          setManualLanguage(lang);
+          setRightPaneView('preview');
+          setTerminalEntries(prev => [
+            ...prev,
+            { type: 'system', text: `\n🚀 [Full-Stack Sandbox Initialized]: Loaded ${newFiles.length} workspace files. Hot-reload preview online.\n` }
+          ]);
+        }}
+      />
+
+      {/* S-Tier 2: Ephemeral Web Terminal */}
+      <EphemeralTerminalModal
+        isOpen={isEphemeralTerminalOpen}
+        onClose={() => setIsEphemeralTerminalOpen(false)}
+        files={files}
+        onCreateFileFromTerminal={(fileName) => {
+          handleCreateFile('file');
+        }}
+        onRunDevServer={() => {
+          setRightPaneView('preview');
+        }}
+      />
+
+      {/* S-Tier 3: Time & Space Complexity Visualizer */}
+      <ComplexityVisualizerModal
+        isOpen={isComplexityVisualizerOpen}
+        onClose={() => setIsComplexityVisualizerOpen(false)}
+        code={activeFile.code}
+        language={activeLanguage}
+      />
+
+      {/* S-Tier 3: One-Click Serverless Deployment */}
+      <ServerlessDeploymentModal
+        isOpen={isServerlessDeployOpen}
+        onClose={() => setIsServerlessDeployOpen(false)}
+        files={files}
+      />
+
+      {/* S-Tier 4: AI Smart Proctoring Hub */}
+      <AiSmartProctoringModal
+        isOpen={isSmartProctoringOpen}
+        onClose={() => setIsSmartProctoringOpen(false)}
+        violationsCount={collegeViolations}
+        isCollegeMode={isCollegeMode}
+        onViolationOccurred={(count) => {
+          setCollegeViolations(count);
+        }}
+      />
+
+      {/* S-Tier 4: Automated Batch Grading Engine */}
+      <BatchGradingModal
+        isOpen={isBatchGradingOpen}
+        onClose={() => setIsBatchGradingOpen(false)}
       />
 
     </div>
