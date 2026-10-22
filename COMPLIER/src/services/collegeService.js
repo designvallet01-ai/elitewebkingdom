@@ -34,14 +34,10 @@ let supabaseRealtimeChannel = null;
 try {
   if (supabase) {
     supabaseRealtimeChannel = supabase.channel('college_lab_network_channel');
-    supabaseRealtimeChannel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('⚡ Supabase Worldwide Realtime Lab Channel Connected!');
-      }
-    });
+    supabaseRealtimeChannel.subscribe();
   }
 } catch (e) {
-  console.warn('Supabase Realtime Channel error:', e);
+  // Silent catch
 }
 
 // 1. Get all registered colleges (LocalStorage cache + background Supabase fetch)

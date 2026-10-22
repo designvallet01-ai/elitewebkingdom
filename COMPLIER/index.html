@@ -196,6 +196,23 @@
       ]
     }
     </script>
+    <script>
+      // Immediately purge obsolete SW cache and force live update
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var r of regs) { r.update(); }
+        });
+      }
+      if (typeof caches !== 'undefined') {
+        caches.keys().then(function(keys) {
+          keys.forEach(function(k) {
+            if (k !== 'elite-ide-v4-realtime') {
+              caches.delete(k);
+            }
+          });
+        });
+      }
+    </script>
   </head>
   <body>
     <!-- Fallback & Crawler Pre-rendered Content (Hydrated/Replaced by React) -->

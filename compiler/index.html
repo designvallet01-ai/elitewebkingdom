@@ -196,7 +196,24 @@
       ]
     }
     </script>
-    <script type="module" crossorigin src="/compiler/assets/index-DNKQ8PuM.js"></script>
+    <script>
+      // Immediately purge obsolete SW cache and force live update
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var r of regs) { r.update(); }
+        });
+      }
+      if (typeof caches !== 'undefined') {
+        caches.keys().then(function(keys) {
+          keys.forEach(function(k) {
+            if (k !== 'elite-ide-v4-realtime') {
+              caches.delete(k);
+            }
+          });
+        });
+      }
+    </script>
+    <script type="module" crossorigin src="/compiler/assets/index-CQ9JGpev.js"></script>
     <link rel="stylesheet" crossorigin href="/compiler/assets/index-B_Bh4GPM.css">
   </head>
   <body>

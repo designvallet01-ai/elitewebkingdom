@@ -140,6 +140,14 @@ export default function EditorPanel({
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
+    if (monaco && monaco.editor && typeof monaco.editor.setUnexpectedErrorHandler === 'function') {
+      monaco.editor.setUnexpectedErrorHandler((e) => {
+        const msg = e?.message || e?.name || String(e || '');
+        if (msg.includes('Canceled') || msg.includes('cancel')) {
+          return;
+        }
+      });
+    }
     if (onMountEditor) {
       onMountEditor(editor, monaco);
     }

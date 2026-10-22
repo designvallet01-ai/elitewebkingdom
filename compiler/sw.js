@@ -1,24 +1,7 @@
-// Elite IDE Progressive Web App Service Worker
-const CACHE_NAME = 'elite-ide-cache-v1';
-const PRECACHE_URLS = [
-  '/compiler/',
-  '/compiler/manifest.json',
-  '/compiler/favicon.png',
-  '/compiler/icon-192.png',
-  '/compiler/icon-512.png',
-  '/compiler/icon-maskable-192.png',
-  '/compiler/icon-maskable-512.png',
-  '/compiler/apple-touch-icon.png'
-];
+// Elite IDE Progressive Web App Service Worker - v4 Realtime Strategy
+const CACHE_NAME = 'elite-ide-v4-realtime';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_URLS).catch((err) => {
-        console.warn('[Elite IDE SW] Pre-caching non-fatal warning:', err);
-      });
-    })
-  );
   self.skipWaiting();
 });
 
@@ -32,39 +15,44 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  // Ignore non-GET requests or backend execution APIs
-  if (request.method !== 'GET' || request.url.includes('/api/')) {
+  const url = new URL(request.url);
+
+  // Never intercept or cache API, navigation requests, or scripts/styles
+  // This guarantees users always get the latest live code without stale SW locks
+  if (
+    request.method !== 'GET' ||
+    url.pathname.includes('/api/') ||
+    request.mode === 'navigate' ||
+    request.destination === 'script' ||
+    request.destination === 'style'
+  ) {
     return;
   }
 
-  // Network-first with cache fallback strategy
-  event.respondWith(
-    fetch(request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        return caches.match(request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
+  // Cache static icons and manifests only
+  if (
+    request.destination === 'image' ||
+    url.pathname.endsWith('.png') ||
+    url.pathname.endsWith('.ico') ||
+    url.pathname.endsWith('manifest.json')
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        return cached || fetch(request).then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
-          if (request.mode === 'navigate') {
-            return caches.match('/compiler/');
-          }
-        });
+          return res;
+        }).catch(() => cached);
       })
-  );
+    );
+  }
 });
+
