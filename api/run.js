@@ -52,7 +52,7 @@ const WANDBOX_COMPILER_MAP = {
   scala: 'scala-3.5.0'
 };
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -234,6 +234,10 @@ export default async function handler(req, res) {
 
         return res.status(200).json(responsePayload);
       }
+    } catch (wandboxErr) {
+      console.warn('Wandbox primary cluster latency/error:', wandboxErr.message);
+    }
+
     // Guaranteed 200 Response - NEVER send 500 to frontend!
     return res.status(200).json({
       stdout: '',
@@ -257,3 +261,8 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Support both CommonJS and ES Modules on Vercel Node runtimes
+module.exports = handler;
+module.exports.default = handler;
+
