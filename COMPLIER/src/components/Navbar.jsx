@@ -585,11 +585,10 @@ export default function Navbar({
         </div>
 
         <div className="nav-right">
-          {/* Automatic Language Detection Badge & Interactive Engine Selector */}
-          <div className="auto-lang-selector-wrapper">
-            <div className="auto-lang-pill" title="Programming language is identified automatically from your code in real-time">
-              <Zap size={13} className="zap-icon" />
-              {!isMobile && <span className="auto-label">{selectedLanguage === 'auto' ? 'Auto:' : 'Lang:'}</span>}
+          {/* Unified Language & Compiler Hub */}
+          <div className="nav-lang-unified-hub" title="Current Compiler Engine & Language Matrix">
+            <div className="nav-lang-select-wrapper">
+              <Zap size={13} className="nav-lang-zap" />
               <select
                 value={selectedLanguage}
                 onChange={(e) => {
@@ -599,15 +598,17 @@ export default function Navbar({
                     onSelectLanguage(e.target.value);
                   }
                 }}
-                className="lang-select-dropdown"
+                className="nav-lang-select"
                 id="language-select-dropdown"
                 title="Select programming language or browse all 116+ compilers"
               >
                 <option value="auto">
-                  ⚡ {isMobile ? (detectedLangInfo?.detected ? detectedLangInfo.name : 'Auto') : `Auto-Detect ${detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : ''}`}
+                  ⚡ {isMobile 
+                    ? (detectedLangInfo?.detected ? (detectedLangInfo.name || '').split('(')[0].trim() : 'Auto') 
+                    : `Auto • ${detectedLangInfo?.detected ? (detectedLangInfo.name || '').split('(')[0].trim() : 'Detect'}`}
                 </option>
                 <option value="__open_hub__">
-                  🌐 ✨ Open 116+ Languages Matrix...
+                  🌐 Open 116+ Languages Matrix...
                 </option>
 
                 {LANGUAGE_CATEGORIES.map(cat => {
@@ -625,92 +626,92 @@ export default function Navbar({
                 })}
               </select>
               {detectedLangInfo?.detected && !isMobile && (
-                <span className="extension-badge live-detected">.{detectedLangInfo.extension}</span>
+                <span className="nav-lang-badge">.{detectedLangInfo.extension}</span>
               )}
             </div>
 
-            {/* Dedicated 116+ Languages Hub Button (Desktop only; on mobile accessed via dropdown & tools sheet) */}
+            {/* Compact 116+ Matrix Chip Button */}
             {!isMobile && (
               <button
                 type="button"
                 onClick={onOpenLanguageModal}
-                className="nav-lang-hub-btn"
-                title="Open Universal 116+ Language & Compiler Matrix Modal"
+                className="nav-matrix-btn"
+                title="Open Universal 116+ Language & Compiler Matrix Modal (Ctrl+Alt+L)"
               >
-                <Globe size={13} className="hub-globe-icon" />
-                <span>116+ Languages</span>
+                <Globe size={13} className="matrix-globe-icon" />
+                <span>116+</span>
               </button>
             )}
           </div>
 
-          {/* Desktop controls */}
+          {/* Desktop Controls Divider & Action Toolbar */}
           {!isMobile ? (
             <>
-              {/* Quick Git Version Control */}
-              {onOpenGitControl && (
-                <button 
-                  className="nav-icon-btn" 
-                  onClick={onOpenGitControl} 
-                  title="Git Version Control & Repository Clone (Ctrl + Shift + G)"
-                  id="git-control-button"
-                  style={{ color: '#ec4899' }}
-                >
-                  <FolderGit2 size={16} />
-                </button>
-              )}
+              <div className="nav-divider" />
 
-              {/* Quick AI Architecture & Big-O Auditor */}
-              {onOpenAiExplainer && (
-                <button 
-                  className="nav-icon-btn" 
-                  onClick={onOpenAiExplainer} 
-                  title="AI Big-O Complexity & Logic Auditor"
-                  id="ai-doctor-button"
-                  style={{ color: '#c084fc' }}
-                >
-                  <Sparkles size={16} />
-                </button>
-              )}
-
-              {/* Quick Share Code */}
-              {onOpenShareCode && (
-                <button 
-                  className="nav-icon-btn" 
-                  onClick={onOpenShareCode} 
-                  title="Share Code Snippet (URL / WhatsApp)"
-                  id="share-code-button"
-                  style={{ color: '#38bdf8' }}
-                >
-                  <Share2 size={16} />
-                </button>
-              )}
-
-              {/* Quick Command Palette */}
-              {onOpenCommandPalette && (
-                <button 
-                  className="nav-icon-btn" 
-                  onClick={onOpenCommandPalette} 
-                  title="Command Palette & Quick Search (Ctrl + K)"
-                  id="command-palette-button"
-                  style={{ color: '#f59e0b' }}
-                >
-                  <Search size={16} />
-                </button>
-              )}
-
-              {/* Theme Toggle */}
-              <button 
-                className="nav-icon-btn" 
-                onClick={onToggleTheme} 
-                title={`Theme: ${theme === 'vs-dark' ? 'Obsidian Dark' : 'Light Mode'} (Click to switch)`}
-                id="toggle-theme-button"
-              >
-                {theme === 'vs-dark' ? (
-                  <Moon size={16} style={{ color: '#38bdf8' }} />
-                ) : (
-                  <Sun size={16} style={{ color: '#f59e0b' }} />
+              <div className="nav-actions-group">
+                {/* Quick Git Version Control */}
+                {onOpenGitControl && (
+                  <button 
+                    className="nav-action-btn" 
+                    onClick={onOpenGitControl} 
+                    title="Git Version Control & Repository Clone (Ctrl + Shift + G)"
+                    id="git-control-button"
+                  >
+                    <FolderGit2 size={15} />
+                  </button>
                 )}
-              </button>
+
+                {/* Quick AI Architecture & Big-O Auditor */}
+                {onOpenAiExplainer && (
+                  <button 
+                    className="nav-action-btn" 
+                    onClick={onOpenAiExplainer} 
+                    title="AI Big-O Complexity & Logic Auditor"
+                    id="ai-doctor-button"
+                  >
+                    <Sparkles size={15} />
+                  </button>
+                )}
+
+                {/* Quick Share Code */}
+                {onOpenShareCode && (
+                  <button 
+                    className="nav-action-btn" 
+                    onClick={onOpenShareCode} 
+                    title="Share Code Snippet (URL / WhatsApp)"
+                    id="share-code-button"
+                  >
+                    <Share2 size={15} />
+                  </button>
+                )}
+
+                {/* Quick Command Palette */}
+                {onOpenCommandPalette && (
+                  <button 
+                    className="nav-action-btn" 
+                    onClick={onOpenCommandPalette} 
+                    title="Command Palette & Quick Search (Ctrl + K)"
+                    id="command-palette-button"
+                  >
+                    <Search size={15} />
+                  </button>
+                )}
+
+                {/* Theme Toggle */}
+                <button 
+                  className="nav-action-btn" 
+                  onClick={onToggleTheme} 
+                  title={`Theme: ${theme === 'vs-dark' ? 'Obsidian Dark' : 'Light Mode'} (Click to switch)`}
+                  id="toggle-theme-button"
+                >
+                  {theme === 'vs-dark' ? (
+                    <Moon size={15} />
+                  ) : (
+                    <Sun size={15} />
+                  )}
+                </button>
+              </div>
             </>
           ) : (
             /* Mobile More Action Menu Button */

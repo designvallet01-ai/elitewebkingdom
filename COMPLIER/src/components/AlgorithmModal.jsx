@@ -5,13 +5,16 @@ import {
   BookOpen, 
   Plus, 
   ArrowRight, 
+  ArrowLeft,
   Copy, 
   Check, 
   Clock, 
   HardDrive, 
   Zap,
   Tag,
-  Code2
+  Code2,
+  ListFilter,
+  FileCode2
 } from 'lucide-react';
 import { ALGORITHMS, ALGORITHM_CATEGORIES } from '../data/algorithmsLibrary';
 
@@ -25,10 +28,11 @@ export default function AlgorithmModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAlgoId, setSelectedAlgoId] = useState(ALGORITHMS[0]?.id || 'bst');
+  const [mobileTab, setMobileTab] = useState('list'); // 'list' | 'preview'
   const [previewLanguage, setPreviewLanguage] = useState(() => {
-    return ['python', 'cpp', 'java', 'javascript'].includes(currentLanguage) 
+    return ['python', 'cpp', 'java', 'javascript', 'matlab'].includes(currentLanguage) 
       ? currentLanguage 
-      : 'python';
+      : (currentLanguage === 'octave' ? 'matlab' : 'python');
   });
   const [copied, setCopied] = useState(false);
 
@@ -53,6 +57,7 @@ export default function AlgorithmModal({
   const currentSnippet = selectedAlgo?.code?.[previewLanguage] || 
     selectedAlgo?.code?.python || 
     selectedAlgo?.code?.cpp || 
+    selectedAlgo?.code?.matlab ||
     '';
 
   const handleCopy = () => {
@@ -66,7 +71,8 @@ export default function AlgorithmModal({
     if (onOpenInNewTab && selectedAlgo) {
       const ext = previewLanguage === 'python' ? 'py' : 
                   previewLanguage === 'cpp' ? 'cpp' : 
-                  previewLanguage === 'java' ? 'java' : 'js';
+                  previewLanguage === 'java' ? 'java' : 
+                  previewLanguage === 'matlab' ? 'm' : 'js';
       const fileName = `${selectedAlgo.id}_demo.${ext}`;
       onOpenInNewTab(fileName, currentSnippet, previewLanguage);
       onClose();
@@ -83,7 +89,7 @@ export default function AlgorithmModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div className="algorithm-modal-card" onClick={e => e.stopPropagation()}>
         {/* Modal Header */}
         <div className="algo-modal-header">
@@ -92,11 +98,11 @@ export default function AlgorithmModal({
             <div>
               <h3>Algorithm & Data Structure Library</h3>
               <p className="algo-modal-subtitle">
-                Curated, ready-to-run implementations across Python, C++, Java, & JavaScript
+                Curated, ready-to-run implementations across Python, C++, Java, JavaScript & MATLAB
               </p>
             </div>
           </div>
-          <button className="algo-close-btn" onClick={onClose} title="Close Library (Esc)">
+          <button className="algo-close-btn" onClick={onClose} title="Close Library (Esc)" aria-label="Close Modal">
             <X size={18} />
           </button>
         </div>
@@ -108,19 +114,19 @@ export default function AlgorithmModal({
             <input
               type="text"
               className="algo-search-input"
-              placeholder="Search algorithms, data structures, trees, dynamic programming..."
+              placeholder="Search algorithms, data structures, linear algebra..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               autoFocus
             />
             {searchQuery && (
-              <button className="clear-search-btn" onClick={() => setSearchQuery('')}>
+              <button className="clear-search-btn" onClick={() => setSearchQuery('')} aria-label="Clear Search">
                 <X size={14} />
               </button>
             )}
           </div>
 
-          {/* Categories */}
+          {/* Categories Horizontal Chip Row */}
           <div className="algo-category-tabs">
             {ALGORITHM_CATEGORIES.map(cat => (
               <button
@@ -134,10 +140,34 @@ export default function AlgorithmModal({
           </div>
         </div>
 
-        {/* Main Body: Master-Detail Layout */}
-        <div className="algo-modal-body">
+        {/* Mobile View Switcher (Visible only on screens <= 768px) */}
+        <div className="algo-mobile-view-tabs" role="tablist">
+          <button 
+            type="button"
+            role="tab"
+            aria-selected={mobileTab === 'list'}
+            className={`algo-mobile-tab-btn ${mobileTab === 'list' ? 'active' : ''}`}
+            onClick={() => setMobileTab('list')}
+          >
+            <ListFilter size={14} />
+            <span>Algorithms ({filteredAlgorithms.length})</span>
+          </button>
+          <button 
+            type="button"
+            role="tab"
+            aria-selected={mobileTab === 'preview'}
+            className={`algo-mobile-tab-btn ${mobileTab === 'preview' ? 'active' : ''}`}
+            onClick={() => setMobileTab('preview')}
+          >
+            <FileCode2 size={14} />
+            <span>Code Preview {selectedAlgo ? `• ${selectedAlgo.title.split(' ')[0]}` : ''}</span>
+          </button>
+        </div>
+
+        {/* Main Body: Master-Detail on Desktop, Segmented/Tabbed on Mobile */}
+        <div className={`algo-modal-body mobile-view-${mobileTab}`}>
           {/* Left Column: Algorithm List */}
-          <div className="algo-list-column">
+          <div className={`algo-list-column ${mobileTab === 'list' ? 'mobile-visible' : 'mobile-hidden'}`}>
             {filteredAlgorithms.length === 0 ? (
               <div className="algo-empty-state">
                 <p>No algorithms found matching "{searchQuery}"</p>
@@ -155,7 +185,10 @@ export default function AlgorithmModal({
                   <div
                     key={item.id}
                     className={`algo-item-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => setSelectedAlgoId(item.id)}
+                    onClick={() => {
+                      setSelectedAlgoId(item.id);
+                      setMobileTab('preview'); // Auto-switch to preview on mobile tap
+                    }}
                   >
                     <div className="algo-item-top">
                       <span className="algo-item-name">{item.title}</span>
@@ -177,9 +210,24 @@ export default function AlgorithmModal({
 
           {/* Right Column: Detail & Code Preview */}
           {selectedAlgo && (
-            <div className="algo-detail-column">
+            <div className={`algo-detail-column ${mobileTab === 'preview' ? 'mobile-visible' : 'mobile-hidden'}`}>
+              {/* Mobile Back Button Strip */}
+              <div className="algo-mobile-back-strip">
+                <button 
+                  type="button" 
+                  className="algo-mobile-back-btn" 
+                  onClick={() => setMobileTab('list')}
+                >
+                  <ArrowLeft size={14} />
+                  <span>← Back to Algorithm List</span>
+                </button>
+                <span className={`difficulty-badge ${selectedAlgo.difficulty.toLowerCase()}`}>
+                  {selectedAlgo.difficulty}
+                </span>
+              </div>
+
               <div className="algo-detail-header">
-                <div>
+                <div className="algo-detail-meta">
                   <h4 className="algo-detail-title">{selectedAlgo.title}</h4>
                   <div className="algo-complexity-row">
                     <span className="complexity-badge">
@@ -195,13 +243,16 @@ export default function AlgorithmModal({
 
                 {/* Language Switcher Tabs */}
                 <div className="algo-lang-pills">
-                  {['python', 'cpp', 'java', 'javascript'].map(lang => (
+                  {['python', 'cpp', 'java', 'javascript', 'matlab'].map(lang => (
                     <button
                       key={lang}
                       className={`lang-pill-btn ${previewLanguage === lang ? 'active' : ''}`}
                       onClick={() => setPreviewLanguage(lang)}
                     >
-                      {lang === 'python' ? 'Python' : lang === 'cpp' ? 'C++' : lang === 'java' ? 'Java' : 'JavaScript'}
+                      {lang === 'python' ? 'Python' : 
+                       lang === 'cpp' ? 'C++' : 
+                       lang === 'java' ? 'Java' : 
+                       lang === 'javascript' ? 'JavaScript' : 'MATLAB'}
                     </button>
                   ))}
                 </div>
@@ -216,16 +267,16 @@ export default function AlgorithmModal({
 
               {/* Footer Actions */}
               <div className="algo-detail-footer">
-                <button className="algo-copy-btn" onClick={handleCopy}>
+                <button className="algo-copy-btn" onClick={handleCopy} title="Copy Code Snippet">
                   {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
-                  <span>{copied ? 'Copied' : 'Copy Code'}</span>
+                  <span>{copied ? 'Copied!' : 'Copy Code'}</span>
                 </button>
 
                 <div className="algo-cta-group">
-                  <button className="algo-load-btn secondary" onClick={handleLoadCurrent}>
+                  <button className="algo-load-btn secondary" onClick={handleLoadCurrent} title="Replace editor buffer with this algorithm">
                     <span>Replace Current File</span>
                   </button>
-                  <button className="algo-load-btn primary" onClick={handleOpenNewTab}>
+                  <button className="algo-load-btn primary" onClick={handleOpenNewTab} title="Create new tab with this algorithm">
                     <Plus size={14} />
                     <span>Open in New Tab</span>
                   </button>

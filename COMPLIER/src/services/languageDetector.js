@@ -25,6 +25,8 @@ export const SUPPORTED_LANGUAGES = [
   { id: 'haskell', name: 'Haskell (GHC)', extension: 'hs', monaco: 'haskell', icon: 'λ' },
   { id: 'perl', name: 'Perl (5.28)', extension: 'pl', monaco: 'perl', icon: '🐪' },
   { id: 'assembly', name: 'Assembly (NASM)', extension: 'asm', monaco: 'plaintext', icon: '⚡' },
+  { id: 'matlab', name: 'MATLAB (Matrix Laboratory)', extension: 'm', monaco: 'matlab', icon: '📐' },
+  { id: 'jdbc', name: 'Java (JDBC Database)', extension: 'java', monaco: 'java', icon: '☕🗄️' },
   { id: 'html', name: 'HTML5 Web Sandbox', extension: 'html', monaco: 'html', icon: '🌐' }
 ];
 
@@ -34,6 +36,7 @@ export function detectLanguage(code, fallbackLang = 'cpp') {
     cpp: { name: 'C++ (G++ 14)', extension: 'cpp', filename: 'main.cpp' },
     c: { name: 'C (GCC 14)', extension: 'c', filename: 'main.c' },
     java: { name: 'Java (JDK 17)', extension: 'java', filename: 'Main.java' },
+    jdbc: { name: 'Java (JDBC Database)', extension: 'java', filename: 'Main.java' },
     javascript: { name: 'JavaScript (Node 22)', extension: 'js', filename: 'main.js' },
     typescript: { name: 'TypeScript', extension: 'ts', filename: 'main.ts' },
     rust: { name: 'Rust (1.85)', extension: 'rs', filename: 'main.rs' },
@@ -52,6 +55,7 @@ export function detectLanguage(code, fallbackLang = 'cpp') {
     haskell: { name: 'Haskell (GHC)', extension: 'hs', filename: 'Main.hs' },
     perl: { name: 'Perl (5.28)', extension: 'pl', filename: 'script.pl' },
     assembly: { name: 'Assembly (NASM)', extension: 'asm', filename: 'main.asm' },
+    matlab: { name: 'MATLAB (Matrix Laboratory)', extension: 'm', filename: 'main.m' },
     html: { name: 'HTML5 Web Sandbox', extension: 'html', filename: 'index.html' }
   };
 
@@ -91,6 +95,8 @@ export function detectLanguage(code, fallbackLang = 'cpp') {
     haskell: 0,
     perl: 0,
     assembly: 0,
+    matlab: 0,
+    jdbc: 0,
     html: 0
   };
 
@@ -198,6 +204,18 @@ export function detectLanguage(code, fallbackLang = 'cpp') {
   if (/System\.(out|err)\.(println|print|printf)/.test(text)) scores.java += 30;
   if (/import\s+java\.[a-z0-9_.]+/i.test(text)) scores.java += 30;
 
+  // 19.5 JDBC (Java Database Connectivity)
+  if (/\bimport\s+java\.sql\b/.test(text)) scores.jdbc += 50;
+  if (/\bDriverManager\.getConnection\b/.test(text)) scores.jdbc += 45;
+  if (/\bPreparedStatement\b/.test(text)) scores.jdbc += 40;
+  if (/\b(createStatement|executeQuery|executeUpdate)\b/.test(text)) scores.jdbc += 35;
+  if (/\bResultSet\b/.test(text)) scores.jdbc += 35;
+  if (/jdbc:(mysql|sqlite|oracle|postgresql|h2)/i.test(text)) scores.jdbc += 45;
+  if (scores.jdbc >= 40) {
+    // If JDBC markers are prominent, prioritize JDBC execution environment
+    scores.jdbc += scores.java + 20;
+  }
+
   // 20. Python
   if (/^\s*def\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\([^)]*\)\s*:/m.test(text)) scores.python += 30;
   if (/^\s*(elif|else)\s*:/m.test(text)) scores.python += 20;
@@ -230,7 +248,15 @@ export function detectLanguage(code, fallbackLang = 'cpp') {
     scores.html += 30;
   }
 
-  // 23. Disambiguation
+  // 23. MATLAB / Octave
+  if (/^%.*$/m.test(text)) scores.matlab += 30;
+  if (/\[\s*[\d\w\.\-]+(?:\s*,\s*|\s+)[\d\w\.\-]+(?:\s*;\s*)/.test(text)) scores.matlab += 40;
+  if (/\b(clc|clear|clear\s+all|close\s+all);?/.test(text)) scores.matlab += 35;
+  if (/\bdisp\s*\(/.test(text)) scores.matlab += 25;
+  if (/\b(num2str|meshgrid|linspace|eye|zeros|ones|det|inv|eig)\s*\(/.test(text)) scores.matlab += 30;
+  if (/[a-zA-Z_]\w*'\s*(?:;|\n|$)/.test(text)) scores.matlab += 20;
+
+  // 24. Disambiguation
   if (scores.cpp > 0 && scores.c > 0) {
     if (text.includes('cout') || text.includes('cin') || text.includes('<iostream>') || text.includes('std::')) {
       scores.c = 0;

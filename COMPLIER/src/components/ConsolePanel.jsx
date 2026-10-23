@@ -149,8 +149,13 @@ export default function ConsolePanel({
       {/* Terminal Header */}
       <div className="console-header">
         <div className="terminal-header-title">
-          <TerminalIcon size={15} />
-          <span>Interactive Cloud Terminal</span>
+          <div className="terminal-window-dots" title="Elite Cloud Execution Sandbox">
+            <span className="dot dot-close" />
+            <span className="dot dot-minimize" />
+            <span className="dot dot-maximize" />
+          </div>
+          <TerminalIcon size={14} className="terminal-header-icon" />
+          <span className="terminal-header-name">Elite Cloud Terminal</span>
           <span className="terminal-shell-tag">bash</span>
           {isRunning ? (
             <span className="live-pulse-badge">
@@ -158,8 +163,12 @@ export default function ConsolePanel({
               RUNNING
             </span>
           ) : lastStats ? (
-            <span className={`tab-badge ${isSuccess ? 'success' : 'error'}`} />
-          ) : null}
+            <span className={`tab-badge ${isSuccess ? 'success' : 'error'}`}>
+              {isSuccess ? 'READY • 0' : `EXIT • ${lastStats.code || 1}`}
+            </span>
+          ) : (
+            <span className="tab-badge idle">STANDBY</span>
+          )}
         </div>
 
         <div className="console-actions">

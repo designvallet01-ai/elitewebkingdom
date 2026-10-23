@@ -6,6 +6,8 @@ import { WebSocketServer } from 'ws';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { evaluateMatlabLocally } from '../src/services/clientMatlabRunner.js';
+import { evaluateJdbcLocally } from '../src/services/clientJdbcRunner.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,7 +21,10 @@ const LANGUAGES = [
   { id: 'c', name: 'C (GCC 13.3)', version: '13.3.0', runner: 'native-gcc', extension: 'c', monaco: 'c' },
   { id: 'python', name: 'Python 3', version: '3.11', runner: 'native-python', extension: 'py', monaco: 'python' },
   { id: 'java', name: 'Java (OpenJDK 17)', version: '17.0.10', runner: 'native-java', extension: 'java', monaco: 'java' },
+  { id: 'jdbc', name: 'Java (JDBC Database)', version: 'JDK 17 + JDBC 4.3', runner: 'jdbc-runner', extension: 'java', monaco: 'java' },
   { id: 'javascript', name: 'JavaScript (Node.js)', version: '24.13', runner: 'native-node', extension: 'js', monaco: 'javascript' },
+  { id: 'matlab', name: 'MATLAB (Matrix Laboratory)', version: 'R2024b / 5.1', runner: 'matlab-runner', extension: 'm', monaco: 'matlab' },
+  { id: 'octave', name: 'GNU Octave / MATLAB (5.1)', version: '5.1.0', runner: 'matlab-runner', extension: 'm', monaco: 'matlab' },
   { id: 'html', name: 'HTML / CSS / JS', version: 'HTML5', runner: 'client-sandbox', extension: 'html', monaco: 'html' }
 ];
 
@@ -213,7 +218,7 @@ app.post('/api/run', async (req, res) => {
 
     // 5. Java (Microsoft OpenJDK 17 Native)
     if (langConfig.runner === 'native-java') {
-      const classMatch = code.match(/public\s+class\s+([A-Za-z0-9_]+)/);
+      const classMatch = code.match(/(?:public\s+)?class\s+([A-Za-z0-9_]+)/);
       const className = classMatch ? classMatch[1] : 'Main';
       const javaCode = classMatch ? code : `public class Main {\n  public static void main(String[] args) {\n${code}\n  }\n}`;
       const javaFile = `${className}.java`;
@@ -244,6 +249,15 @@ app.post('/api/run', async (req, res) => {
       });
     }
 
+    // 5.5 Java (JDBC Database Engine)
+    if (langConfig.runner === 'jdbc-runner' || language === 'jdbc') {
+      const jdbcRes = evaluateJdbcLocally(code, stdin);
+      return res.json({
+        ...jdbcRes,
+        runner: 'Microsoft OpenJDK 17 + Elite JDBC In-Memory Engine'
+      });
+    }
+
     // 6. HTML / CSS / JS Sandbox
     if (langConfig.runner === 'client-sandbox') {
       return res.json({
@@ -254,6 +268,12 @@ app.post('/api/run', async (req, res) => {
         status: 'SUCCESS',
         runner: 'Browser DOM Sandbox'
       });
+    }
+
+    // 7. MATLAB / GNU Octave Runner
+    if (langConfig.runner === 'matlab-runner') {
+      const result = evaluateMatlabLocally(code, stdin);
+      return res.json(result);
     }
 
   } catch (error) {
@@ -389,7 +409,31 @@ wss.on('connection', (ws) => {
           return;
         }
 
-        // 3. C++ (G++ 13.3 Native via WSL)
+        // 3. MATLAB / GNU Octave
+        if (language === 'matlab' || language === 'octave') {
+          ws.send(JSON.stringify({
+            type: 'system',
+            data: `[Elite IDE Terminal] Launching MATLAB / GNU Octave Virtual Engine...\r\n`
+          }));
+          const result = evaluateMatlabLocally(code, '');
+          if (result.stdout) {
+            ws.send(JSON.stringify({ type: 'stdout', data: result.stdout }));
+          }
+          if (result.stderr) {
+            ws.send(JSON.stringify({ type: 'stderr', data: result.stderr }));
+          }
+          ws.send(JSON.stringify({
+            type: 'exit',
+            code: result.code,
+            status: result.status,
+            executionTime: result.executionTime,
+            runner: result.runner
+          }));
+          cleanup();
+          return;
+        }
+
+        // 4. C++ (G++ 13.3 Native via WSL)
         if (language === 'cpp') {
           const srcFile = path.join(tempDir, 'main.cpp');
           fs.writeFileSync(srcFile, code, 'utf-8');

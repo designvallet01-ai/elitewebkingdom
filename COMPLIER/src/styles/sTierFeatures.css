@@ -995,6 +995,70 @@
   font-size: 0.78rem;
 }
 
+.diag-line-badge.healthy {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.diag-severity-badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.diag-severity-badge.severity-optimal {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.diag-severity-badge.severity-low {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+}
+
+.diag-severity-badge.severity-medium {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.diag-severity-badge.severity-high {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+}
+
+.diag-severity-badge.severity-critical {
+  background: rgba(225, 29, 72, 0.3);
+  color: #fda4af;
+  border: 1px solid rgba(225, 29, 72, 0.4);
+}
+
+.diagnostic-hero-card.healthy {
+  background: rgba(6, 78, 59, 0.25);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.diag-healthy-badge {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #34d399 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ai-explanation-box.healthy {
+  background: rgba(6, 78, 59, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ai-healthy-summary {
+  color: #a7f3d0;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #10b981;
+}
+
 .diag-lang-toggle {
   display: flex;
   background: rgba(15, 23, 42, 0.9);

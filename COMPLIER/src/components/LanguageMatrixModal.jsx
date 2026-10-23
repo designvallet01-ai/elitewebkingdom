@@ -78,7 +78,7 @@ export default function LanguageMatrixModal({
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Universal 116+ Language Matrix"
+        aria-label={`Universal ${ALL_LANGUAGES.length}+ Language Matrix`}
       >
         {/* Header */}
         <div className="lang-matrix-header">
@@ -120,7 +120,7 @@ export default function LanguageMatrixModal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search 116+ languages by name, extension, or compiler (e.g. rust, clang, python, net, go, zig, wasm)..."
+              placeholder={`Search ${ALL_LANGUAGES.length}+ languages by name, extension, or compiler (e.g. rust, clang, python, net, go, zig, wasm)...`}
               className="lang-matrix-input"
             />
             {searchQuery && (
@@ -216,7 +216,7 @@ export default function LanguageMatrixModal({
         <div className="lang-matrix-footer">
           <div className="footer-status">
             <span className="status-live-dot"></span>
-            <span>All 116+ Languages Production Ready</span>
+            <span>All {ALL_LANGUAGES.length}+ Languages Production Ready</span>
             <span className="footer-sep">•</span>
             <span>Monaco Syntax Highlight Synced</span>
           </div>

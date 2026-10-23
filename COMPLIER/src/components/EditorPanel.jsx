@@ -148,6 +148,54 @@ export default function EditorPanel({
         }
       });
     }
+
+    // Register Monarch syntax highlighter for MATLAB
+    try {
+      if (monaco && monaco.languages) {
+        const existingLangs = monaco.languages.getLanguages() || [];
+        if (!existingLangs.some(l => l.id === 'matlab')) {
+          monaco.languages.register({ id: 'matlab' });
+        }
+        monaco.languages.setMonarchTokensProvider('matlab', {
+          defaultToken: '',
+          tokenPostfix: '.matlab',
+          keywords: [
+            'break', 'case', 'catch', 'classdef', 'continue', 'else', 'elseif', 'end',
+            'for', 'function', 'global', 'if', 'otherwise', 'parfor', 'persistent',
+            'return', 'spmd', 'switch', 'try', 'while'
+          ],
+          builtins: [
+            'clc', 'clear', 'disp', 'fprintf', 'sprintf', 'num2str', 'str2num',
+            'zeros', 'ones', 'eye', 'rand', 'randn', 'linspace', 'logspace', 'diag',
+            'det', 'inv', 'eig', 'svd', 'rank', 'trace', 'norm', 'size', 'length',
+            'sum', 'prod', 'mean', 'median', 'std', 'var', 'min', 'max',
+            'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'exp', 'log', 'log10', 'sqrt', 'abs',
+            'plot', 'figure', 'title', 'xlabel', 'ylabel', 'legend', 'grid', 'hold', 'subplot'
+          ],
+          tokenizer: {
+            root: [
+              [/%.*$/, 'comment'],
+              [/".*?"/, 'string'],
+              [/'.*?'/, 'string'],
+              [/[a-zA-Z_]\w*/, {
+                cases: {
+                  '@keywords': 'keyword',
+                  '@builtins': 'type',
+                  '@default': 'identifier'
+                }
+              }],
+              [/\d*\.\d+([eE][\-+]?\d+)?/, 'number.float'],
+              [/\d+/, 'number'],
+              [/[;,]/, 'delimiter'],
+              [/[\[\]\(\)\{\}]/, 'delimiter.bracket']
+            ]
+          }
+        });
+      }
+    } catch (langErr) {
+      console.warn('Monaco matlab registration notice:', langErr);
+    }
+
     if (onMountEditor) {
       onMountEditor(editor, monaco);
     }
@@ -189,12 +237,15 @@ export default function EditorPanel({
       case 'swift': return '#F05138';
       case 'dart': return '#00B4AB';
       case 'sql': return '#e38c00';
+      case 'jdbc': return '#f89820';
       case 'r': return '#198CE7';
       case 'bash': return '#89e051';
       case 'scala': return '#c22d40';
       case 'lua': return '#000080';
       case 'haskell': return '#5e5086';
       case 'perl': return '#0298c3';
+      case 'matlab':
+      case 'octave': return '#e16737';
       case 'html': return '#e34c26';
       default: return '#8b949e';
     }
@@ -419,6 +470,21 @@ export default function EditorPanel({
             {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
             <span className="action-btn-text">{copied ? 'Copied' : 'Copy'}</span>
           </button>
+        </div>
+      </div>
+
+      {/* VS Code Breadcrumb Path Bar */}
+      <div className="editor-breadcrumbs-bar">
+        <div className="breadcrumbs-path">
+          <span className="breadcrumb-segment">workspace</span>
+          <span className="breadcrumb-separator">/</span>
+          <span className="breadcrumb-file">
+            <FileCode2 size={13} style={{ color: getLanguageColor(language) }} />
+            <span>{filename || 'main'}</span>
+          </span>
+        </div>
+        <div className="breadcrumbs-info">
+          <span className="breadcrumb-engine-tag">{getLanguageById(language)?.name || language}</span>
         </div>
       </div>
 

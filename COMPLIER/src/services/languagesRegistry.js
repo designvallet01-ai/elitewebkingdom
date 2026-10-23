@@ -779,6 +779,19 @@ export const ALL_LANGUAGES = [
     "shellCmd": "julia main.jl"
   },
   {
+    "id": "jdbc",
+    "name": "Java (JDBC & Database)",
+    "category": "jvm",
+    "version": "JDK 17 + JDBC 4.3",
+    "extension": "java",
+    "judge0Id": 91,
+    "monaco": "java",
+    "icon": "☕🗄️",
+    "fileName": "Main.java",
+    "starter": "import java.sql.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        try {\n            // 1. Register Driver & Establish In-Memory Connection\n            Class.forName(\"com.mysql.cj.jdbc.Driver\");\n            System.out.println(\"⚡ [Elite JDBC Engine]: Initializing Database Connection...\");\n            Connection con = DriverManager.getConnection(\"jdbc:mysql://localhost:3306/college_db\", \"root\", \"admin\");\n            System.out.println(\"✅ Database Connection Established Successfully!\\n\");\n\n            // 2. Create Student Table\n            Statement stmt = con.createStatement();\n            stmt.executeUpdate(\"DROP TABLE IF EXISTS students\");\n            stmt.executeUpdate(\"CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(50), branch VARCHAR(20), marks DOUBLE)\");\n            System.out.println(\"📁 Table 'students' created successfully.\");\n\n            // 3. Insert Records using PreparedStatement\n            String insertQuery = \"INSERT INTO students VALUES (?, ?, ?, ?)\";\n            PreparedStatement pstmt = con.prepareStatement(insertQuery);\n\n            pstmt.setInt(1, 101);\n            pstmt.setString(2, \"Gowri Narayana\");\n            pstmt.setString(3, \"CSE\");\n            pstmt.setDouble(4, 95.5);\n            pstmt.executeUpdate();\n\n            pstmt.setInt(1, 102);\n            pstmt.setString(2, \"Sneha Reddy\");\n            pstmt.setString(3, \"ECE\");\n            pstmt.setDouble(4, 88.0);\n            pstmt.executeUpdate();\n\n            pstmt.setInt(1, 103);\n            pstmt.setString(2, \"Aditya Varma\");\n            pstmt.setString(3, \"AI & ML\");\n            pstmt.setDouble(4, 92.0);\n            pstmt.executeUpdate();\n            System.out.println(\"✨ 3 Student Records inserted into Database.\\n\");\n\n            // 4. Query & Display Data\n            System.out.println(\"================ STUDENT DATABASE RECORDS ================\");\n            System.out.printf(\"%-6s %-18s %-12s %-8s\\n\", \"ROLL\", \"STUDENT NAME\", \"BRANCH\", \"CGPA\");\n            System.out.println(\"----------------------------------------------------------\");\n\n            ResultSet rs = stmt.executeQuery(\"SELECT * FROM students\");\n            while (rs.next()) {\n                System.out.printf(\"%-6d %-18s %-12s %-8.1f\\n\",\n                    rs.getInt(\"id\"),\n                    rs.getString(\"name\"),\n                    rs.getString(\"branch\"),\n                    rs.getDouble(\"marks\")\n                );\n            }\n            System.out.println(\"==========================================================\\n\");\n\n            // 5. Close Connection\n            rs.close();\n            stmt.close();\n            con.close();\n            System.out.println(\"🔒 Database connection closed gracefully.\");\n        } catch (Exception e) {\n            e.printStackTrace();\n        }\n    }\n}",
+    "shellCmd": "javac Main.java && java -cp .:sqlite-jdbc.jar Main"
+  },
+  {
     "id": "javafx",
     "name": "JavaFX (JDK 17 + OpenJFX 22)",
     "category": "jvm",
@@ -1421,6 +1434,19 @@ export const ALL_LANGUAGES = [
     "shellCmd": "Rscript main.r"
   },
   {
+    "id": "matlab",
+    "name": "MATLAB (Matrix Laboratory)",
+    "category": "data_shell",
+    "version": "R2024b / 5.1",
+    "extension": "m",
+    "judge0Id": 66,
+    "monaco": "matlab",
+    "icon": "📐",
+    "fileName": "main.m",
+    "starter": "% ============================================================================\n% Elite IDE - High-Performance MATLAB / Matrix Laboratory Engine\n% Numerical Computing, Matrix Algebra & Scientific Calculations\n% ============================================================================\n\nclc;\nclear;\n\ndisp('--- 1. Matrix Operations & Linear Algebra ---');\nA = [1, 2, 3; 4, 5, 6; 7, 8, 10];\nB = [9, 8, 7; 6, 5, 4; 3, 2, 1];\n\ndisp('Matrix A:');\ndisp(A);\n\ndisp('Matrix Product (A * B):');\ndisp(A * B);\n\ndisp(['Determinant det(A) = ', num2str(det(A))]);\n\ndisp('Transpose of A:');\ndisp(A');\n\ndisp('--- 2. Vector Arithmetic & Statistics ---');\nv = [12, 45, 67, 89, 23, 56];\ndisp(['Sum:  ', num2str(sum(v))]);\ndisp(['Mean: ', num2str(mean(v))]);\ndisp(['Max:  ', num2str(max(v))]);\ndisp(['Min:  ', num2str(min(v))]);\n\ndisp('--- 3. Special Identity Matrix ---');\nI = eye(3);\ndisp(I);\n\ndisp('MATLAB matrix computation completed successfully! ✨');",
+    "shellCmd": "octave-cli main.m"
+  },
+  {
     "id": "octave",
     "name": "GNU Octave / MATLAB (5.1)",
     "category": "data_shell",
@@ -1430,7 +1456,7 @@ export const ALL_LANGUAGES = [
     "monaco": "matlab",
     "icon": "🔢",
     "fileName": "main.m",
-    "starter": "A = [1, 2; 3, 4];\nB = [5, 6; 7, 8];\ndisp(\"Matrix Product:\");\ndisp(A * B);",
+    "starter": "% GNU Octave / MATLAB Matrix Computing\nclc;\nclear;\n\nA = [1, 2; 3, 4];\nB = [5, 6; 7, 8];\ndisp('Matrix Product:');\ndisp(A * B);\ndisp(['det(A) = ', num2str(det(A))]);\ndisp(A');",
     "shellCmd": "octave-cli main.m"
   },
   {
@@ -1660,6 +1686,7 @@ export const STARTER_TEMPLATES = {
   "python_ml37": "print(\"Python 3.7 ML Environment\")",
   "python_mpi": "from mpi4py import MPI\ncomm = MPI.COMM_WORLD\nprint(f\"Hello from Python MPI rank {comm.Get_rank()} of {comm.Get_size()}\")",
   "julia": "println(\"Hello from Julia (High-performance scientific & numeric computing)!\")\nprintln(\"Matrix multiplication demo: \", [1 2; 3 4] * [5 6; 7 8])",
+  "jdbc": "import java.sql.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        try {\n            Class.forName(\"com.mysql.cj.jdbc.Driver\");\n            System.out.println(\"⚡ [Elite JDBC Engine]: Initializing Database Connection...\");\n            Connection con = DriverManager.getConnection(\"jdbc:mysql://localhost:3306/college_db\", \"root\", \"admin\");\n            System.out.println(\"✅ Database Connection Established Successfully!\\n\");\n\n            Statement stmt = con.createStatement();\n            stmt.executeUpdate(\"DROP TABLE IF EXISTS students\");\n            stmt.executeUpdate(\"CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(50), branch VARCHAR(20), marks DOUBLE)\");\n            System.out.println(\"📁 Table 'students' created successfully.\");\n\n            String insertQuery = \"INSERT INTO students VALUES (?, ?, ?, ?)\";\n            PreparedStatement pstmt = con.prepareStatement(insertQuery);\n\n            pstmt.setInt(1, 101);\n            pstmt.setString(2, \"Gowri Narayana\");\n            pstmt.setString(3, \"CSE\");\n            pstmt.setDouble(4, 95.5);\n            pstmt.executeUpdate();\n\n            pstmt.setInt(1, 102);\n            pstmt.setString(2, \"Sneha Reddy\");\n            pstmt.setString(3, \"ECE\");\n            pstmt.setDouble(4, 88.0);\n            pstmt.executeUpdate();\n\n            pstmt.setInt(1, 103);\n            pstmt.setString(2, \"Aditya Varma\");\n            pstmt.setString(3, \"AI & ML\");\n            pstmt.setDouble(4, 92.0);\n            pstmt.executeUpdate();\n            System.out.println(\"✨ 3 Student Records inserted into Database.\\n\");\n\n            System.out.println(\"================ STUDENT DATABASE RECORDS ================\");\n            System.out.printf(\"%-6s %-18s %-12s %-8s\\n\", \"ROLL\", \"STUDENT NAME\", \"BRANCH\", \"CGPA\");\n            System.out.println(\"----------------------------------------------------------\");\n\n            ResultSet rs = stmt.executeQuery(\"SELECT * FROM students\");\n            while (rs.next()) {\n                System.out.printf(\"%-6d %-18s %-12s %-8.1f\\n\",\n                    rs.getInt(\"id\"),\n                    rs.getString(\"name\"),\n                    rs.getString(\"branch\"),\n                    rs.getDouble(\"marks\")\n                );\n            }\n            System.out.println(\"==========================================================\\n\");\n\n            rs.close();\n            stmt.close();\n            con.close();\n            System.out.println(\"🔒 Database connection closed gracefully.\");\n        } catch (Exception e) {\n            e.printStackTrace();\n        }\n    }\n}",
   "javafx": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"JavaFX 22 Enterprise Runtime Initialized!\");\n    }\n}",
   "java14": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello from Java 14 records & switch expressions!\");\n    }\n}",
   "java_junit": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\npublic class SampleTest {\n    @Test\n    void testSuccess() {\n        assertEquals(10, 5 + 5);\n    }\n}",
@@ -1708,7 +1735,8 @@ export const STARTER_TEMPLATES = {
   "sql_postgres": "SELECT version();\nCREATE TABLE metrics (id SERIAL PRIMARY KEY, cpu_load FLOAT, memory_mb INT);\nINSERT INTO metrics (cpu_load, memory_mb) VALUES (12.4, 4096);\nSELECT * FROM metrics;",
   "r": "data <- c(10, 20, 30, 40, 50)\nprint(summary(data))\ncat(\"Mean:\", mean(data), \"\\n\")",
   "r40": "cat(\"Hello from R 4.0!\\n\")",
-  "octave": "A = [1, 2; 3, 4];\nB = [5, 6; 7, 8];\ndisp(\"Matrix Product:\");\ndisp(A * B);",
+  "matlab": "% ============================================================================\n% Elite IDE - High-Performance MATLAB / Matrix Laboratory Engine\n% Numerical Computing, Matrix Algebra & Scientific Calculations\n% ============================================================================\n\nclc;\nclear;\n\ndisp('--- 1. Matrix Operations & Linear Algebra ---');\nA = [1, 2, 3; 4, 5, 6; 7, 8, 10];\nB = [9, 8, 7; 6, 5, 4; 3, 2, 1];\n\ndisp('Matrix A:');\ndisp(A);\n\ndisp('Matrix Product (A * B):');\ndisp(A * B);\n\ndisp(['Determinant det(A) = ', num2str(det(A))]);\n\ndisp('Transpose of A:');\ndisp(A');\n\ndisp('--- 2. Vector Arithmetic & Statistics ---');\nv = [12, 45, 67, 89, 23, 56];\ndisp(['Sum:  ', num2str(sum(v))]);\ndisp(['Mean: ', num2str(mean(v))]);\ndisp(['Max:  ', num2str(max(v))]);\ndisp(['Min:  ', num2str(min(v))]);\n\ndisp('--- 3. Special Identity Matrix ---');\nI = eye(3);\ndisp(I);\n\ndisp('MATLAB matrix computation completed successfully! ✨');",
+  "octave": "% GNU Octave / MATLAB Matrix Computing\nclc;\nclear;\n\nA = [1, 2; 3, 4];\nB = [5, 6; 7, 8];\ndisp('Matrix Product:');\ndisp(A * B);\ndisp(['det(A) = ', num2str(det(A))]);\ndisp(A');",
   "bash": "#!/bin/bash\necho \"Current user: $(whoami)\"\necho \"Operating kernel: $(uname -s)\"\necho \"Host architecture: $(uname -m)\"",
   "haskell": "main :: IO ()\nmain = putStrLn \"Hello from purely functional Haskell (GHC)!\"",
   "elixir": "IO.puts(\"Hello from Elixir running on BEAM distributed virtual machine!\")",
@@ -1761,7 +1789,7 @@ export const EXTENSION_MAP = {
   "dockerfile": "dockerfile",
   "dart": "dart",
   "swift": "swift",
-  "m": "octave",
+  "m": "matlab",
   "v": "vlang",
   "php": "php7",
   "rb": "ruby",
@@ -1787,6 +1815,12 @@ export const EXTENSION_MAP = {
 export const getLanguageById = (langId) => {
   if (!langId) return ALL_LANGUAGES[0];
   const normalized = langId.toLowerCase().trim();
+  if (normalized === 'jdbc' || normalized === 'java_jdbc') {
+    return ALL_LANGUAGES.find(l => l.id === 'jdbc') || ALL_LANGUAGES[0];
+  }
+  if (normalized === 'matlab' || normalized === 'm') {
+    return ALL_LANGUAGES.find(l => l.id === 'matlab') || ALL_LANGUAGES.find(l => l.id === 'octave') || ALL_LANGUAGES[0];
+  }
   return (
     ALL_LANGUAGES.find(l => l.id.toLowerCase() === normalized) ||
     ALL_LANGUAGES.find(l => l.extension.toLowerCase() === normalized) ||

@@ -6,7 +6,8 @@ export const ALGORITHM_CATEGORIES = [
   { id: 'ds', label: 'Data Structures' },
   { id: 'algorithms', label: 'Algorithms' },
   { id: 'cp', label: 'Competitive Programming' },
-  { id: 'math', label: 'Math & Number Theory' }
+  { id: 'math', label: 'Math & Number Theory' },
+  { id: 'jdbc', label: '☕ JDBC & Database Lab' }
 ];
 
 export const ALGORITHMS = [
@@ -1070,5 +1071,409 @@ console.log("Search 'appl':", trie.search("appl"));
 console.log("Starts with 'app':", trie.startsWith("app"));
 `
     }
+  },
+
+  // 6. Matrix Computing & Linear Algebra
+  {
+    id: 'matrix_linalg',
+    title: 'Matrix Computing & Linear Algebra',
+    category: 'math',
+    tags: ['Matrix', 'Linear Algebra', 'Determinant', 'Inverse', 'Math'],
+    difficulty: 'Easy',
+    timeComplexity: 'O(N³) for Matrix Inversion & Multiplication',
+    spaceComplexity: 'O(N²)',
+    description: 'High-speed matrix multiplication, determinants, transposition, eigenvalues, and linear equation solver in MATLAB & NumPy.',
+    code: {
+      matlab: `% ============================================================================
+% Elite IDE - High-Performance MATLAB / Matrix Laboratory Engine
+% Linear Algebra, Matrix Multiplication, Determinants & System Solver
+% ============================================================================
+
+clc;
+clear;
+
+disp('--- 1. Matrix Operations & Multiplication ---');
+A = [1, 2, 3; 4, 5, 6; 7, 8, 10];
+B = [9, 8, 7; 6, 5, 4; 3, 2, 1];
+
+disp('Matrix A:');
+disp(A);
+disp('Matrix B:');
+disp(B);
+
+C = A * B;
+disp('Matrix Product (C = A * B):');
+disp(C);
+
+disp('--- 2. Determinant & Transpose ---');
+detA = det(A);
+disp(['Determinant det(A) = ', num2str(detA)]);
+
+disp('Transpose of A:');
+disp(A');
+
+disp('--- 3. Special Matrices & Vector Statistics ---');
+I = eye(3);
+disp('3x3 Identity Matrix:');
+disp(I);
+
+v = [15, 30, 45, 60, 75, 90];
+disp(['Sum:  ', num2str(sum(v))]);
+disp(['Mean: ', num2str(mean(v))]);
+disp(['Max:  ', num2str(max(v))]);
+disp(['Min:  ', num2str(min(v))]);
+
+disp('MATLAB Linear Algebra successfully completed! ✨');
+`,
+      python: `import numpy as np
+
+# High-Performance Linear Algebra with NumPy
+A = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 10]], dtype=float)
+B = np.array([[9, 8, 7], [6, 5, 4], [3, 2, 1]], dtype=float)
+
+print("--- 1. Matrix Multiplication ---")
+C = np.dot(A, B)
+print("Product C = A * B:\n", C)
+
+print("\n--- 2. Determinant & Transpose ---")
+print("det(A) =", np.linalg.det(A))
+print("Transpose of A:\n", A.T)
+
+print("\n--- 3. Solving Linear System A * x = b ---")
+b = np.array([14, 32, 53], dtype=float)
+x = np.linalg.solve(A, b)
+print("Solution vector x:\n", x)
+print("Verification (A * x):\n", np.dot(A, x))
+`,
+      cpp: `#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<std::vector<int>> A = {{1, 2}, {3, 4}};
+    std::vector<std::vector<int>> B = {{5, 6}, {7, 8}};
+    std::vector<std::vector<int>> C(2, std::vector<int>(2, 0));
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            for (int k = 0; k < 2; k++) {
+                C[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+
+    std::cout << "Matrix Product (A * B):\n";
+    for (int i = 0; i < 2; i++) {
+        std::cout << "  [" << C[i][0] << ", " << C[i][1] << "]\n";
+    }
+
+    int detA = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+    std::cout << "det(A) = " << detA << "\n";
+    return 0;
+}
+`,
+      javascript: `// Matrix Multiplication & Determinant in JavaScript
+const A = [[1, 2], [3, 4]];
+const B = [[5, 6], [7, 8]];
+
+const C = [
+  [A[0][0] * B[0][0] + A[0][1] * B[1][0], A[0][0] * B[0][1] + A[0][1] * B[1][1]],
+  [A[1][0] * B[0][0] + A[1][1] * B[1][0], A[1][0] * B[0][1] + A[1][1] * B[1][1]]
+];
+
+console.log("Matrix Product (A * B):", C);
+const detA = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+console.log("det(A) =", detA);
+`
+    }
+  },
+
+  // 8. JDBC Complete CRUD Operations (Lab Practical 1)
+  {
+    id: 'jdbc-crud',
+    title: 'JDBC Complete CRUD Operations (Lab Practical 1)',
+    category: 'jdbc',
+    tags: ['JDBC', 'Database', 'CRUD', 'Java', 'SQL'],
+    difficulty: 'Medium',
+    timeComplexity: 'O(1) connection, O(N) queries',
+    spaceComplexity: 'O(N)',
+    description: 'Complete University B.Tech Java Practical: Registering Driver, Connection establishment, Table Creation, Insertion, Updating, Deletion, and Select Query with ResultSet traversal.',
+    code: {
+      java: `import java.sql.*;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            // 1. Register JDBC Driver & Establish In-Memory Connection
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("Connecting to Database...");
+            Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/college_db", "root", "admin");
+            System.out.println("Connection established successfully!\\n");
+
+            // 2. Create Student Table
+            Statement stmt = con.createStatement();
+            stmt.executeUpdate("DROP TABLE IF EXISTS students");
+            stmt.executeUpdate("CREATE TABLE students (id INT PRIMARY KEY, name VARCHAR(50), branch VARCHAR(20), marks DOUBLE)");
+            System.out.println("Table 'students' created successfully.");
+
+            // 3. Insert Records using PreparedStatement
+            String insertQuery = "INSERT INTO students VALUES (?, ?, ?, ?)";
+            PreparedStatement pstmt = con.prepareStatement(insertQuery);
+
+            pstmt.setInt(1, 101);
+            pstmt.setString(2, "Gowri Narayana");
+            pstmt.setString(3, "CSE");
+            pstmt.setDouble(4, 95.5);
+            pstmt.executeUpdate();
+
+            pstmt.setInt(1, 102);
+            pstmt.setString(2, "Sneha Reddy");
+            pstmt.setString(3, "ECE");
+            pstmt.setDouble(4, 88.0);
+            pstmt.executeUpdate();
+
+            pstmt.setInt(1, 103);
+            pstmt.setString(2, "Aditya Varma");
+            pstmt.setString(3, "AI & ML");
+            pstmt.setDouble(4, 92.0);
+            pstmt.executeUpdate();
+            System.out.println("3 Student Records inserted into Database.\\n");
+
+            // 4. Update a Record
+            stmt.executeUpdate("UPDATE students SET marks = 96.0 WHERE id = 101");
+            System.out.println("Updated marks for student ID 101 to 96.0.\\n");
+
+            // 5. Query & Display Data
+            System.out.println("================ STUDENT DATABASE RECORDS ================");
+            System.out.printf("%-6s %-18s %-12s %-8s\\n", "ROLL", "STUDENT NAME", "BRANCH", "MARKS");
+            System.out.println("----------------------------------------------------------");
+
+            ResultSet rs = stmt.executeQuery("SELECT * FROM students");
+            while (rs.next()) {
+                System.out.printf("%-6d %-18s %-12s %-8.1f\\n",
+                    rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getString("branch"),
+                    rs.getDouble("marks")
+                );
+            }
+            System.out.println("==========================================================\\n");
+
+            // 6. Delete a Record
+            stmt.executeUpdate("DELETE FROM students WHERE id = 102");
+            System.out.println("Deleted student ID 102.\\n");
+
+            rs.close();
+            stmt.close();
+            con.close();
+            System.out.println("Database connection closed gracefully.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+`,
+      python: `# Python SQLite equivalent for comparison
+import sqlite3
+
+con = sqlite3.connect(':memory:')
+cur = con.cursor()
+cur.execute("CREATE TABLE students (id INT PRIMARY KEY, name TEXT, branch TEXT, marks REAL)")
+cur.execute("INSERT INTO students VALUES (101, 'Gowri Narayana', 'CSE', 95.5)")
+cur.execute("INSERT INTO students VALUES (102, 'Sneha Reddy', 'ECE', 88.0)")
+con.commit()
+
+cur.execute("SELECT * FROM students")
+for row in cur.fetchall():
+    print(row)
+con.close()
+`,
+      cpp: `// C++ SQLite demonstration
+#include <iostream>
+int main() {
+    std::cout << "JDBC is a Java-specific database connectivity API standard.\\n";
+    std::cout << "Switch to Java or Java (JDBC Database) to run this program.\\n";
+    return 0;
+}
+`,
+      javascript: `// Node.js Database Equivalent
+console.log("In JavaScript/Node, use pg or mysql2 driver for equivalent connectivity.");
+`
+    }
+  },
+
+  // 9. JDBC PreparedStatement & Batch Processing (Lab Practical 2)
+  {
+    id: 'jdbc-prepared',
+    title: 'JDBC PreparedStatement & Dynamic Queries (Lab Practical 2)',
+    category: 'jdbc',
+    tags: ['JDBC', 'PreparedStatement', 'SQL Injection Guard', 'Batch'],
+    difficulty: 'Easy',
+    timeComplexity: 'O(1) per statement',
+    spaceComplexity: 'O(N)',
+    description: 'Safe parameterized SQL execution preventing SQL injection attacks, binding dynamic variables, and retrieving filtered records.',
+    code: {
+      java: `import java.sql.*;
+
+public class Main {
+    public static void main(String[] args) {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/college_db", "root", "admin");
+
+            Statement stmt = con.createStatement();
+            stmt.executeUpdate("CREATE TABLE courses (course_id INT, title VARCHAR(50), credits INT)");
+
+            // PreparedStatement for parameterized insertion
+            String insertSql = "INSERT INTO courses VALUES (?, ?, ?)";
+            PreparedStatement pstmt = con.prepareStatement(insertSql);
+
+            Object[][] courseData = {
+                {101, "Data Structures & Algorithms", 4},
+                {102, "Database Management Systems", 4},
+                {103, "Web Development & Cloud", 3},
+                {104, "Operating Systems", 3}
+            };
+
+            for (Object[] c : courseData) {
+                pstmt.setInt(1, (Integer) c[0]);
+                pstmt.setString(2, (String) c[1]);
+                pstmt.setInt(3, (Integer) c[2]);
+                pstmt.executeUpdate();
+            }
+
+            System.out.println("Courses batch successfully inserted via PreparedStatement!\\n");
+
+            // Query with Filter Parameter
+            String searchSql = "SELECT * FROM courses WHERE credits >= ?";
+            PreparedStatement searchStmt = con.prepareStatement(searchSql);
+            searchStmt.setInt(1, 4);
+
+            System.out.println("Courses with 4 or more credits:");
+            System.out.println("----------------------------------------");
+            ResultSet rs = searchStmt.executeQuery();
+            while (rs.next()) {
+                System.out.println(rs.getInt(1) + ": " + rs.getString(2) + " (" + rs.getInt(3) + " credits)");
+            }
+
+            con.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+`,
+      python: `# Python Parameterized Query
+import sqlite3
+con = sqlite3.connect(':memory:')
+cur = con.cursor()
+cur.execute("CREATE TABLE courses (course_id INT, title TEXT, credits INT)")
+cur.executemany("INSERT INTO courses VALUES (?, ?, ?)", [
+    (101, "Data Structures", 4),
+    (102, "DBMS", 4)
+])
+for row in cur.execute("SELECT * FROM courses WHERE credits >= ?", (4,)):
+    print(row)
+`,
+      cpp: `// C++ Parameterized query reference
+#include <iostream>
+int main() {
+    std::cout << "Switch to Java to run PreparedStatement code.\\n";
+    return 0;
+}
+`,
+      javascript: `// Node.js Parameterized query reference
+console.log("Use parameterized placeholders (?, ?) in DB queries to prevent SQL injection.");
+`
+    }
+  },
+
+  // 10. JDBC Transaction Management (Commit & Rollback)
+  {
+    id: 'jdbc-transaction',
+    title: 'JDBC Transaction Management (Commit & Rollback)',
+    category: 'jdbc',
+    tags: ['JDBC', 'Transaction', 'Commit', 'Rollback', 'ACID'],
+    difficulty: 'Hard',
+    timeComplexity: 'O(1) transaction block',
+    spaceComplexity: 'O(1)',
+    description: 'Demonstrating ACID transaction safety in Java: disabling auto-commit, executing multi-step balance transfer, and rolling back safely if an error occurs.',
+    code: {
+      java: `import java.sql.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Connection con = null;
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            con = DriverManager.getConnection("jdbc:mysql://localhost:3306/bank_db", "root", "admin");
+
+            // 1. Disable Auto-Commit for Transaction Atomicity
+            con.setAutoCommit(false);
+            System.out.println("Auto-commit disabled. Transaction block started.\\n");
+
+            Statement stmt = con.createStatement();
+            stmt.executeUpdate("CREATE TABLE accounts (acc_no INT, holder VARCHAR(50), balance DOUBLE)");
+            stmt.executeUpdate("INSERT INTO accounts VALUES (1001, 'Gowri Narayana', 15000.0)");
+            stmt.executeUpdate("INSERT INTO accounts VALUES (1002, 'Siddharth', 5000.0)");
+
+            // 2. Perform Fund Transfer ($2,000 from 1001 to 1002)
+            double transferAmount = 2000.0;
+            System.out.println("Transferring $" + transferAmount + " from Account 1001 to 1002...");
+
+            stmt.executeUpdate("UPDATE accounts SET balance = balance - " + transferAmount + " WHERE acc_no = 1001");
+            stmt.executeUpdate("UPDATE accounts SET balance = balance + " + transferAmount + " WHERE acc_no = 1002");
+
+            // 3. Commit the transaction
+            con.commit();
+            System.out.println("Transaction committed successfully! Both accounts updated.\\n");
+
+            // 4. Display Final Balances
+            System.out.println("Account Status:");
+            ResultSet rs = stmt.executeQuery("SELECT * FROM accounts");
+            while (rs.next()) {
+                System.out.printf("Acc: %d | Holder: %-15s | Balance: $%.2f\\n",
+                    rs.getInt("acc_no"),
+                    rs.getString("holder"),
+                    rs.getDouble("balance")
+                );
+            }
+
+            con.close();
+        } catch (Exception e) {
+            System.err.println("Transaction failed: " + e.getMessage());
+            try {
+                if (con != null) {
+                    con.rollback();
+                    System.err.println("Transaction rolled back successfully. Database returned to safe state.");
+                }
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
+        }
+    }
+}
+`,
+      python: `# Python SQLite Transaction Demo
+import sqlite3
+con = sqlite3.connect(':memory:')
+cur = con.cursor()
+cur.execute("CREATE TABLE accounts (acc_no INT, holder TEXT, balance REAL)")
+cur.execute("INSERT INTO accounts VALUES (1001, 'Gowri', 15000.0)")
+cur.execute("INSERT INTO accounts VALUES (1002, 'Siddharth', 5000.0)")
+con.commit()
+print("Transaction committed.")
+`,
+      cpp: `// C++ Transaction Reference
+#include <iostream>
+int main() {
+    std::cout << "Switch to Java to execute JDBC Transaction Management.\\n";
+    return 0;
+}
+`,
+      javascript: `// JavaScript Transaction Reference
+console.log("Transactions ensure ACID properties in relational databases.");
+`
+    }
   }
 ];
+

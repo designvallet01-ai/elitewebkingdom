@@ -53,5 +53,24 @@ export const CODE_TEMPLATES = {
     version: 'HTML5',
     sampleStdin: '',
     code: ''
+  },
+  matlab: {
+    name: 'MATLAB (Matrix Laboratory)',
+    extension: 'm',
+    filename: 'main.m',
+    monaco: 'matlab',
+    version: 'R2024b / 5.1',
+    sampleStdin: '',
+    code: ''
+  },
+  jdbc: {
+    name: 'Java (JDBC Database)',
+    extension: 'java',
+    filename: 'Main.java',
+    monaco: 'java',
+    version: 'JDK 17 + JDBC 4.3',
+    sampleStdin: '',
+    code: ''
   }
 };
+

@@ -1,30 +1,110 @@
 // ============================================================================
-// Elite IDE - Autonomous Multi-Model AI Code Healer & Error Diagnosis Matrix
-// Instant compiler error parser, root cause analyzer (English + Telugu),
-// and 1-Click clean code repair generator.
+// Elite IDE - Autonomous Multi-Model Real AI Code Healer & Diagnostic Matrix
+// Real LLM Intelligence (Pollinations Cloud / Gemini / Groq) + Offline AST Guard
+// Explanations in English + Telugu (తెలుగు) & 1-Click Code Refactoring
 // ============================================================================
 
-export function diagnoseAndHealError(code = '', language = 'python', stderr = '', stdout = '') {
-  const lang = (language || 'python').toLowerCase();
-  const rawError = (stderr || stdout || '').trim();
+const AI_CONFIG_KEY = 'elite_ai_debugger_config';
 
-  if (!rawError && !code) {
+/**
+ * Get active AI engine configuration from localStorage
+ */
+export function getStoredAiConfig() {
+  try {
+    const raw = localStorage.getItem(AI_CONFIG_KEY);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
+  return {
+    provider: 'cloud', // 'cloud' (Free zero-key) | 'gemini' | 'groq'
+    apiKey: '',
+    model: 'openai-fast'
+  };
+}
+
+/**
+ * Save AI engine configuration to localStorage
+ */
+export function setStoredAiConfig(config) {
+  try {
+    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(config));
+  } catch (e) {}
+}
+
+/**
+ * Synchronous Pre-flight Diagnostic Check
+ * Instantly identifies healthy code, rogue semicolons, or pre-computes immediate offline state
+ */
+export function diagnoseAndHealError(code = '', language = 'python', stderr = '', stdout = '', lastStats = null) {
+  const lang = (language || 'python').toLowerCase();
+  const trimmedStderr = (stderr || '').trim();
+  const trimmedStdout = (stdout || '').trim();
+
+  if (!code && !trimmedStderr && !trimmedStdout) {
     return null;
   }
 
-  // 1. Extract problematic line number and error message from stack trace
+  // 1. Detect if the code has a preprocessor semicolon corruption (e.g. #include <iostream>;)
+  const roguePreprocessor = detectRoguePreprocessorSemicolon(code, lang);
+  if (roguePreprocessor) {
+    const cleanedCode = code.replace(/^([ \t]*#(?:include|define|pragma|ifdef|ifndef|endif)\b[^;\n]*);+([ \t]*)$/gm, '$1$2');
+    return {
+      isHealthy: false,
+      isRealAi: false,
+      errorType: 'Illegal Semicolon in Preprocessor Directive',
+      severity: 'HIGH',
+      problemLine: roguePreprocessor.line,
+      problemSnippet: roguePreprocessor.snippet,
+      rootCauseEn: 'Preprocessor directives in C/C++ (#include, #define, #pragma) are processed by the preprocessor before compilation and must NEVER terminate with a semicolon (;). Appending a semicolon produces invalid syntax and compiler errors.',
+      rootCauseTe: 'C/C++ లో #include లేదా #define వంటి ప్రీప్రాసెసర్ డైరెక్టివ్‌లకు చివర సెమికోలన్ (;) ఉండకూడదు. సెమికోలన్ పెట్టడం వల్ల కంపైలర్ సింటాక్స్ ఎర్రర్ వస్తుంది.',
+      fixSummaryEn: 'Stripped rogue semicolon from the preprocessor directive.',
+      fixSummaryTe: 'ప్రీప్రాసెసర్ డైరెక్టివ్ చివర ఉన్న అనవసర సెమికోలన్ (;) ని తొలగించి కోడ్‌ని సరిచేశాం.',
+      fixedCode: cleanedCode,
+      hasAutoFix: true
+    };
+  }
+
+  // 2. Determine if execution was actually an error or clean success
+  const isExplicitSuccess = lastStats && lastStats.code === 0 && !String(lastStats.status || '').toUpperCase().includes('ERROR');
+  const hasRealStderr = trimmedStderr.length > 0 && !isBenignStderr(trimmedStderr);
+  const hasStdoutError = !hasRealStderr && hasExplicitErrorTraces(trimmedStdout);
+  const rawError = hasRealStderr ? trimmedStderr : (hasStdoutError ? trimmedStdout : '');
+
+  // 3. If there are NO errors from the execution and run succeeded:
+  if (!rawError && (isExplicitSuccess || !trimmedStderr)) {
+    const syntaxIssue = detectBasicSyntaxIssues(code, lang);
+    if (!syntaxIssue) {
+      return {
+        isHealthy: true,
+        isRealAi: false,
+        errorType: 'Code Healthy (0 Errors)',
+        severity: 'OPTIMAL',
+        problemLine: null,
+        problemSnippet: '',
+        rootCauseEn: 'All systems operational! No syntax errors, compiler warnings, or runtime exceptions detected in your code. It compiled and executed cleanly.',
+        rootCauseTe: 'మీ కోడ్ అంతా సరిగ్గా ఉంది! ఎలాంటి సింటాక్స్ లేదా రన్‌టైమ్ లోపాలు లేవు. ప్రోగ్రామ్ విజయవంతంగా పూర్తయ్యింది.',
+        fixSummaryEn: 'No refactoring required. Your code is valid and ready to run.',
+        fixSummaryTe: 'ఎలాంటి మార్పులు అవసరం లేదు. మీ కోడ్ సరిగ్గా పనిచేస్తుంది.',
+        fixedCode: code,
+        hasAutoFix: false
+      };
+    } else {
+      return syntaxIssue;
+    }
+  }
+
+  // 4. Fallback instant diagnosis while Real AI is queried
   const errorInfo = parseStackTrace(rawError, lang, code);
-
-  // 2. Perform Root Cause Analysis
   const diagnosis = analyzeRootCause(code, lang, errorInfo, rawError);
-
-  // 3. Generate Clean Repaired Code
   const fixedCode = generateFixedCode(code, lang, errorInfo, diagnosis);
 
   return {
+    isHealthy: false,
+    isRealAi: false,
     errorType: diagnosis.errorType,
     severity: diagnosis.severity,
-    problemLine: errorInfo.line || diagnosis.detectedLine || 1,
+    problemLine: errorInfo.line || diagnosis.detectedLine || null,
     problemSnippet: errorInfo.snippet || '',
     rootCauseEn: diagnosis.explanationEn,
     rootCauseTe: diagnosis.explanationTe,
@@ -33,6 +113,285 @@ export function diagnoseAndHealError(code = '', language = 'python', stderr = ''
     fixedCode: fixedCode || code,
     hasAutoFix: Boolean(fixedCode && fixedCode !== code)
   };
+}
+
+/**
+ * REAL AI ENGINE CALL
+ * Queries true LLM intelligence (Pollinations AI, Gemini, or Groq)
+ */
+export async function fetchRealAiDiagnosis({
+  code = '',
+  language = 'python',
+  stderr = '',
+  stdout = '',
+  lastStats = null,
+  provider = 'cloud',
+  apiKey = '',
+  model = 'openai-fast'
+}) {
+  const lang = (language || 'python').toLowerCase();
+  const trimmedStderr = (stderr || '').trim();
+  const trimmedStdout = (stdout || '').trim();
+
+  const systemPrompt = `You are Elite IDE's autonomous compiler AI code doctor.
+You must analyze the user's source code and execution logs with absolute programming accuracy.
+
+CRITICAL INSTRUCTIONS:
+1. Always return a raw, valid JSON object with EXACTLY these keys:
+{
+  "errorType": "string (e.g. 'Syntax Error', 'Missing Semicolon', 'Type Mismatch', 'Segmentation Fault')",
+  "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
+  "problemLine": number or null,
+  "problemSnippet": "the exact line from the code causing the issue",
+  "rootCauseEn": "In-depth technical explanation in English of why the compiler or runtime rejected this code",
+  "rootCauseTe": "Clear, authentic technical explanation in Telugu (తెలుగు) explaining why this error happened in simple terms",
+  "fixSummaryEn": "1-sentence summary of the fix in English",
+  "fixSummaryTe": "1-sentence summary of the fix in Telugu (తెలుగు)",
+  "fixedCode": "the COMPLETE, 100% syntactically correct source code with the fix applied"
+}
+2. C/C++ RULE: NEVER add a semicolon to preprocessor directives (#include, #define, #pragma, etc.). If an #include ends with a semicolon (like #include <iostream>;), your fix MUST REMOVE the semicolon.
+3. JAVA RULE: In automated compilers, if a class is declared 'public class X' without matching filename, change to 'class X'.
+4. Do NOT wrap the JSON in markdown code blocks (\`\`\`json). Output RAW JSON ONLY.
+5. 'fixedCode' must contain the complete source code, ready to compile and run immediately.`;
+
+  const userPrompt = `Language: ${lang}
+Compiler Exit Code: ${lastStats?.code ?? (trimmedStderr ? 1 : 0)}
+Compiler / Runtime stderr:
+${trimmedStderr || 'None (Clean)'}
+
+Standard Output (stdout):
+${trimmedStdout || 'None'}
+
+Active Source Code:
+${code}`;
+
+  try {
+    let rawResponseText = '';
+
+    // PROVIDER 1: Google Gemini 1.5 Flash (User API Key)
+    if (provider === 'gemini' && apiKey) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.1
+          }
+        })
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Gemini API error (${res.status}): ${errText}`);
+      }
+      const data = await res.json();
+      rawResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    } 
+    // PROVIDER 2: Groq Llama 3.3 70B (User API Key)
+    else if (provider === 'groq' && apiKey) {
+      const endpoint = 'https://api.groq.com/openai/v1/chat/completions';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey.trim()}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.1
+        })
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Groq API error (${res.status}): ${errText}`);
+      }
+      const data = await res.json();
+      rawResponseText = data.choices?.[0]?.message?.content || '';
+    } 
+    // PROVIDER 3: Zero-Config Cloud AI (Pollinations Real AI Engine)
+    else {
+      const endpoint = 'https://text.pollinations.ai/';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 28000);
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          model: model || 'openai-fast',
+          jsonMode: true
+        })
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error(`Cloud AI Engine error: HTTP ${res.status}`);
+      }
+      rawResponseText = await res.text();
+    }
+
+    // Parse JSON safely
+    const parsed = extractJsonFromText(rawResponseText);
+    if (!parsed || !parsed.fixedCode) {
+      throw new Error('AI response could not be parsed as valid code patch JSON.');
+    }
+
+    // Extra safety guarantee: Never allow AI to append a semicolon to #include
+    let validatedFixedCode = parsed.fixedCode;
+    if (lang.includes('c') || lang.includes('cpp')) {
+      validatedFixedCode = validatedFixedCode.replace(/^([ \t]*#(?:include|define|pragma|ifdef|ifndef|endif)\b[^;\n]*);+([ \t]*)$/gm, '$1$2');
+    }
+
+    return {
+      isHealthy: parsed.errorType?.toLowerCase().includes('healthy') || false,
+      isRealAi: true,
+      modelUsed: provider === 'gemini' ? 'Gemini 1.5 Flash' : (provider === 'groq' ? 'Groq Llama-3.3' : 'Autonomous Cloud AI (GPT-4o-mini)'),
+      errorType: parsed.errorType || 'AI Identified Defect',
+      severity: parsed.severity || 'HIGH',
+      problemLine: parsed.problemLine || null,
+      problemSnippet: parsed.problemSnippet || '',
+      rootCauseEn: parsed.rootCauseEn || 'Analyzed by Real AI Engine.',
+      rootCauseTe: parsed.rootCauseTe || 'నిజమైన AI మోడల్ ద్వారా విశ్లేషించబడింది.',
+      fixSummaryEn: parsed.fixSummaryEn || 'Applied AI refactoring patch.',
+      fixSummaryTe: parsed.fixSummaryTe || 'AI ద్వారా కోడ్ సవరించబడింది.',
+      fixedCode: validatedFixedCode,
+      hasAutoFix: Boolean(validatedFixedCode && validatedFixedCode !== code)
+    };
+
+  } catch (err) {
+    console.warn('[Real AI Engine Fallback]:', err.message);
+    // Graceful offline fallback
+    const offlineResult = diagnoseAndHealError(code, language, stderr, stdout, lastStats);
+    if (offlineResult) {
+      offlineResult.isRealAi = false;
+      offlineResult.networkNotice = `(Cloud AI Busy: ${err.message}. Showing verified offline diagnostics)`;
+      return offlineResult;
+    }
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers: JSON Cleaner
+// ---------------------------------------------------------------------------
+function extractJsonFromText(rawText) {
+  if (!rawText) return null;
+  let cleaned = rawText.trim();
+  // Strip ```json and ``` if present
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  }
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1));
+      } catch (err) {}
+    }
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers: Static Error Detection and Filtering
+// ---------------------------------------------------------------------------
+function isBenignStderr(text) {
+  const benignPatterns = [
+    /picked up _java_options/i,
+    /note: some input files use unchecked or unsafe operations/i,
+    /note: recompile with -xlint:unchecked/i
+  ];
+  const lines = text.split('\n').filter(l => l.trim().length > 0);
+  return lines.length > 0 && lines.every(line => benignPatterns.some(p => p.test(line)));
+}
+
+function hasExplicitErrorTraces(text) {
+  if (!text) return false;
+  return /\b(error:|fatal error:|Traceback \(most recent call last\):|SyntaxError|NameError|TypeError|IndexError|ZeroDivisionError|IndentationError|Exception in thread|NullPointerException|panic: runtime error|Segmentation fault|SIGSEGV|ReferenceError)\b/i.test(text);
+}
+
+function detectRoguePreprocessorSemicolon(code, lang) {
+  if (!lang.includes('c') && !lang.includes('cpp')) return null;
+  const lines = code.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^[ \t]*#(?:include|define|pragma|ifdef|ifndef|endif)\b.*?;+[ \t]*$/.test(line)) {
+      return { line: i + 1, snippet: line.trim() };
+    }
+  }
+  return null;
+}
+
+function detectBasicSyntaxIssues(code, lang) {
+  const lines = code.split('\n');
+
+  const rogue = detectRoguePreprocessorSemicolon(code, lang);
+  if (rogue) return null;
+
+  if (lang.includes('java')) {
+    const publicClassMatch = code.match(/\bpublic\s+class\s+([A-Za-z0-9_]+)/);
+    if (publicClassMatch && publicClassMatch[1] !== 'Main') {
+      const fixedCode = code.replace(/\bpublic\s+class\s+([A-Za-z0-9_]+)/, 'class $1');
+      return {
+        isHealthy: false,
+        isRealAi: false,
+        errorType: 'Class Declaration Conflict',
+        severity: 'MEDIUM',
+        problemLine: 1,
+        problemSnippet: publicClassMatch[0],
+        rootCauseEn: `In online Java runners, class '${publicClassMatch[1]}' cannot be declared 'public' unless saved in '${publicClassMatch[1]}.java'. Removing 'public' allows smooth execution.`,
+        rootCauseTe: `ఆన్‌లైన్ జావా రన్నర్లలో ఫైల్ నేమ్ 'Main.java' కావడం వల్ల '${publicClassMatch[1]}' ని 'public' గా పెట్టకూడదు. కేవలం 'class ${publicClassMatch[1]}' అని ఉంచాలి.`,
+        fixSummaryEn: `Changed 'public class ${publicClassMatch[1]}' to 'class ${publicClassMatch[1]}'.`,
+        fixSummaryTe: `'public class' ని 'class' గా మార్చాం.`,
+        fixedCode: fixedCode,
+        hasAutoFix: true
+      };
+    }
+  }
+
+  if (lang.includes('python') || lang === 'py') {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s*(def|class|if|elif|else|for|while|try|except|finally)\b/.test(line)) {
+        const trimmed = line.trim();
+        if (!trimmed.endsWith(':') && !trimmed.endsWith('\\')) {
+          const fixedLines = [...lines];
+          fixedLines[i] = line + ':';
+          return {
+            isHealthy: false,
+            isRealAi: false,
+            errorType: 'Missing Colon (:)',
+            severity: 'HIGH',
+            problemLine: i + 1,
+            problemSnippet: trimmed,
+            rootCauseEn: `Python block header statements (def, if, for, while, etc.) must terminate with a colon (:).`,
+            rootCauseTe: `పైథాన్‌లో def, if, for, while స్టేట్‌మెంట్ల చివర తప్పనిసరిగా కోలన్ (:) ఉండాలి.`,
+            fixSummaryEn: `Appended missing colon (:) to line ${i + 1}.`,
+            fixSummaryTe: `లైన్ ${i + 1} చివర మిస్ అయిన కోలన్ (:) జోడించాం.`,
+            fixedCode: fixedLines.join('\n'),
+            hasAutoFix: true
+          };
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -44,19 +403,15 @@ function parseStackTrace(stderr, lang, code) {
   const lines = code ? code.split('\n') : [];
 
   if (lang.includes('python') || lang === 'py') {
-    // Python traceback: File "...", line 12, in ...
     const match = stderr.match(/line (\d+)/i);
     if (match) line = parseInt(match[1], 10);
   } else if (lang.includes('c') || lang === 'cpp') {
-    // GCC / Clang: main.cpp:14:5: error: ...
-    const match = stderr.match(/:(\d+):\d+: (?:fatal )?error:/i) || stderr.match(/:(\d+): (?:fatal )?error:/i);
+    const match = stderr.match(/:(\d+):\d+: (?:fatal )?error:/i) || stderr.match(/:(\d+): (?:fatal )?error:/i) || stderr.match(/:(\d+):\d+:/);
     if (match) line = parseInt(match[1], 10);
   } else if (lang.includes('java')) {
-    // Java: Main.java:15: error: ... or Exception in thread "main" ...:15
-    const match = stderr.match(/:(\d+): error:/i) || stderr.match(/Main\.java:(\d+)/i);
+    const match = stderr.match(/:(\d+): error:/i) || stderr.match(/Main\.java:(\d+)/i) || stderr.match(/:(\d+)\)/);
     if (match) line = parseInt(match[1], 10);
   } else if (lang.includes('javascript') || lang.includes('typescript') || lang === 'js' || lang === 'ts') {
-    // Node.js: at ...:15:23 or evalmachine.<anonymous>:14
     const match = stderr.match(/:(\d+):(\d+)/);
     if (match) line = parseInt(match[1], 10);
   } else if (lang.includes('rust') || lang === 'rs') {
@@ -67,8 +422,11 @@ function parseStackTrace(stderr, lang, code) {
     if (match) line = parseInt(match[1], 10);
   }
 
-  if (line && lines[line - 1]) {
+  if (line && line > 0 && line <= lines.length) {
     snippet = lines[line - 1].trim();
+  } else {
+    line = null;
+    snippet = '';
   }
 
   return { line, snippet, raw: stderr };
@@ -79,16 +437,15 @@ function parseStackTrace(stderr, lang, code) {
 // ---------------------------------------------------------------------------
 function analyzeRootCause(code, lang, errorInfo, stderr) {
   const errLower = stderr.toLowerCase();
-  const codeLines = code.split('\n');
 
-  // PYTHON DIAGNOSES
+  // PYTHON
   if (lang.includes('python') || lang === 'py') {
     if (errLower.includes('indentationerror')) {
       return {
         errorType: 'Indentation Error',
         severity: 'HIGH',
         detectedLine: errorInfo.line,
-        explanationEn: 'Python relies strictly on consistent indentation (spaces or tabs). A block inside a function, loop, or conditional is misaligned.',
+        explanationEn: 'Python relies strictly on consistent indentation. A block inside a function, loop, or conditional is misaligned.',
         explanationTe: 'పైథాన్‌లో స్పేసింగ్/ఇండెంటేషన్ చాలా ముఖ్యం. లూప్ లేదా ఫంక్షన్ లోపల స్పేస్‌లు సక్రమంగా లేకపోవడం వల్ల ఈ లోపం వచ్చింది.',
         fixSummaryEn: 'Realigned all nested block lines with clean 4-space indentation.',
         fixSummaryTe: 'అన్ని లైన్లను సరిగ్గా 4 స్పేస్‌ల ఇండెంటేషన్‌తో అమర్చాం.'
@@ -129,42 +486,9 @@ function analyzeRootCause(code, lang, errorInfo, stderr) {
         fixSummaryTe: `'${varName}' ని ఉపయోగించడానికి ముందే డిక్లేర్ చేసి సరిచేశాం.`
       };
     }
-    if (errLower.includes('typeerror')) {
-      return {
-        errorType: 'Type Mismatch (TypeError)',
-        severity: 'MEDIUM',
-        detectedLine: errorInfo.line,
-        explanationEn: 'An operation was attempted on incompatible data types (e.g. adding a string to an integer).',
-        explanationTe: 'సరికాని డేటా టైప్స్ మధ్య ఆపరేషన్ జరిగింది (ఉదా: స్ట్రింగ్ మరియు నంబర్‌ని కలపడం).',
-        fixSummaryEn: 'Added type casting (int/str) to ensure compatibility.',
-        fixSummaryTe: 'టైప్ కాస్టింగ్ (int() లేదా str()) ఉపయోగించి డేటా రకాలను సరిచేశాం.'
-      };
-    }
-    if (errLower.includes('eoferror')) {
-      return {
-        errorType: 'Input EOF Error',
-        severity: 'MEDIUM',
-        detectedLine: errorInfo.line,
-        explanationEn: 'The program requested user input using input(), but standard input (stdin) was empty.',
-        explanationTe: 'ప్రోగ్రామ్ input() ద్వారా విలువను కోరింది, కానీ ఇన్‌పుట్ ఇవ్వలేదు.',
-        fixSummaryEn: 'Wrapped input() in a try-except block with fallback default values.',
-        fixSummaryTe: 'ఇన్‌పుట్ లేకపోయినా క్రాష్ అవ్వకుండా డీఫాల్ట్ వాల్యూని సెట్ చేశాం.'
-      };
-    }
-    if (errLower.includes('syntaxerror')) {
-      return {
-        errorType: 'Syntax Error',
-        severity: 'HIGH',
-        detectedLine: errorInfo.line,
-        explanationEn: 'Invalid Python syntax, such as a missing colon (:), unmatched parenthesis, or invalid operator.',
-        explanationTe: 'పైథాన్ సింటాక్స్ లోపం - కోలన్ (:), బ్రాకెట్ మూసివేయకపోవడం లేదా తప్పు ఆపరేటర్ వాడారు.',
-        fixSummaryEn: 'Corrected syntax, closed brackets, and verified colon placements.',
-        fixSummaryTe: 'సింటాక్స్ తప్పులను సరిచేసి బ్రాకెట్స్, కోలన్స్ సరిచేశాం.'
-      };
-    }
   }
 
-  // C / C++ DIAGNOSES
+  // C / C++
   if (lang.includes('c') || lang === 'cpp') {
     if (errLower.includes('expected \';\'') || errLower.includes('expected semicolon')) {
       return {
@@ -173,7 +497,7 @@ function analyzeRootCause(code, lang, errorInfo, stderr) {
         detectedLine: errorInfo.line,
         explanationEn: 'A statement is missing a closing semicolon (;) at the end of the line.',
         explanationTe: 'లైన్ చివరలో సెమికోలన్ (;) పెట్టడం మర్చిపోయారు.',
-        fixSummaryEn: 'Appended missing semicolon (;) to terminate the statement.',
+        fixSummaryEn: 'Appended missing semicolon (;) to terminate the statement safely.',
         fixSummaryTe: 'లైన్ చివర మిస్ అయిన సెమికోలన్ (;) జోడించాం.'
       };
     }
@@ -183,152 +507,79 @@ function analyzeRootCause(code, lang, errorInfo, stderr) {
         severity: 'HIGH',
         detectedLine: errorInfo.line,
         explanationEn: 'Identifier, variable, or standard namespace entity is used without declaration or missing header.',
-        explanationTe: 'వేరియబుల్ లేదా లైబ్రరీ హెడర్ డిక్లేర్ చేయకుండా వాడారు.',
+        explanationTe: 'వేరియబుల్ లేదా లైబ్రరీ హెడర్ డిక్లేర్ చేయకుండా వాడారు (ఉదా: <iostream>, <vector>).',
         fixSummaryEn: 'Added required namespace/type declaration.',
         fixSummaryTe: 'అవసరమైన వేరియబుల్ లేదా `using namespace std;` జోడించాం.'
       };
     }
-    if (errLower.includes('segmentation fault') || errLower.includes('sigsegv')) {
-      return {
-        errorType: 'Segmentation Fault (Memory Violation)',
-        severity: 'CRITICAL',
-        detectedLine: errorInfo.line,
-        explanationEn: 'The program attempted to access unallocated or restricted memory (e.g. NULL pointer or out-of-bounds array access).',
-        explanationTe: 'మెమొరీ ఉల్లంఘన జరిగింది - నల్ పాయింటర్ లేదా పరిమితి దాటిన అరే మెమొరీని యాక్సెస్ చేయడానికి ప్రయత్నించారు.',
-        fixSummaryEn: 'Added bounds checking and NULL validation to protect memory access.',
-        fixSummaryTe: 'మెమొరీ బౌండరీస్ చెక్ చేసి నల్ పాయింటర్లను సరిచేశాం.'
-      };
-    }
   }
 
-  // JAVA DIAGNOSES
+  // JAVA
   if (lang.includes('java')) {
-    if (errLower.includes('nullpointerexception')) {
+    if (errLower.includes('is public, should be declared in a file named')) {
       return {
-        errorType: 'Null Pointer Exception',
-        severity: 'CRITICAL',
-        detectedLine: errorInfo.line,
-        explanationEn: 'Invoked a method or accessed a field on an object reference that is currently null.',
-        explanationTe: 'ఇంకా ఇనీషియలైజ్ కాని (null గా ఉన్న) ఆబ్జెక్ట్‌ని యాక్సెస్ చేయడానికి ప్రయత్నించారు.',
-        fixSummaryEn: 'Added null-safe guard condition before method invocation.',
-        fixSummaryTe: 'నల్ చెక్ పెట్టి ఆబ్జెక్ట్ ఉన్నప్పుడు మాత్రమే ఎగ్జిక్యూట్ అయ్యేలా చేశాం.'
-      };
-    }
-    if (errLower.includes('cannot find symbol')) {
-      return {
-        errorType: 'Symbol Not Found',
+        errorType: 'Class Declaration Conflict',
         severity: 'HIGH',
         detectedLine: errorInfo.line,
-        explanationEn: 'Java compiler cannot find the variable, method, or class. Ensure correct spelling, import, and scope.',
-        explanationTe: 'జావా కంపైలర్ ఈ వేరియబుల్ లేదా మెథడ్‌ని గుర్తించలేకపోయింది.',
-        fixSummaryEn: 'Added declaration and verified imports.',
-        fixSummaryTe: 'సరైన ఇంపోర్ట్ మరియు వేరియబుల్ డిక్లరేషన్ సరిచేశాం.'
+        explanationEn: 'In Java, a public class must match the source file name. Since the compiler runs in an automated environment, declaring a non-matching public class causes a compilation error.',
+        explanationTe: 'జావాలో పబ్లిక్ క్లాస్ పేరు ఫైల్ పేరుతో సమానంగా ఉండాలి. \'public class\' బదులు కేవలం \'class\' అని డిక్లేర్ చేస్తే సరిపోతుంది.',
+        fixSummaryEn: 'Removed \'public\' modifier from class declaration so it compiles cleanly.',
+        fixSummaryTe: '\'public class\' ని \'class\' గా మార్చి ఫైల్ నేమ్ సమస్యను సరిచేశాం.'
       };
     }
   }
 
-  // JAVASCRIPT / TYPESCRIPT
-  if (lang.includes('js') || lang.includes('ts')) {
-    if (errLower.includes('is not defined') || errLower.includes('referenceerror')) {
-      return {
-        errorType: 'Reference Error',
-        severity: 'HIGH',
-        detectedLine: errorInfo.line,
-        explanationEn: 'Referenced a variable that does not exist in the current execution scope.',
-        explanationTe: 'ప్రస్తుత స్కోప్‌లో లేని వేరియబుల్‌ని యాక్సెస్ చేయడానికి ప్రయత్నించారు.',
-        fixSummaryEn: 'Declared variable with let/const before usage.',
-        fixSummaryTe: 'వేరియబుల్‌ని let లేదా const తో డిక్లేర్ చేశాం.'
-      };
-    }
-    if (errLower.includes('cannot read property') || errLower.includes('cannot read properties of undefined')) {
-      return {
-        errorType: 'Undefined Property Access',
-        severity: 'HIGH',
-        detectedLine: errorInfo.line,
-        explanationEn: 'Attempted to read a property on an undefined or null variable.',
-        explanationTe: 'అన్‌డిఫైన్డ్ లేదా నల్ గా ఉన్న ఆబ్జెక్ట్ నుండి ప్రాపర్టీని చదవడానికి ప్రయత్నించారు.',
-        fixSummaryEn: 'Implemented optional chaining (?.) and fallback safeguards.',
-        fixSummaryTe: 'ఆప్షనల్ చైనింగ్ (?.) ఉపయోగించి క్రాష్ అవ్వకుండా చేశాం.'
-      };
-    }
-  }
-
-  // GENERIC FALLBACK DIAGNOSIS
   return {
     errorType: 'Runtime Execution Error',
     severity: 'MEDIUM',
-    detectedLine: errorInfo.line || 1,
-    explanationEn: 'The program encountered an exception during execution. Check logic constraints and syntax.',
-    explanationTe: 'ఎగ్జిక్యూషన్ సమయంలో లోపం తలెత్తింది. లాజిక్ మరియు సింటాక్స్‌ని సరిచూసుకోండి.',
-    fixSummaryEn: 'Applied automated defensive coding patterns and error boundaries.',
-    fixSummaryTe: 'రక్షణ కోడింగ్ పద్ధతులతో లోపాన్ని నివారించాం.'
+    detectedLine: errorInfo.line,
+    explanationEn: 'The program encountered an exception during execution. Check logic constraints, runtime inputs, and boundary conditions.',
+    explanationTe: 'ఎగ్జిక్యూషన్ సమయంలో లోపం తలెత్తింది. లాజిక్ మరియు ఇన్పుట్ బౌండరీలను ఒకసారి సరిచూసుకోండి.',
+    fixSummaryEn: 'Inspect the highlighted line and check data constraints.',
+    fixSummaryTe: 'హైలైట్ చేసిన లైన్ మరియు డేటా సరిగ్గా ఉన్నాయో లేదో గమనించండి.'
   };
 }
 
 // ---------------------------------------------------------------------------
-// 3. Automated Code Repair Generator
+// 3. Automated Code Repair Generator (Defensive fallback)
 // ---------------------------------------------------------------------------
 function generateFixedCode(code, lang, errorInfo, diagnosis) {
-  const lines = code.split('\n');
-  const targetLineIdx = errorInfo.line ? errorInfo.line - 1 : 0;
+  if (diagnosis.isHealthy) return code;
 
-  // Python Fixes
-  if (lang.includes('python') || lang === 'py') {
-    // Missing colon fix
-    if (diagnosis.errorType === 'Syntax Error' && lines[targetLineIdx]) {
-      const lineText = lines[targetLineIdx];
-      if (/^\s*(if|elif|else|for|while|def|class|try|except|finally)\b/.test(lineText) && !lineText.trim().endsWith(':')) {
-        lines[targetLineIdx] = lineText + ':';
-        return lines.join('\n');
-      }
-    }
-    // ZeroDivision fix
-    if (diagnosis.errorType === 'Zero Division Error') {
-      return code.replace(/(\w+)\s*\/\s*(\w+)/g, (match, a, b) => {
-        return `(${a} / ${b} if ${b} != 0 else 0)`;
-      });
-    }
-    // EOF input fix
-    if (diagnosis.errorType === 'Input EOF Error') {
-      return code.replace(/input\((.*?)\)/g, 'input($1) if False else "0"');
-    }
-    // Indentation fix
-    if (diagnosis.errorType === 'Indentation Error') {
-      let currentIndent = 0;
-      return lines.map(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return '';
-        if (trimmed.startsWith('def ') || trimmed.startsWith('class ')) {
-          currentIndent = 0;
-          const res = ' '.repeat(currentIndent) + trimmed;
-          currentIndent += 4;
-          return res;
-        }
-        if (trimmed.startsWith('return ') || trimmed.startsWith('pass')) {
-          const res = ' '.repeat(Math.max(4, currentIndent)) + trimmed;
-          currentIndent = Math.max(0, currentIndent - 4);
-          return res;
-        }
-        return '    ' + trimmed;
-      }).join('\n');
+  // Sanitize rogue semicolons on preprocessor lines
+  if (lang.includes('c') || lang.includes('cpp')) {
+    if (/^[ \t]*#(?:include|define|pragma|ifdef|ifndef|endif)\b.*?;+[ \t]*$/m.test(code)) {
+      return code.replace(/^([ \t]*#(?:include|define|pragma|ifdef|ifndef|endif)[^;\n]*);+([ \t]*)$/gm, '$1$2');
     }
   }
 
-  // C / C++ Semicolon Fix
+  // Java: public class mismatch fix
+  if (lang.includes('java')) {
+    if (diagnosis.errorType === 'Class Declaration Conflict' || /is public, should be declared in a file named/i.test(diagnosis.explanationEn || '')) {
+      return code.replace(/\bpublic\s+class\s+(\w+)/g, 'class $1');
+    }
+  }
+
+  // C / C++ Missing Semicolon Fix
   if ((lang.includes('c') || lang === 'cpp') && diagnosis.errorType === 'Missing Semicolon') {
-    if (lines[targetLineIdx] && !lines[targetLineIdx].trim().endsWith(';')) {
-      lines[targetLineIdx] = lines[targetLineIdx] + ';';
-      return lines.join('\n');
-    }
-  }
+    if (errorInfo.line) {
+      const lines = code.split('\n');
+      const idx = errorInfo.line - 1;
+      if (idx >= 0 && idx < lines.length) {
+        const raw = lines[idx];
+        const trimmed = raw.trim();
 
-  // Generic fallback auto-correction
-  if (lines[targetLineIdx]) {
-    const raw = lines[targetLineIdx];
-    // Check missing semicolon in C/C++/Java/JS
-    if ((lang === 'javascript' || lang === 'cpp' || lang === 'c' || lang === 'java') && !raw.trim().endsWith(';') && !raw.trim().endsWith('{') && !raw.trim().endsWith('}')) {
-      lines[targetLineIdx] = raw + ';';
-      return lines.join('\n');
+        const isPreprocessor = trimmed.startsWith('#');
+        const isComment = trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
+        const isTerminated = /[;{}:]$/.test(trimmed);
+        const isControl = /^(if|for|while|switch|else|catch|case|default|class|struct|namespace)\b/.test(trimmed);
+        const isFunctionSig = /\)\s*$/.test(trimmed) && /^(int|void|bool|double|float|char|long|auto|std::)\b/.test(trimmed);
+
+        if (!isPreprocessor && !isComment && !isTerminated && !isControl && !isFunctionSig) {
+          lines[idx] = raw + ';';
+          return lines.join('\n');
+        }
+      }
     }
   }
 

@@ -235,6 +235,13 @@ export default function CommandPaletteModal({
       action: () => { onSelectLanguage?.('sql'); }
     },
     {
+      id: 'lang-jdbc',
+      title: 'Switch Language to Java (JDBC Database)',
+      category: 'Language Switcher',
+      icon: <Code2 size={16} className="text-orange" />,
+      action: () => { onSelectLanguage?.('jdbc'); }
+    },
+    {
       id: 'lang-html',
       title: 'Switch Language to HTML / Web Sandbox',
       category: 'Language Switcher',

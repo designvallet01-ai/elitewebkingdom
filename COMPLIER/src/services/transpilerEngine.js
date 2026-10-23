@@ -10,6 +10,7 @@ export const SUPPORTED_TRANSPILER_LANGUAGES = [
   { id: 'cpp', name: 'C++ (GCC 14)', icon: '⚙️', ext: 'cpp' },
   { id: 'c', name: 'C (GCC 14)', icon: '🔧', ext: 'c' },
   { id: 'java', name: 'Java (OpenJDK 17)', icon: '☕', ext: 'java' },
+  { id: 'jdbc', name: 'Java (JDBC Database)', icon: '☕🗄️', ext: 'java' },
   { id: 'javascript', name: 'JavaScript (Node.js)', icon: '⚡', ext: 'js' },
   { id: 'typescript', name: 'TypeScript', icon: '🔷', ext: 'ts' },
   { id: 'go', name: 'Go (Golang)', icon: '🐹', ext: 'go' },

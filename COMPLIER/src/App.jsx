@@ -48,7 +48,10 @@ import {
 import { detectLanguage } from './services/languageDetector';
 import { transpileCode } from './services/transpilerEngine';
 import { ALL_LANGUAGES, STARTER_TEMPLATES, EXTENSION_MAP, getLanguageById } from './services/languagesRegistry';
-import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages } from 'lucide-react';
+import { evaluateMatlabLocally } from './services/clientMatlabRunner';
+import { evaluateJdbcLocally } from './services/clientJdbcRunner';
+import VisualGuiPlotViewer from './components/VisualGuiPlotViewer';
+import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages, Monitor } from 'lucide-react';
 
 const STORAGE_FILES_KEY = 'elite_ide_workspace_files_v2';
 const STORAGE_ACTIVE_KEY = 'elite_ide_active_file_id_v2';
@@ -395,7 +398,7 @@ export default function App() {
 
         if (decodedCode) {
           const lang = sharedLang || detectLanguage(decodedCode).language || 'python';
-          const extMap = { python: 'py', cpp: 'cpp', c: 'c', java: 'java', javascript: 'js', rust: 'rs', go: 'go', sql: 'sql', html: 'html' };
+          const extMap = { python: 'py', cpp: 'cpp', c: 'c', java: 'java', jdbc: 'java', javascript: 'js', rust: 'rs', go: 'go', sql: 'sql', html: 'html' };
           const ext = extMap[lang] || 'txt';
           const fileName = sharedName || `shared_${Math.random().toString(36).substring(4, 8)}.${ext}`;
           const newFileId = 'file-shared-' + Date.now();
@@ -805,6 +808,7 @@ export default function App() {
     setIsRunning(true);
     setRightPaneView('console');
     setLastStats(null);
+    const runStartTime = performance.now();
     const shellCmd = getShellExecutionCommand(lang, activeFile?.name);
     if (!inlineContext) {
       setTerminalEntries([
@@ -815,14 +819,64 @@ export default function App() {
     try {
       // 1. If HTML / Web sandbox, switch to preview
       if (lang === 'html') {
+        const renderTime = Math.max(1, Math.round(performance.now() - runStartTime));
         setRightPaneView('preview');
         setTerminalEntries([
           { type: 'cmd', text: 'vite preview --port 5173' },
           { type: 'system', text: '[Web Preview]: Rendering HTML, CSS & JavaScript in live DOM canvas...\n' }
         ]);
-        setLastStats({ code: 0, executionTime: 5, status: 'SUCCESS', runner: 'Browser DOM Sandbox' });
+        setLastStats({ code: 0, executionTime: renderTime, status: 'SUCCESS', runner: 'Browser DOM Sandbox' });
         setIsRunning(false);
         return;
+      }
+
+      // Auto-detect GUI Window or Plot Code (MATLAB / JavaFX / Swing / Tkinter)
+      const lowerCode = (codeToRun || '').toLowerCase();
+      const hasGuiOrPlot = 
+        lowerCode.includes('plot(') || 
+        lowerCode.includes('bar(') || 
+        lowerCode.includes('scatter(') || 
+        lowerCode.includes('stem(') || 
+        lowerCode.includes('javafx') || 
+        lowerCode.includes('swing') || 
+        lowerCode.includes('jframe') || 
+        lowerCode.includes('tkinter');
+
+      if (hasGuiOrPlot) {
+        setRightPaneView('gui');
+        if (isMobile) {
+          setMobileActiveTab('gui');
+        }
+      }
+
+      // 1.8 Client-side Java JDBC & Relational Database Virtual Engine
+      const isJdbcCode = lang === 'jdbc' || (lang.startsWith('java') && (
+        codeToRun.includes('java.sql') || 
+        codeToRun.includes('DriverManager') || 
+        codeToRun.includes('PreparedStatement') || 
+        codeToRun.includes('ResultSet') || 
+        /class\s+Jdbc/i.test(codeToRun)
+      ));
+      if (isJdbcCode) {
+        try {
+          const jdbcResult = evaluateJdbcLocally(codeToRun, customStdin);
+          setTerminalEntries([
+            { type: 'cmd', text: `javac Main.java && java -cp .:sqlite-jdbc.jar Main` },
+            ...(jdbcResult.stdout ? [{ type: 'stdout', text: jdbcResult.stdout }] : []),
+            ...(jdbcResult.stderr ? [{ type: 'stderr', text: jdbcResult.stderr }] : []),
+            {
+              type: 'process-exit',
+              exitCode: jdbcResult.code || 0,
+              time: jdbcResult.executionTime || 2,
+              runner: jdbcResult.runner || 'Elite JDBC In-Memory Engine (JDK 17 + JDBC 4.3)'
+            }
+          ]);
+          setLastStats(jdbcResult);
+          setIsRunning(false);
+          return;
+        } catch (jdbcErr) {
+          console.warn('Local JDBC runner fallback to Cloud:', jdbcErr);
+        }
       }
 
       // 2. Client-side Node.js / JavaScript Virtual Engine (Strategy 1)
@@ -849,6 +903,7 @@ export default function App() {
       }
 
       let data;
+      const cloudStartTime = performance.now();
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s safe timeout for cloud compilation
@@ -861,10 +916,23 @@ export default function App() {
         });
         clearTimeout(timeoutId);
 
+        const cloudElapsed = Math.max(1, Math.round(performance.now() - cloudStartTime));
         if (!response.ok) {
           throw new Error(`Server status ${response.status}`);
         }
         data = await response.json();
+
+        // If backend does not provide executionTime, record real measured cloud roundtrip
+        if (data && (!data.executionTime || data.executionTime <= 0)) {
+          data.executionTime = cloudElapsed;
+        }
+
+        // If MATLAB cloud returned timeout or empty, activate instant local engine
+        if (data && (lang === 'matlab' || lang === 'octave' || lang === 'm')) {
+          if (!data.stdout && data.stderr && (data.stderr.includes('longer than expected') || data.status === 'TIMEOUT')) {
+            data = evaluateMatlabLocally(codeToRun, customStdin);
+          }
+        }
 
         // If server cluster returned load notice, immediately trigger direct client execution
         if (data?.runner === 'Elite Cloud Queue' || data?.stderr?.includes('Server cluster')) {
@@ -872,52 +940,64 @@ export default function App() {
         }
       } catch (apiErr) {
         console.warn('Activating direct high-speed engine:', apiErr.message);
-        const WANDBOX_MAP = {
-          python: 'cpython-3.12.7',
-          py: 'cpython-3.12.7',
-          cpp: 'gcc-13.2.0',
-          c: 'gcc-13.2.0-c',
-          java: 'openjdk-jdk-22+36',
-          javascript: 'nodejs-20.17.0',
-          js: 'nodejs-20.17.0',
-          rust: 'rust-1.82.0',
-          go: 'go-1.23.2'
-        };
-        const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.7';
-        try {
-          let src = codeToRun;
-          if (lang.startsWith('java') && !src.includes('class ')) {
-            src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
-          }
-          const directRes = await fetch('https://wandbox.org/api/compile.json', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ compiler: wbCompiler, code: src, stdin: customStdin || '' })
-          });
-          if (directRes.ok) {
-            const wbData = await directRes.json();
-            const statusCode = parseInt(wbData.status || '0', 10);
-            const isSuccess = statusCode === 0;
-            data = {
-              stdout: wbData.program_output || wbData.program_message || '',
-              stderr: wbData.compiler_error || wbData.compiler_message || wbData.program_error || '',
-              code: statusCode,
-              executionTime: 25,
-              status: isSuccess ? 'SUCCESS' : 'RUNTIME_ERROR',
-              runner: `Elite Direct Engine (${wbCompiler})`
-            };
-          } else {
-            throw new Error(`Wandbox status ${directRes.status}`);
-          }
-        } catch (wbErr) {
-          data = {
-            stdout: '',
-            stderr: `Execution gateway notice: ${apiErr.message || 'Server load limit'}. Direct fallback active.\n`,
-            code: 1,
-            executionTime: 0,
-            status: 'RUNTIME_ERROR',
-            runner: 'Elite Fallback Guard'
+
+        // Instant failover for MATLAB - NEVER route to Wandbox Python!
+        if (lang === 'matlab' || lang === 'octave' || lang === 'm') {
+          data = evaluateMatlabLocally(codeToRun, customStdin);
+        } else {
+          const WANDBOX_MAP = {
+            python: 'cpython-3.12.7',
+            py: 'cpython-3.12.7',
+            cpp: 'gcc-13.2.0',
+            c: 'gcc-13.2.0-c',
+            java: 'openjdk-jdk-22+36',
+            javascript: 'nodejs-20.17.0',
+            js: 'nodejs-20.17.0',
+            rust: 'rust-1.82.0',
+            go: 'go-1.23.2'
           };
+          const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.7';
+          const wbStartTime = performance.now();
+          try {
+            let src = codeToRun;
+            if (lang.startsWith('java')) {
+              src = src.replace(/\bpublic\s+class\s+([A-Za-z0-9_]+)/g, 'class $1');
+              if (!src.includes('class ')) {
+                src = `class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+              }
+            }
+            const directRes = await fetch('https://wandbox.org/api/compile.json', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ compiler: wbCompiler, code: src, stdin: customStdin || '' })
+            });
+            const realWbDuration = Math.max(1, Math.round(performance.now() - wbStartTime));
+            if (directRes.ok) {
+              const wbData = await directRes.json();
+              const statusCode = parseInt(wbData.status || '0', 10);
+              const isSuccess = statusCode === 0;
+              data = {
+                stdout: wbData.program_output || wbData.program_message || '',
+                stderr: wbData.compiler_error || wbData.compiler_message || wbData.program_error || '',
+                code: statusCode,
+                executionTime: realWbDuration,
+                status: isSuccess ? 'SUCCESS' : 'RUNTIME_ERROR',
+                runner: `Elite Direct Engine (${wbCompiler})`
+              };
+            } else {
+              throw new Error(`Wandbox status ${directRes.status}`);
+            }
+          } catch (wbErr) {
+            const failDuration = Math.max(1, Math.round(performance.now() - wbStartTime));
+            data = {
+              stdout: '',
+              stderr: `Execution gateway notice: ${apiErr.message || 'Server load limit'}. Direct fallback active.\n`,
+              code: 1,
+              executionTime: failDuration,
+              status: 'RUNTIME_ERROR',
+              runner: 'Elite Fallback Guard'
+            };
+          }
         }
       }
 
@@ -960,15 +1040,36 @@ export default function App() {
         entries.push({ type: 'system', text: '[Execution completed with no console output]\n' });
       }
 
+      const realDuration = (data.executionTime && data.executionTime > 0) 
+        ? data.executionTime 
+        : Math.max(1, Math.round(performance.now() - runStartTime));
+      data.executionTime = realDuration;
+
       entries.push({
         type: 'process-exit',
         exitCode: data.code || 0,
-        time: data.executionTime || 0,
+        time: realDuration,
         runner: data.runner || 'Cloud Sandbox'
       });
 
       setTerminalEntries(entries);
       setLastStats(data);
+
+      // Auto-switch to GUI & Plot view if MATLAB plotting or scientific visualization is detected
+      const codeLower = (codeToRun || '').toLowerCase();
+      const hasPlottingCommands = (
+        codeLower.includes('tiledlayout') || 
+        codeLower.includes('nexttile') || 
+        codeLower.includes('plot(') || 
+        codeLower.includes('subplot(') || 
+        codeLower.includes('scatter(') || 
+        codeLower.includes('bar(') || 
+        codeLower.includes('stem(')
+      );
+      if (hasPlottingCommands && (lang === 'matlab' || lang === 'octave' || codeLower.includes('matplotlib'))) {
+        setRightPaneView('gui');
+        if (isMobile) setMobileActiveTab('gui');
+      }
     } catch (err) {
       // In-browser JavaScript execution fallback if offline
       if (lang === 'javascript') {
@@ -1137,6 +1238,15 @@ export default function App() {
       }
       throw new Error(`Server returned ${response.status}`);
     } catch (apiErr) {
+      // Instant in-browser Java JDBC evaluation
+      if (lang === 'jdbc' || (lang.startsWith('java') && (codeToRun.includes('java.sql') || codeToRun.includes('DriverManager')))) {
+        try {
+          return evaluateJdbcLocally(codeToRun, stdinInput);
+        } catch (jdbcErr) {
+          return { stdout: '', stderr: jdbcErr.message, code: 1, executionTime: 0, status: 'ERROR' };
+        }
+      }
+
       // Instant in-browser JavaScript evaluation
       if (lang === 'javascript' || lang === 'js') {
         try {
@@ -1163,16 +1273,21 @@ export default function App() {
         go: 'go-1.23.2'
       };
       const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.7';
+      const tcStartTime = performance.now();
       try {
         let src = codeToRun;
-        if (lang.startsWith('java') && !src.includes('class ')) {
-          src = `public class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+        if (lang.startsWith('java')) {
+          src = src.replace(/\bpublic\s+class\s+([A-Za-z0-9_]+)/g, 'class $1');
+          if (!src.includes('class ')) {
+            src = `class Main {\n    public static void main(String[] args) {\n${src}\n    }\n}`;
+          }
         }
         const directRes = await fetch('https://wandbox.org/api/compile.json', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ compiler: wbCompiler, code: src, stdin: stdinInput || '' })
         });
+        const realTcDuration = Math.max(1, Math.round(performance.now() - tcStartTime));
         if (directRes.ok) {
           const wbData = await directRes.json();
           const statusCode = parseInt(wbData.status || '0', 10);
@@ -1180,14 +1295,15 @@ export default function App() {
             stdout: wbData.program_output || wbData.program_message || '',
             stderr: wbData.compiler_error || wbData.compiler_message || wbData.program_error || '',
             code: statusCode,
-            executionTime: 20,
+            executionTime: realTcDuration,
             status: statusCode === 0 ? 'SUCCESS' : 'RUNTIME_ERROR'
           };
         }
       } catch (directErr) {
         console.warn('Direct test case runner notice:', directErr);
       }
-      return { stdout: '', stderr: 'Execution notice: server load limit reached. Please retry.', code: 1, executionTime: 0 };
+      const failDuration = Math.max(1, Math.round(performance.now() - tcStartTime));
+      return { stdout: '', stderr: 'Execution notice: server load limit reached. Please retry.', code: 1, executionTime: failDuration };
     }
   }, [activeLanguage, activeFile.code]);
 
@@ -1742,7 +1858,7 @@ export default function App() {
               const currentLang = activeFile ? activeFile.language : manualLanguage;
               const stderrText = terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '');
               const stdoutText = terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n');
-              const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText);
+              const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText, lastStats);
               setAiHealingData(diagnosis);
               setIsAiHealerModalOpen(true);
             }}
@@ -1863,6 +1979,17 @@ export default function App() {
                   <span>Recursion</span>
                 </button>
 
+                <button
+                  className={`view-mode-btn ${rightPaneView === 'gui' ? 'active' : ''}`}
+                  onClick={() => setRightPaneView('gui')}
+                  id="btn-view-gui"
+                  title="Interactive Visual GUI Window, MATLAB Plots & Swing/JavaFX Canvas"
+                >
+                  <Monitor size={14} className="text-violet-400" />
+                  <span>GUI & Plot</span>
+                  <span className="pill-badge" style={{ backgroundColor: '#a855f7' }} />
+                </button>
+
                 {activeLanguage === 'html' && (
                   <button
                     className={`view-mode-btn ${rightPaneView === 'preview' ? 'active' : ''}`}
@@ -1921,7 +2048,7 @@ export default function App() {
                   const currentLang = activeFile ? activeFile.language : manualLanguage;
                   const stderrText = terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '');
                   const stdoutText = terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n');
-                  const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText);
+                  const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText, lastStats);
                   setAiHealingData(diagnosis);
                   setIsAiHealerModalOpen(true);
                 }}
@@ -1973,6 +2100,21 @@ export default function App() {
                 files={files} 
                 activeCode={activeFile.code} 
                 isRunning={isRunning} 
+              />
+            )}
+
+            {rightPaneView === 'gui' && (
+              <VisualGuiPlotViewer
+                code={activeFile ? activeFile.code : ''}
+                language={activeLanguage}
+                isMobile={isMobile}
+                onClose={() => {
+                  if (isMobile) {
+                    setMobileActiveTab('editor');
+                  } else {
+                    setRightPaneView('console');
+                  }
+                }}
               />
             )}
           </div>
@@ -2040,6 +2182,16 @@ export default function App() {
             <span>Memory</span>
           </button>
 
+          <button
+            className={`mobile-tab-btn ${mobileActiveTab === 'gui' ? 'active' : ''}`}
+            onClick={() => { setMobileActiveTab('gui'); setRightPaneView('gui'); }}
+            id="mobile-tab-gui"
+            title="Visual GUI & MATLAB Plot Output"
+          >
+            <Monitor size={16} />
+            <span>GUI/Plot</span>
+          </button>
+
           {activeLanguage === 'html' && (
             <button
               className={`mobile-tab-btn ${mobileActiveTab === 'preview' ? 'active' : ''}`}
@@ -2101,7 +2253,7 @@ export default function App() {
         sourceLanguage={activeLanguage}
         onApplyConvertedCode={(newCode, newLang) => {
           const extMap = {
-            python: 'py', cpp: 'cpp', c: 'c', java: 'java', javascript: 'js',
+            python: 'py', cpp: 'cpp', c: 'c', java: 'java', jdbc: 'java', javascript: 'js',
             typescript: 'ts', rust: 'rs', go: 'go', csharp: 'cs', php: 'php',
             ruby: 'rb', kotlin: 'kt', swift: 'swift', dart: 'dart', sql: 'sql'
           };
@@ -2229,6 +2381,11 @@ export default function App() {
         isOpen={isAiHealerModalOpen}
         onClose={() => setIsAiHealerModalOpen(false)}
         healingData={aiHealingData}
+        code={activeFile ? activeFile.code : ''}
+        language={activeFile ? activeFile.language : manualLanguage}
+        stderr={terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '')}
+        stdout={terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n')}
+        lastStats={lastStats}
         onApplyFix={(fixedCode) => {
           if (!fixedCode || !activeFile) return;
           handleCodeChange(fixedCode);
@@ -2288,7 +2445,7 @@ export default function App() {
             const currentLang = activeFile ? activeFile.language : manualLanguage;
             const stderrText = terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '');
             const stdoutText = terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n');
-            const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText);
+            const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText, lastStats);
             setAiHealingData(diagnosis);
             setIsAiHealerModalOpen(true);
           }}

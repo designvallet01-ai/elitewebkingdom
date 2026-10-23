@@ -603,6 +603,17 @@ export default function handler(req, res) {
     "runner": "Elite In-Browser Engine (0ms sandbox)"
   },
   {
+    "id": "jdbc",
+    "name": "Java (JDBC Database)",
+    "version": "JDK 17 + JDBC 4.3",
+    "extension": "java",
+    "category": "jvm",
+    "isExtra": false,
+    "isClient": true,
+    "judge0Id": 91,
+    "runner": "Elite JDBC Virtual Engine (0ms sandbox)"
+  },
+  {
     "id": "javafx",
     "name": "JavaFX (JDK 17 + OpenJFX 22)",
     "version": "22.0.2",
