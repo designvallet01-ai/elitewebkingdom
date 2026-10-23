@@ -5,16 +5,17 @@ import {
   BookOpen, 
   Plus, 
   ArrowRight, 
-  ArrowLeft,
+  ArrowLeft, 
   Copy, 
   Check, 
   Clock, 
   HardDrive, 
-  Zap,
-  Tag,
-  Code2,
-  ListFilter,
-  FileCode2
+  Zap, 
+  Code2, 
+  ListFilter, 
+  FileCode2,
+  ChevronRight,
+  ArrowUpRight
 } from 'lucide-react';
 import { ALGORITHMS, ALGORITHM_CATEGORIES } from '../data/algorithmsLibrary';
 
@@ -60,6 +61,10 @@ export default function AlgorithmModal({
     selectedAlgo?.code?.matlab ||
     '';
 
+  const codeLines = useMemo(() => {
+    return currentSnippet ? currentSnippet.split('\n') : [];
+  }, [currentSnippet]);
+
   const handleCopy = () => {
     if (!currentSnippet) return;
     navigator.clipboard.writeText(currentSnippet);
@@ -89,35 +94,56 @@ export default function AlgorithmModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
-      <div className="algorithm-modal-card" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop algo-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div className={`algorithm-modal-card mobile-active-${mobileTab}`} onClick={e => e.stopPropagation()}>
         {/* Modal Header */}
-        <div className="algo-modal-header">
-          <div className="algo-modal-title">
-            <BookOpen size={20} className="algo-brand-icon" />
-            <div>
-              <h3>Algorithm & Data Structure Library</h3>
-              <p className="algo-modal-subtitle">
-                Curated, ready-to-run implementations across Python, C++, Java, JavaScript & MATLAB
-              </p>
+        <div className={`algo-modal-header ${mobileTab === 'preview' ? 'mobile-preview-header' : ''}`}>
+          <div className="algo-header-left">
+            {/* Mobile Back Button visible only when in preview tab */}
+            <button 
+              type="button" 
+              className="algo-mobile-back-header-btn"
+              onClick={() => setMobileTab('list')}
+              aria-label="Back to Algorithm list"
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+
+            <div className="algo-modal-title">
+              <BookOpen size={20} className="algo-brand-icon" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3>{mobileTab === 'preview' ? (selectedAlgo?.title || 'Code Preview') : 'Algorithm Library'}</h3>
+                  <span className="algo-count-badge">
+                    {mobileTab === 'preview' ? selectedAlgo?.difficulty : `${filteredAlgorithms.length} Templates`}
+                  </span>
+                </div>
+                <p className="algo-modal-subtitle">
+                  {mobileTab === 'preview' 
+                    ? `Time: ${selectedAlgo?.timeComplexity || 'O(N)'} • Space: ${selectedAlgo?.spaceComplexity || 'O(1)'}`
+                    : 'Curated, ready-to-run DSA implementations across Python, C++, Java, JS & MATLAB'}
+                </p>
+              </div>
             </div>
           </div>
+
           <button className="algo-close-btn" onClick={onClose} title="Close Library (Esc)" aria-label="Close Modal">
             <X size={18} />
           </button>
         </div>
 
-        {/* Modal Search & Filter Bar */}
-        <div className="algo-filter-bar">
+        {/* Search & Filter Bar (Only visible on mobile when mobileTab === 'list', always on desktop) */}
+        <div className={`algo-filter-bar ${mobileTab === 'preview' ? 'mobile-hide-filter' : ''}`}>
           <div className="algo-search-input-wrap">
             <Search size={16} className="search-icon" />
             <input
               type="text"
               className="algo-search-input"
-              placeholder="Search algorithms, data structures, linear algebra..."
+              placeholder="Search algorithms, data structures, trees, graphs, sorting..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              autoFocus
+              autoFocus={mobileTab === 'list'}
             />
             {searchQuery && (
               <button className="clear-search-btn" onClick={() => setSearchQuery('')} aria-label="Clear Search">
@@ -140,7 +166,7 @@ export default function AlgorithmModal({
           </div>
         </div>
 
-        {/* Mobile View Switcher (Visible only on screens <= 768px) */}
+        {/* Mobile View Switcher Tab (Mobile Only) */}
         <div className="algo-mobile-view-tabs" role="tablist">
           <button 
             type="button"
@@ -150,7 +176,7 @@ export default function AlgorithmModal({
             onClick={() => setMobileTab('list')}
           >
             <ListFilter size={14} />
-            <span>Algorithms ({filteredAlgorithms.length})</span>
+            <span>Browse Algorithms ({filteredAlgorithms.length})</span>
           </button>
           <button 
             type="button"
@@ -164,7 +190,7 @@ export default function AlgorithmModal({
           </button>
         </div>
 
-        {/* Main Body: Master-Detail on Desktop, Segmented/Tabbed on Mobile */}
+        {/* Main Body */}
         <div className={`algo-modal-body mobile-view-${mobileTab}`}>
           {/* Left Column: Algorithm List */}
           <div className={`algo-list-column ${mobileTab === 'list' ? 'mobile-visible' : 'mobile-hidden'}`}>
@@ -187,16 +213,31 @@ export default function AlgorithmModal({
                     className={`algo-item-card ${isSelected ? 'selected' : ''}`}
                     onClick={() => {
                       setSelectedAlgoId(item.id);
-                      setMobileTab('preview'); // Auto-switch to preview on mobile tap
+                      setMobileTab('preview');
                     }}
                   >
                     <div className="algo-item-top">
                       <span className="algo-item-name">{item.title}</span>
-                      <span className={`difficulty-badge ${item.difficulty.toLowerCase()}`}>
-                        {item.difficulty}
+                      <div className="flex items-center gap-1">
+                        <span className={`difficulty-badge ${item.difficulty.toLowerCase()}`}>
+                          {item.difficulty}
+                        </span>
+                        <ChevronRight size={14} className="algo-arrow-icon" />
+                      </div>
+                    </div>
+                    
+                    <p className="algo-item-desc">{item.description}</p>
+                    
+                    {/* Complexity Strip right on card */}
+                    <div className="algo-card-complexity-strip">
+                      <span className="complexity-badge-mini">
+                        <Clock size={11} /> {item.timeComplexity}
+                      </span>
+                      <span className="complexity-badge-mini">
+                        <HardDrive size={11} /> {item.spaceComplexity}
                       </span>
                     </div>
-                    <p className="algo-item-desc">{item.description}</p>
+
                     <div className="algo-item-tags">
                       {item.tags.slice(0, 3).map(tag => (
                         <span key={tag} className="algo-tag">#{tag}</span>
@@ -211,21 +252,6 @@ export default function AlgorithmModal({
           {/* Right Column: Detail & Code Preview */}
           {selectedAlgo && (
             <div className={`algo-detail-column ${mobileTab === 'preview' ? 'mobile-visible' : 'mobile-hidden'}`}>
-              {/* Mobile Back Button Strip */}
-              <div className="algo-mobile-back-strip">
-                <button 
-                  type="button" 
-                  className="algo-mobile-back-btn" 
-                  onClick={() => setMobileTab('list')}
-                >
-                  <ArrowLeft size={14} />
-                  <span>← Back to Algorithm List</span>
-                </button>
-                <span className={`difficulty-badge ${selectedAlgo.difficulty.toLowerCase()}`}>
-                  {selectedAlgo.difficulty}
-                </span>
-              </div>
-
               <div className="algo-detail-header">
                 <div className="algo-detail-meta">
                   <h4 className="algo-detail-title">{selectedAlgo.title}</h4>
@@ -258,27 +284,44 @@ export default function AlgorithmModal({
                 </div>
               </div>
 
-              {/* Code Snippet Box */}
+              {/* Code Snippet Box with Line Numbers */}
               <div className="algo-code-preview-wrap">
-                <pre className="algo-code-preview">
-                  <code>{currentSnippet}</code>
-                </pre>
+                <div className="algo-code-header-bar">
+                  <span className="algo-code-lang-label">
+                    <Code2 size={13} />
+                    <span>{previewLanguage.toUpperCase()} IMPLEMENTATION</span>
+                  </span>
+                  <button className="algo-copy-icon-btn" onClick={handleCopy} title="Copy Code">
+                    {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                    <span>{copied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+                
+                <div className="algo-code-lines-container">
+                  {codeLines.map((line, idx) => (
+                    <div key={idx} className="algo-code-row">
+                      <span className="algo-line-number">{idx + 1}</span>
+                      <span className="algo-line-text">{line || ' '}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Footer Actions */}
               <div className="algo-detail-footer">
                 <button className="algo-copy-btn" onClick={handleCopy} title="Copy Code Snippet">
-                  {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
-                  <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+                  {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                  <span>{copied ? 'Copied to Clipboard!' : 'Copy Code'}</span>
                 </button>
 
                 <div className="algo-cta-group">
-                  <button className="algo-load-btn secondary" onClick={handleLoadCurrent} title="Replace editor buffer with this algorithm">
-                    <span>Replace Current File</span>
+                  <button className="algo-load-btn secondary" onClick={handleLoadCurrent} title="Replace editor with this algorithm">
+                    <ArrowUpRight size={14} />
+                    <span>Load to File</span>
                   </button>
                   <button className="algo-load-btn primary" onClick={handleOpenNewTab} title="Create new tab with this algorithm">
                     <Plus size={14} />
-                    <span>Open in New Tab</span>
+                    <span>Open New Tab</span>
                   </button>
                 </div>
               </div>
