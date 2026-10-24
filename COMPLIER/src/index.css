@@ -4122,6 +4122,7 @@ html, body, #root {
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin-bottom: 0.5rem;
@@ -4597,60 +4598,153 @@ html, body, #root {
     }
   }
 
-  .nav-lang-unified-hub,
-  .auto-lang-selector-wrapper {
-    min-width: 0;
-    flex-shrink: 1;
-    padding: 2px 6px;
-    gap: 0.25rem;
-    max-width: 140px;
-  }
-
-  .nav-lang-select,
-  .lang-select-dropdown {
-    font-size: 0.72rem;
-    max-width: 85px;
-    text-overflow: ellipsis;
-  }
-
-  .nav-lang-badge,
-  .nav-matrix-btn,
-  .nav-divider,
-  .extension-badge {
-    display: none !important;
-  }
-
-  .nav-center {
-    position: static;
-    transform: none;
-    flex-shrink: 0;
-  }
-
-  .run-button {
-    padding: 6px 14px;
-    font-size: 0.84rem;
-    gap: 0.35rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(16, 185, 129, 0.45);
-  }
-
-  .nav-right {
-    gap: 0.35rem;
-    flex-shrink: 0;
+  /* Mobile Action Group */
+  .mobile-navbar-actions {
     display: flex;
     align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
+  /* 1. Mobile Run Button */
+  .mobile-nav-run-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s ease, filter 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .mobile-nav-run-btn:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  .mobile-nav-run-btn.running {
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+  }
+
+  /* 2. Mobile Clean Language Pill */
+  .mobile-nav-lang-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 32px;
+    padding: 0 8px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    flex-shrink: 0;
+    max-width: 95px;
+  }
+
+  .mobile-nav-lang-icon {
+    font-size: 0.85rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .mobile-nav-lang-label {
+    font-size: 0.76rem;
+    font-weight: 600;
+    font-family: var(--font-mono, monospace);
+    color: #38bdf8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+  }
+
+  .mobile-nav-lang-chevron {
+    color: #94a3b8;
+    flex-shrink: 0;
+    margin-left: -2px;
+  }
+
+  /* Hidden native select sitting invisibly right on top of the pill */
+  .mobile-nav-lang-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* 3. Mobile Developer Profile Button */
+  .mobile-nav-profile-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #38bdf8;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-nav-profile-btn.is-registered {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.4));
+    border: 1.5px solid #10b981;
+    color: #34d399;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+  }
+
+  .mobile-nav-profile-initial {
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .mobile-nav-profile-dot {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 7px;
+    height: 7px;
+    background: #10b981;
+    border-radius: 50%;
+    border: 1.5px solid #070a12;
+  }
+
+  /* 4. Mobile More Menu Trigger */
   .mobile-more-trigger {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 6px;
+    border-radius: 50%;
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-secondary);
     border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    transition: all 0.2s ease;
   }
 
   .mobile-more-trigger:active {
@@ -5318,6 +5412,7 @@ html, body, #root {
     color: #94a3b8 !important;
     margin: 4px 0 6px !important;
     -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
   }
 
   .algo-card-complexity-strip {
@@ -7527,6 +7622,7 @@ html, body, #root {
   letter-spacing: 0.04em;
   background: linear-gradient(135deg, #f87171, #fbbf24);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

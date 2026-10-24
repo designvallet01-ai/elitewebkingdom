@@ -11,7 +11,12 @@
   "theme_color": "#0f172a",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["developer", "education", "productivity", "utilities"],
+  "categories": [
+    "developer",
+    "education",
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/compiler/favicon.png",
@@ -49,19 +54,34 @@
       "name": "Open Python Compiler",
       "short_name": "Python",
       "url": "/compiler/?lang=python",
-      "icons": [{ "src": "/compiler/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/compiler/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Open C++ Compiler",
       "short_name": "C++",
       "url": "/compiler/?lang=cpp",
-      "icons": [{ "src": "/compiler/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/compiler/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Open Java Compiler",
       "short_name": "Java",
       "url": "/compiler/?lang=java",
-      "icons": [{ "src": "/compiler/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/compiler/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

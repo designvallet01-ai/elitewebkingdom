@@ -92,7 +92,7 @@ export async function saveUserProfile({ name, mobile, email }) {
   // 2. Persist to Supabase Database
   if (supabase) {
     try {
-      // Upsert into dedicated compiler_user_profiles table
+      // 2a. Primary save: Dedicated compiler_user_profiles table (if created)
       supabase
         .from('compiler_user_profiles')
         .upsert([{
@@ -107,38 +107,69 @@ export async function saveUserProfile({ name, mobile, email }) {
           last_active: nowIso
         }], { onConflict: 'user_id' })
         .then(({ error }) => {
-          if (error) console.warn('[Telemetry] Profiles upsert notice:', error.message);
+          if (error) console.warn('[Telemetry] compiler_user_profiles upsert notice:', error.message);
         })
         .catch(() => {});
 
-      // Update current active session with developer name and contacts
+      // 2b. Guaranteed permanent persistence: Save into leads table with all mandatory constraints
+      if (cleanMobile || cleanEmail) {
+        const leadId = Date.now().toString();
+        // Check if lead already exists for this contact to update or insert
+        supabase
+          .from('leads')
+          .select('id')
+          .or(`phone.eq.${cleanMobile},email.eq.${cleanEmail}`)
+          .limit(1)
+          .then(async ({ data: existingLead }) => {
+            if (existingLead && existingLead.length > 0) {
+              await supabase
+                .from('leads')
+                .update({
+                  name: cleanName || 'Developer',
+                  email: cleanEmail || 'developer@elitewebkingdom.in',
+                  phone: cleanMobile || 'N/A',
+                  company: 'Elite IDE Developer',
+                  category: 'Compiler Developer Profile',
+                  budget: '₹0',
+                  timeline: 'Active User',
+                  message: `Developer Profile [ID: ${userId}] registered from Elite IDE. Device: ${device} • ${os} • IP: ${ip}`,
+                  status: 'new'
+                })
+                .eq('id', existingLead[0].id);
+            } else {
+              await supabase
+                .from('leads')
+                .insert([{
+                  id: leadId,
+                  name: cleanName || 'Developer',
+                  email: cleanEmail || 'developer@elitewebkingdom.in',
+                  phone: cleanMobile || 'N/A',
+                  company: 'Elite IDE Developer',
+                  category: 'Compiler Developer Profile',
+                  budget: '₹0',
+                  timeline: 'Active User',
+                  message: `Developer Profile [ID: ${userId}] registered from Elite IDE. Device: ${device} • ${os} • IP: ${ip}`,
+                  status: 'new',
+                  created_at: nowIso
+                }]);
+            }
+          })
+          .catch(err => {
+            console.warn('[Telemetry] Leads table profile sync notice:', err);
+          });
+      }
+
+      // 2c. Update active session with developer name and phone in college_name
       if (currentSessionId) {
         supabase
           .from('compiler_active_sessions')
           .update({
             user_name: cleanName || undefined,
-            user_mobile: cleanMobile,
-            user_email: cleanEmail
+            college_name: cleanMobile ? `${activeCollegeName} • 📱 ${cleanMobile}` : activeCollegeName
           })
           .eq('session_id', currentSessionId)
           .then(() => {})
           .catch(() => {});
-      }
-
-      // 3. Resilient fallback sync into leads table (guaranteed to be captured in Admin even without schema changes)
-      if (cleanMobile || cleanEmail) {
-        supabase.from('leads').insert([{
-          name: cleanName || 'Developer',
-          email: cleanEmail || 'developer@elitewebkingdom.in',
-          phone: cleanMobile || 'N/A',
-          company: 'Elite IDE Developer',
-          category: 'Compiler Developer Profile',
-          budget: '₹0',
-          timeline: 'Active User',
-          message: `Developer Profile [ID: ${userId}] registered from Elite IDE. Device: ${device} • ${os} • IP: ${ip}`,
-          status: 'new',
-          created_at: nowIso
-        }]).then(() => {}).catch(() => {});
       }
     } catch (err) {
       console.warn('[Telemetry] Save profile notice:', err);
@@ -293,6 +324,15 @@ export async function initCompilerTelemetry(initialLang = 'python', collegeDetai
     if (collegeDetails.studentName) {
       userName = collegeDetails.studentName;
     }
+  }
+
+  // Auto-sync stored user profile to Supabase to guarantee permanent admin reflection
+  if (profile && (profile.mobile || profile.email)) {
+    saveUserProfile({
+      name: profile.name || userName,
+      mobile: profile.mobile,
+      email: profile.email
+    }).catch(() => {});
   }
 
   const device = detectDevice();

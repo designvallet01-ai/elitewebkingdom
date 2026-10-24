@@ -253,6 +253,33 @@ export default function Navbar({
     setIsMobileMenuOpen(false);
   };
 
+  // Calculate clean mobile language display icon & short name
+  const getMobileLangDisplay = () => {
+    if (selectedLanguage === 'auto') {
+      if (detectedLangInfo?.detected) {
+        const raw = (detectedLangInfo.name || '').split('(')[0].trim();
+        const shortName = raw.split(' ')[0];
+        return {
+          icon: detectedLangInfo.icon || '⚡',
+          label: shortName || 'Auto'
+        };
+      }
+      return { icon: '⚡', label: 'Auto' };
+    }
+    const matched = ALL_LANGUAGES.find(l => l.id === selectedLanguage);
+    if (matched) {
+      const raw = (matched.name || '').split('(')[0].trim();
+      const shortName = raw.split(' ')[0];
+      return {
+        icon: matched.icon || '⚡',
+        label: shortName || matched.id
+      };
+    }
+    return { icon: '⚡', label: selectedLanguage };
+  };
+
+  const mobileLang = getMobileLangDisplay();
+
   return (
     <>
       <header className="ide-navbar">
@@ -572,26 +599,26 @@ export default function Navbar({
           )}
         </div>
 
-        <div className="nav-center">
-          {/* Run Code Button */}
-          <button
-            className={`run-button ${isRunning ? 'running' : ''}`}
-            onClick={onRun}
-            disabled={isRunning}
-            id="run-code-button"
-            title="Compile & Run Code (Ctrl + Enter)"
-          >
-            <Play size={14} fill="currentColor" />
-            <span>{isRunning ? 'Running...' : (isMobile ? 'Run' : 'Run Code')}</span>
-            {!isMobile && <kbd className="kbd-shortcut">Ctrl+↵</kbd>}
-          </button>
-        </div>
+        {/* Action Controls: Mobile Layout vs Desktop Layout */}
+        {isMobile ? (
+          <div className="mobile-navbar-actions">
+            {/* 1. Mobile Run Button */}
+            <button
+              className={`mobile-nav-run-btn ${isRunning ? 'running' : ''}`}
+              onClick={onRun}
+              disabled={isRunning}
+              id="run-code-button"
+              title="Compile & Run Code"
+            >
+              <Play size={12} fill="currentColor" />
+              <span>{isRunning ? '...' : 'Run'}</span>
+            </button>
 
-        <div className="nav-right">
-          {/* Unified Language & Compiler Hub */}
-          <div className="nav-lang-unified-hub" title="Current Compiler Engine & Language Matrix">
-            <div className="nav-lang-select-wrapper">
-              <Zap size={13} className="nav-lang-zap" />
+            {/* 2. Mobile Clean Language Pill */}
+            <div className="mobile-nav-lang-pill" title="Select Language or Browse 116+ Matrix">
+              <span className="mobile-nav-lang-icon">{mobileLang.icon}</span>
+              <span className="mobile-nav-lang-label">{mobileLang.label}</span>
+              <ChevronDown size={11} className="mobile-nav-lang-chevron" />
               <select
                 value={selectedLanguage}
                 onChange={(e) => {
@@ -601,19 +628,16 @@ export default function Navbar({
                     onSelectLanguage(e.target.value);
                   }
                 }}
-                className="nav-lang-select"
+                className="mobile-nav-lang-select"
                 id="language-select-dropdown"
-                title="Select programming language or browse all 116+ compilers"
+                title="Select Language"
               >
                 <option value="auto">
-                  ⚡ {isMobile 
-                    ? (detectedLangInfo?.detected ? (detectedLangInfo.name || '').split('(')[0].trim() : 'Auto') 
-                    : `Auto • ${detectedLangInfo?.detected ? (detectedLangInfo.name || '').split('(')[0].trim() : 'Detect'}`}
+                  ⚡ Auto Detect {detectedLangInfo?.detected ? `(${detectedLangInfo.name})` : ''}
                 </option>
                 <option value="__open_hub__">
-                  🌐 Open 116+ Languages Matrix...
+                  🌐 Open 116+ Language Matrix...
                 </option>
-
                 {LANGUAGE_CATEGORIES.map(cat => {
                   const items = ALL_LANGUAGES.filter(l => l.category === cat.id);
                   if (!items.length) return null;
@@ -628,28 +652,113 @@ export default function Navbar({
                   );
                 })}
               </select>
-              {detectedLangInfo?.detected && !isMobile && (
-                <span className="nav-lang-badge">.{detectedLangInfo.extension}</span>
-              )}
             </div>
 
-            {/* Compact 116+ Matrix Chip Button */}
-            {!isMobile && (
-              <button
-                type="button"
-                onClick={onOpenLanguageModal}
-                className="nav-matrix-btn"
-                title="Open Universal 116+ Language & Compiler Matrix Modal (Ctrl+Alt+L)"
-              >
-                <Globe size={13} className="matrix-globe-icon" />
-                <span>116+</span>
-              </button>
-            )}
-          </div>
+            {/* 3. Mobile Developer Profile Avatar Chip */}
+            <button
+              type="button"
+              className={`mobile-nav-profile-btn ${userProfile?.name ? 'is-registered' : ''}`}
+              onClick={onOpenProfileModal}
+              title={userProfile?.name ? `Developer: ${userProfile.name} • ${userProfile.mobile || ''}` : "Developer Profile (Tap to Register)"}
+              id="mobile-profile-btn"
+              aria-label="Developer Profile"
+            >
+              {userProfile?.name ? (
+                <span className="mobile-nav-profile-initial">
+                  {userProfile.name.trim().charAt(0).toUpperCase()}
+                </span>
+              ) : (
+                <User size={15} />
+              )}
+              {userProfile?.name && <span className="mobile-nav-profile-dot" />}
+            </button>
 
-          {/* Desktop Controls Divider & Action Toolbar */}
-          {!isMobile ? (
-            <>
+            {/* 4. Mobile More Menu Trigger */}
+            <button
+              type="button"
+              className="nav-icon-btn mobile-more-trigger"
+              onClick={() => setIsMobileMenuOpen(prev => !prev)}
+              title="More Actions & Settings"
+              id="mobile-more-actions-btn"
+              aria-label="Open mobile IDE tools menu"
+            >
+              <MoreVertical size={17} />
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="nav-center">
+              {/* Run Code Button */}
+              <button
+                className={`run-button ${isRunning ? 'running' : ''}`}
+                onClick={onRun}
+                disabled={isRunning}
+                id="run-code-button"
+                title="Compile & Run Code (Ctrl + Enter)"
+              >
+                <Play size={14} fill="currentColor" />
+                <span>{isRunning ? 'Running...' : 'Run Code'}</span>
+                <kbd className="kbd-shortcut">Ctrl+↵</kbd>
+              </button>
+            </div>
+
+            <div className="nav-right">
+              {/* Unified Language & Compiler Hub */}
+              <div className="nav-lang-unified-hub" title="Current Compiler Engine & Language Matrix">
+                <div className="nav-lang-select-wrapper">
+                  <Zap size={13} className="nav-lang-zap" />
+                  <select
+                    value={selectedLanguage}
+                    onChange={(e) => {
+                      if (e.target.value === '__open_hub__') {
+                        onOpenLanguageModal?.();
+                      } else if (onSelectLanguage) {
+                        onSelectLanguage(e.target.value);
+                      }
+                    }}
+                    className="nav-lang-select"
+                    id="language-select-dropdown"
+                    title="Select programming language or browse all 116+ compilers"
+                  >
+                    <option value="auto">
+                      ⚡ Auto • {detectedLangInfo?.detected ? (detectedLangInfo.name || '').split('(')[0].trim() : 'Detect'}
+                    </option>
+                    <option value="__open_hub__">
+                      🌐 Open 116+ Languages Matrix...
+                    </option>
+
+                    {LANGUAGE_CATEGORIES.map(cat => {
+                      const items = ALL_LANGUAGES.filter(l => l.category === cat.id);
+                      if (!items.length) return null;
+                      return (
+                        <optgroup key={cat.id} label={cat.name}>
+                          {items.map(l => (
+                            <option key={l.id} value={l.id}>
+                              {l.icon} {l.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                  {detectedLangInfo?.detected && (
+                    <span className="nav-lang-badge">.{detectedLangInfo.extension}</span>
+                  )}
+                </div>
+
+                {/* Compact 116+ Matrix Chip Button */}
+                <button
+                  type="button"
+                  onClick={onOpenLanguageModal}
+                  className="nav-matrix-btn"
+                  title="Open Universal 116+ Language & Compiler Matrix Modal (Ctrl+Alt+L)"
+                >
+                  <Globe size={13} className="matrix-globe-icon" />
+                  <span>116+</span>
+                </button>
+              </div>
+
+              {/* Desktop Controls Divider & Action Toolbar */}
               <div className="nav-divider" />
 
               <div className="nav-actions-group">
@@ -734,44 +843,16 @@ export default function Navbar({
                   <span className="profile-chip-status-dot" />
                 )}
               </button>
-            </>
-          ) : (
-            /* Mobile Action Group (Profile + More Menu) */
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <button
-                className="nav-icon-btn mobile-profile-trigger"
-                onClick={onOpenProfileModal}
-                title="Developer Profile (Name, Mobile, Email)"
-                id="mobile-profile-btn"
-                aria-label="Developer Profile"
-                style={{
-                  color: userProfile?.name ? '#10b981' : '#00f2fe',
-                  background: userProfile?.name ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 242, 254, 0.1)',
-                  borderRadius: '6px',
-                  padding: '6px'
-                }}
-              >
-                <User size={16} />
-              </button>
-              <button
-                className="nav-icon-btn mobile-more-trigger"
-                onClick={() => setIsMobileMenuOpen(prev => !prev)}
-                title="More Actions & Settings"
-                id="mobile-more-actions-btn"
-                aria-label="Open mobile IDE tools menu"
-              >
-                <MoreVertical size={18} />
-              </button>
             </div>
-          )}
+          </>
+        )}
 
-          <input 
-            ref={fileInputRef} 
-            type="file" 
-            style={{ display: 'none' }} 
-            onChange={handleFileChange} 
-          />
-        </div>
+        <input 
+          ref={fileInputRef} 
+          type="file" 
+          style={{ display: 'none' }} 
+          onChange={handleFileChange} 
+        />
       </header>
 
       {/* Mobile Slide-Up Settings & Actions Bottom Sheet */}
