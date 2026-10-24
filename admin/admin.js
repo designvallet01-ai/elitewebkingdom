@@ -2543,7 +2543,7 @@ function setupRealtimeCompilerTracker() {
           if (window.allCompilerRuns.length > 350) window.allCompilerRuns.pop();
         }
 
-        // Update active session runs count
+        // Update active session runs count or register immediately
         const targetSession = window.allCompilerActiveSessions.find(s => s.session_id === newRun.session_id);
         if (targetSession) {
           targetSession.runs_count = (targetSession.runs_count || 0) + 1;
@@ -2553,6 +2553,27 @@ function setupRealtimeCompilerTracker() {
           if (newRun.user_name) targetSession.user_name = newRun.user_name;
           if (newRun.user_mobile) targetSession.user_mobile = newRun.user_mobile;
           if (newRun.user_email) targetSession.user_email = newRun.user_email;
+          renderCompilerActiveUsers(window.allCompilerActiveSessions);
+        } else {
+          // New coder session synthesized from live run
+          const newSession = {
+            session_id: newRun.session_id,
+            user_id: newRun.user_id,
+            user_name: newRun.user_name || 'Anonymous Dev',
+            user_mobile: newRun.user_mobile || '',
+            user_email: newRun.user_email || '',
+            current_language: newRun.language || 'python',
+            device: newRun.device || 'Desktop',
+            browser: newRun.browser || 'Browser',
+            os: newRun.os || 'OS',
+            ip: newRun.ip || 'Direct Client',
+            college_name: newRun.college_name || 'Web IDE',
+            runs_count: 1,
+            last_run_at: newRun.created_at,
+            last_heartbeat: newRun.created_at || new Date().toISOString(),
+            is_online: true
+          };
+          window.allCompilerActiveSessions.unshift(newSession);
           renderCompilerActiveUsers(window.allCompilerActiveSessions);
         }
 
@@ -2679,19 +2700,64 @@ function setupRealtimeCompilerTracker() {
 async function syncActiveCompilerSessions() {
   if (!supabaseClient) return;
   try {
-    const oneMinuteAgo = new Date(Date.now() - 65000).toISOString();
+    // 3-minute active heartbeat window (180,000ms)
+    const activeWindow = new Date(Date.now() - 180000).toISOString();
     const { data, error } = await supabaseClient
       .from('compiler_active_sessions')
       .select('*')
       .eq('is_online', true)
-      .gte('last_heartbeat', oneMinuteAgo)
+      .gte('last_heartbeat', activeWindow)
       .order('last_heartbeat', { ascending: false });
 
-    if (!error && Array.isArray(data)) {
-      window.allCompilerActiveSessions = data;
-      renderCompilerActiveUsers(window.allCompilerActiveSessions);
-      updateCompilerKpiCounters();
+    let activeList = (!error && Array.isArray(data)) ? data : [];
+
+    // Also merge with any active sessions received via realtime broadcast in current window
+    if (Array.isArray(window.allCompilerActiveSessions)) {
+      const existingIds = new Set(activeList.map(s => s.session_id));
+      window.allCompilerActiveSessions.forEach(s => {
+        if (s && s.session_id && !existingIds.has(s.session_id)) {
+          const diffMs = Date.now() - new Date(s.last_heartbeat || Date.now()).getTime();
+          if (diffMs < 180000) {
+            activeList.push(s);
+            existingIds.add(s.session_id);
+          }
+        }
+      });
     }
+
+    // Fallback: If still 0, check if there are recent runs in last 5 minutes
+    if (activeList.length === 0 && Array.isArray(window.allCompilerRuns)) {
+      const fiveMinsAgo = Date.now() - 300000;
+      const recentRunSessions = new Map();
+      window.allCompilerRuns.forEach(r => {
+        if (r && r.created_at && new Date(r.created_at).getTime() >= fiveMinsAgo) {
+          const sid = r.session_id || r.user_id || 'recent';
+          if (!recentRunSessions.has(sid)) {
+            recentRunSessions.set(sid, {
+              session_id: sid,
+              user_id: r.user_id,
+              user_name: r.user_name || 'Anonymous Dev',
+              user_mobile: r.user_mobile || '',
+              user_email: r.user_email || '',
+              current_language: r.language || 'python',
+              device: r.device || 'Desktop',
+              browser: r.browser || 'Browser',
+              os: r.os || 'OS',
+              ip: r.ip || 'Direct Client',
+              college_name: r.college_name || 'Web IDE',
+              runs_count: 1,
+              last_heartbeat: r.created_at,
+              is_online: true
+            });
+          }
+        }
+      });
+      activeList = Array.from(recentRunSessions.values());
+    }
+
+    window.allCompilerActiveSessions = activeList;
+    renderCompilerActiveUsers(window.allCompilerActiveSessions);
+    updateCompilerKpiCounters();
   } catch (e) {
     console.warn('[Compiler Activity] Active sessions sync warning:', e);
   }

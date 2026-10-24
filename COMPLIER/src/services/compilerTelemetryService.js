@@ -334,14 +334,12 @@ export async function initCompilerTelemetry(initialLang = 'python', collegeDetai
     }
   }
 
-  // 2. Register Active Session in Database
-  const sessionPayload = {
+  // 2. Register Active Session in Database (Using strictly Supabase verified columns)
+  const sessionDbPayload = {
     session_id: currentSessionId,
     user_id: userId,
     user_name: userName,
-    user_mobile: userMobile,
-    user_email: userEmail,
-    college_name: activeCollegeName,
+    college_name: userMobile ? `${activeCollegeName} • 📱 ${userMobile}` : activeCollegeName,
     current_language: initialLang,
     device,
     browser,
@@ -355,13 +353,13 @@ export async function initCompilerTelemetry(initialLang = 'python', collegeDetai
 
   if (supabase) {
     try {
-      await supabase.from('compiler_active_sessions').upsert(sessionPayload);
+      await supabase.from('compiler_active_sessions').upsert(sessionDbPayload);
     } catch (dbErr) {
       console.warn('[Telemetry] Active session upsert notice:', dbErr);
     }
   }
 
-  // 3. Heartbeat loop (every 20 seconds to keep live presence fresh)
+  // 3. Heartbeat loop (every 12 seconds to keep live presence fresh and online)
   if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
   heartbeatIntervalId = setInterval(async () => {
     if (!currentSessionId) return;
@@ -371,11 +369,19 @@ export async function initCompilerTelemetry(initialLang = 'python', collegeDetai
       try {
         await supabase
           .from('compiler_active_sessions')
-          .update({
+          .upsert({
+            session_id: currentSessionId,
+            user_id: userId,
+            user_name: userName,
+            college_name: userMobile ? `${activeCollegeName} • 📱 ${userMobile}` : activeCollegeName,
+            current_language: initialLang,
+            device,
+            browser,
+            os,
+            ip,
             last_heartbeat: nowIso,
             is_online: true
-          })
-          .eq('session_id', currentSessionId);
+          });
       } catch (e) {}
     }
 
@@ -387,13 +393,15 @@ export async function initCompilerTelemetry(initialLang = 'python', collegeDetai
           sessionId: currentSessionId,
           userId,
           userName,
+          user_mobile: userMobile,
+          user_email: userEmail,
           device,
           os,
           timestamp: nowIso
         }
       });
     }
-  }, 20000);
+  }, 12000);
 
   // 4. Handle Tab close / Unload to mark offline
   const handleUnload = () => {
@@ -523,13 +531,10 @@ export async function logCompilerRun({
   const lineCount = (code || '').split('\n').length;
   const status = success ? 'SUCCESS' : 'ERROR';
 
-  const telemetryPayload = {
-    run_id: runId,
+  const telemetryDbPayload = {
     session_id: currentSessionId || ('ses_' + Date.now()),
     user_id: userId,
     user_name: userName,
-    user_mobile: userMobile,
-    user_email: userEmail,
     college_name: collegeName,
     system_name: systemName,
     language: (language || 'python').toLowerCase(),
@@ -552,7 +557,10 @@ export async function logCompilerRun({
         type: 'broadcast',
         event: 'code_run',
         payload: {
-          ...telemetryPayload,
+          ...telemetryDbPayload,
+          run_id: runId,
+          user_mobile: userMobile,
+          user_email: userEmail,
           runner
         }
       });
@@ -564,7 +572,7 @@ export async function logCompilerRun({
   // 2. Persist to Supabase Database (Permanent audit log)
   if (supabase) {
     try {
-      supabase.from('compiler_telemetry').insert([telemetryPayload]).then(({ error }) => {
+      supabase.from('compiler_telemetry').insert([telemetryDbPayload]).then(({ error }) => {
         if (error) {
           console.warn('[Telemetry] Supabase compiler_telemetry insert notice:', error.message);
         }
