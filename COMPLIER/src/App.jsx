@@ -344,19 +344,6 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Initialize Real-time Live Compiler Telemetry & Presence Tracking
-  useEffect(() => {
-    initCompilerTelemetry(manualLanguage !== 'auto' ? manualLanguage : (activeFile?.language || 'python'), collegeStudentInfo);
-  }, []);
-
-  // Sync active language to presence stream when language switches
-  useEffect(() => {
-    const currentLang = manualLanguage !== 'auto' ? manualLanguage : (activeFile?.language || 'python');
-    if (currentLang) {
-      updateTelemetryLanguage(currentLang);
-    }
-  }, [manualLanguage, activeFile?.language]);
-
   // When switching views on mobile, trigger Monaco layout recalculation
   useEffect(() => {
     if (mobileActiveTab === 'editor' && editorInstanceRef.current) {
@@ -525,6 +512,18 @@ export default function App() {
   }, [activeFile.name, activeFile.code, manualLanguage]);
 
   const activeLanguage = detectedLangInfo.language;
+
+  // Initialize Real-time Live Compiler Telemetry & Presence Tracking
+  useEffect(() => {
+    initCompilerTelemetry(activeLanguage || 'python', collegeStudentInfo);
+  }, []);
+
+  // Sync active language to presence stream when language switches
+  useEffect(() => {
+    if (activeLanguage) {
+      updateTelemetryLanguage(activeLanguage);
+    }
+  }, [activeLanguage]);
 
   // Language change handler (from dropdown selector) supporting 115+ languages
   const handleLanguageChange = (newLang) => {
