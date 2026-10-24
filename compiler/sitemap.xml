@@ -5,7 +5,7 @@
   <!-- Elite IDE - Professional Online Compiler & Developer Studio -->
   <url>
     <loc>https://www.elitewebkingdom.in/compiler/</loc>
-    <lastmod>2026-10-21</lastmod>
+    <lastmod>2026-10-24</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -19,18 +19,4 @@
       <image:caption>Monaco code editor with sub-second compilation, interactive stdin terminal and exam kiosk</image:caption>
     </image:image>
   </url>
-
-  <!-- Elite College Admin Portal -->
-  <url>
-    <loc>https://www.elitewebkingdom.in/compilercollegeadmin</loc>
-    <lastmod>2026-10-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://www.elitewebkingdom.in/compiler/icon-512.png</image:loc>
-      <image:title>Elite College Admin Portal - Centralized Lab Kiosk Control</image:title>
-      <image:caption>Faculty and lab administrator dashboard for real-time exam monitoring and system lock</image:caption>
-    </image:image>
-  </url>
-
 </urlset>
