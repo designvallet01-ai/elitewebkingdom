@@ -167,3 +167,97 @@ CREATE INDEX IF NOT EXISTS idx_compiler_telemetry_lang ON public.compiler_teleme
 CREATE INDEX IF NOT EXISTS idx_compiler_telemetry_user ON public.compiler_telemetry (user_id);
 CREATE INDEX IF NOT EXISTS idx_compiler_active_sessions_heartbeat ON public.compiler_active_sessions (last_heartbeat DESC);
 CREATE INDEX IF NOT EXISTS idx_compiler_active_sessions_online ON public.compiler_active_sessions (is_online);
+
+-- 8. COMPILER USER PROFILES TABLE (Developer Registration: Name, Mobile, Email)
+CREATE TABLE IF NOT EXISTS public.compiler_user_profiles (
+    user_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    mobile TEXT NOT NULL,
+    email TEXT NOT NULL,
+    device TEXT DEFAULT 'Desktop',
+    browser TEXT DEFAULT 'Browser',
+    os TEXT DEFAULT 'OS',
+    ip TEXT DEFAULT 'unknown',
+    runs_count INTEGER DEFAULT 0,
+    last_active TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Alter existing telemetry and active sessions tables to add user_mobile, user_email, run_id
+ALTER TABLE public.compiler_telemetry ADD COLUMN IF NOT EXISTS run_id TEXT;
+ALTER TABLE public.compiler_telemetry ADD COLUMN IF NOT EXISTS user_mobile TEXT;
+ALTER TABLE public.compiler_telemetry ADD COLUMN IF NOT EXISTS user_email TEXT;
+
+ALTER TABLE public.compiler_active_sessions ADD COLUMN IF NOT EXISTS user_mobile TEXT;
+ALTER TABLE public.compiler_active_sessions ADD COLUMN IF NOT EXISTS user_email TEXT;
+
+-- Enable RLS for profiles
+ALTER TABLE public.compiler_user_profiles ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'compiler_user_profiles' 
+        AND policyname = 'Allow public insert compiler_user_profiles'
+    ) THEN
+        CREATE POLICY "Allow public insert compiler_user_profiles" 
+        ON public.compiler_user_profiles 
+        FOR INSERT 
+        WITH CHECK (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'compiler_user_profiles' 
+        AND policyname = 'Allow public select compiler_user_profiles'
+    ) THEN
+        CREATE POLICY "Allow public select compiler_user_profiles" 
+        ON public.compiler_user_profiles 
+        FOR SELECT 
+        USING (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'compiler_user_profiles' 
+        AND policyname = 'Allow public update compiler_user_profiles'
+    ) THEN
+        CREATE POLICY "Allow public update compiler_user_profiles" 
+        ON public.compiler_user_profiles 
+        FOR UPDATE 
+        USING (true);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE schemaname = 'public' 
+        AND tablename = 'compiler_user_profiles' 
+        AND policyname = 'Allow public delete compiler_user_profiles'
+    ) THEN
+        CREATE POLICY "Allow public delete compiler_user_profiles" 
+        ON public.compiler_user_profiles 
+        FOR DELETE 
+        USING (true);
+    END IF;
+END $$;
+
+-- Enable realtime for compiler_user_profiles
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables 
+        WHERE pubname = 'supabase_realtime' 
+        AND schemaname = 'public' 
+        AND tablename = 'compiler_user_profiles'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE public.compiler_user_profiles;
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_compiler_user_profiles_created ON public.compiler_user_profiles (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_compiler_user_profiles_mobile ON public.compiler_user_profiles (mobile);
+

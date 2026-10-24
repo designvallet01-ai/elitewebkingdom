@@ -6,7 +6,8 @@ import {
   Zap, 
   Terminal, 
   Sparkles,
-  Wifi
+  Wifi,
+  User
 } from 'lucide-react';
 
 export default function StatusBar({
@@ -15,6 +16,8 @@ export default function StatusBar({
   language = 'python',
   langName = 'Python 3.12',
   lastStats = null,
+  userProfile = null,
+  onOpenProfileModal,
   onOpenGit,
   onOpenAiHealer,
   onOpenTerminal,
@@ -91,6 +94,24 @@ export default function StatusBar({
           <Zap size={11} className="text-amber-400" />
           <span>{langName}</span>
           <span className="ml-1.5 px-1 py-0.2 rounded text-[10px] font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">116+</span>
+        </button>
+
+        {/* Developer Profile (Name, Mobile, Email) */}
+        <button 
+          type="button"
+          className="status-bar-item user-profile-status-btn"
+          onClick={onOpenProfileModal}
+          title={userProfile?.name ? `Developer: ${userProfile.name} • ${userProfile.mobile || ''} (Click to edit)` : 'Anonymous Dev (Click to create profile)'}
+          style={{
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            color: userProfile?.name ? '#10b981' : '#38bdf8'
+          }}
+        >
+          <User size={12} />
+          <span>{userProfile?.name ? userProfile.name.split(' ')[0] : 'Profile'}</span>
         </button>
 
         {/* Prettier / Formatter Status */}

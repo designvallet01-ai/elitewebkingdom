@@ -44,7 +44,8 @@ import {
   TrendingUp,
   Rocket,
   ShieldAlert,
-  FileSpreadsheet
+  FileSpreadsheet,
+  User
 } from 'lucide-react';
 import { ALL_LANGUAGES, LANGUAGE_CATEGORIES } from '../services/languagesRegistry';
 
@@ -58,6 +59,8 @@ export default function Navbar({
   onToggleTheme,
   fontSize,
   onChangeFontSize,
+  userProfile,
+  onOpenProfileModal,
   code,
   activeFileName,
   onCreateFile,
@@ -712,18 +715,54 @@ export default function Navbar({
                   )}
                 </button>
               </div>
+
+              {/* Dedicated Developer Profile Chip */}
+              <button
+                type="button"
+                className={`nav-profile-chip ${userProfile?.name ? 'is-registered' : ''}`}
+                onClick={onOpenProfileModal}
+                title={userProfile?.name ? `Developer: ${userProfile.name} • ${userProfile.mobile || ''} (Click to edit)` : "Developer Profile: Name, Mobile, Email (Click to register)"}
+                id="navbar-profile-button"
+              >
+                <div className="profile-chip-avatar">
+                  <User size={13} />
+                </div>
+                <span className="profile-chip-name">
+                  {userProfile?.name ? userProfile.name.split(' ')[0] : 'Profile'}
+                </span>
+                {userProfile?.name && (
+                  <span className="profile-chip-status-dot" />
+                )}
+              </button>
             </>
           ) : (
-            /* Mobile More Action Menu Button */
-            <button
-              className="nav-icon-btn mobile-more-trigger"
-              onClick={() => setIsMobileMenuOpen(prev => !prev)}
-              title="More Actions & Settings"
-              id="mobile-more-actions-btn"
-              aria-label="Open mobile IDE tools menu"
-            >
-              <MoreVertical size={18} />
-            </button>
+            /* Mobile Action Group (Profile + More Menu) */
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                className="nav-icon-btn mobile-profile-trigger"
+                onClick={onOpenProfileModal}
+                title="Developer Profile (Name, Mobile, Email)"
+                id="mobile-profile-btn"
+                aria-label="Developer Profile"
+                style={{
+                  color: userProfile?.name ? '#10b981' : '#00f2fe',
+                  background: userProfile?.name ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0, 242, 254, 0.1)',
+                  borderRadius: '6px',
+                  padding: '6px'
+                }}
+              >
+                <User size={16} />
+              </button>
+              <button
+                className="nav-icon-btn mobile-more-trigger"
+                onClick={() => setIsMobileMenuOpen(prev => !prev)}
+                title="More Actions & Settings"
+                id="mobile-more-actions-btn"
+                aria-label="Open mobile IDE tools menu"
+              >
+                <MoreVertical size={18} />
+              </button>
+            </div>
           )}
 
           <input 
@@ -759,6 +798,38 @@ export default function Navbar({
             </div>
 
             <div className="mobile-sheet-content">
+              {/* Developer Profile Banner */}
+              <div 
+                className="sheet-action-card profile-sheet-card"
+                onClick={() => { onOpenProfileModal?.(); setIsMobileMenuOpen(false); }}
+                style={{
+                  marginBottom: '14px',
+                  background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.12), rgba(79, 70, 229, 0.18))',
+                  border: '1px solid rgba(0, 242, 254, 0.35)',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  borderRadius: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg, #00f2fe, #4f46e5)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>
+                  <User size={18} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.92rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {userProfile?.name || 'Developer Profile'}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#38bdf8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {userProfile?.mobile ? `📱 ${userProfile.mobile}` : 'Save your Name, Mobile & Email'}
+                  </div>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#00f2fe', fontWeight: 700, background: 'rgba(0, 242, 254, 0.15)', padding: '4px 8px', borderRadius: '6px' }}>
+                  {userProfile?.name ? 'Edit' : 'Create'}
+                </span>
+              </div>
+
               {/* Appearance & Font Row */}
               <div className="sheet-section">
                 <span className="sheet-section-title">Editor Appearance</span>

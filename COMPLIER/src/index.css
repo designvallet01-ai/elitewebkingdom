@@ -1011,6 +1011,80 @@ html, body, #root {
 #command-palette-button:hover { color: #fbbf24; }
 #toggle-theme-button:hover { color: #38bdf8; }
 
+/* Dedicated Developer Profile Chip */
+.nav-profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.28);
+  color: #00f2fe;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 6px;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.08);
+}
+
+.nav-profile-chip:hover {
+  background: rgba(0, 242, 254, 0.16);
+  border-color: rgba(0, 242, 254, 0.5);
+  box-shadow: 0 0 16px rgba(0, 242, 254, 0.25);
+  transform: translateY(-1px);
+}
+
+.nav-profile-chip.is-registered {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+}
+
+.nav-profile-chip.is-registered:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.55);
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.profile-chip-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 242, 254, 0.18);
+  color: #00f2fe;
+}
+
+.nav-profile-chip.is-registered .profile-chip-avatar {
+  background: rgba(16, 185, 129, 0.25);
+  color: #10b981;
+}
+
+.profile-chip-name {
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-chip-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #34d399;
+  box-shadow: 0 0 8px #34d399;
+  display: inline-block;
+}
+
 .nav-icon-btn {
   display: flex;
   align-items: center;

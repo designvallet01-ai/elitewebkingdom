@@ -35,6 +35,7 @@ import ComplexityVisualizerModal from './components/ComplexityVisualizerModal';
 import ServerlessDeploymentModal from './components/ServerlessDeploymentModal';
 import AiSmartProctoringModal from './components/AiSmartProctoringModal';
 import BatchGradingModal from './components/BatchGradingModal';
+import UserProfileModal from './components/UserProfileModal';
 import { diagnoseAndHealError } from './services/aiErrorHealer';
 import { executeInBrowserNode } from './services/clientNodeRunner';
 import { recordExecutionTelemetry } from './services/liveLeaderboardService';
@@ -43,7 +44,8 @@ import {
   updateTelemetryLanguage, 
   logCompilerRun, 
   getOrCreateUserName, 
-  updateCompilerUserName 
+  updateCompilerUserName,
+  getUserProfile
 } from './services/compilerTelemetryService';
 import { 
   subscribeToCollegeEvents, 
@@ -220,6 +222,8 @@ export default function App() {
   });
 
   const [isAlgorithmModalOpen, setIsAlgorithmModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(() => getUserProfile());
   const [isRunning, setIsRunning] = useState(false);
   const [terminalEntries, setTerminalEntries] = useState([]);
   const [lastStats, setLastStats] = useState(null);
@@ -330,6 +334,7 @@ export default function App() {
 
   const editorInstanceRef = useRef(null);
   const wsRef = useRef(null);
+  const lastRunTimeRef = useRef(0);
 
   // Mobile viewport resize listener
   useEffect(() => {
@@ -1160,6 +1165,14 @@ export default function App() {
   const handleRun = useCallback((customStdin) => {
     if (isRunning) return;
 
+    // Rapid invocation guard (900ms) to prevent mobile double taps or touch/click double events
+    const nowMs = Date.now();
+    if (nowMs - lastRunTimeRef.current < 900) {
+      console.log('Debouncing rapid handleRun invocation.');
+      return;
+    }
+    lastRunTimeRef.current = nowMs;
+
     const currentCode = activeFile.code;
     const stdinToUse = typeof customStdin === 'string' ? customStdin : '';
 
@@ -1856,6 +1869,8 @@ export default function App() {
         onChangeFontSize={setFontSize}
         code={activeFile.code}
         activeFileName={activeFile.name}
+        userProfile={userProfile}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
         onCreateFile={handleCreateFile}
         onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
         isSidebarOpen={isSidebarOpen}
@@ -2489,6 +2504,8 @@ export default function App() {
           language={activeLanguage}
           langName={detectedLangInfo?.name || 'Python 3.12'}
           lastStats={lastStats}
+          userProfile={userProfile}
+          onOpenProfileModal={() => setIsProfileModalOpen(true)}
           onOpenGit={() => setIsGitModalOpen(true)}
           onOpenAiHealer={() => {
             const currentCode = activeFile ? activeFile.code : '';
@@ -2610,6 +2627,15 @@ export default function App() {
       <BatchGradingModal
         isOpen={isBatchGradingOpen}
         onClose={() => setIsBatchGradingOpen(false)}
+      />
+
+      {/* Developer Profile Modal (Name, Mobile, Email) */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        onProfileUpdated={(updatedProfile) => {
+          setUserProfile(updatedProfile);
+        }}
       />
 
     </div>

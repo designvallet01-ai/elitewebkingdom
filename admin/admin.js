@@ -2472,19 +2472,33 @@ window.switchCompilerSubView = function(view) {
   window.compilerCurrentSubView = view;
   const presenceView = document.getElementById('compiler-presence-view');
   const streamView = document.getElementById('compiler-stream-view');
+  const profilesView = document.getElementById('compiler-profiles-view');
   const btnPresence = document.getElementById('view-btn-presence');
   const btnStream = document.getElementById('view-btn-stream');
+  const btnProfiles = document.getElementById('view-btn-profiles');
 
   if (view === 'presence') {
     if (presenceView) presenceView.style.display = 'block';
     if (streamView) streamView.style.display = 'none';
+    if (profilesView) profilesView.style.display = 'none';
     if (btnPresence) btnPresence.classList.add('active-view-btn');
     if (btnStream) btnStream.classList.remove('active-view-btn');
+    if (btnProfiles) btnProfiles.classList.remove('active-view-btn');
+  } else if (view === 'profiles') {
+    if (presenceView) presenceView.style.display = 'none';
+    if (streamView) streamView.style.display = 'none';
+    if (profilesView) profilesView.style.display = 'block';
+    if (btnPresence) btnPresence.classList.remove('active-view-btn');
+    if (btnStream) btnStream.classList.remove('active-view-btn');
+    if (btnProfiles) btnProfiles.classList.add('active-view-btn');
+    loadCompilerProfiles();
   } else {
     if (presenceView) presenceView.style.display = 'none';
     if (streamView) streamView.style.display = 'block';
+    if (profilesView) profilesView.style.display = 'none';
     if (btnPresence) btnPresence.classList.remove('active-view-btn');
     if (btnStream) btnStream.classList.add('active-view-btn');
+    if (btnProfiles) btnProfiles.classList.remove('active-view-btn');
   }
 };
 
@@ -2518,11 +2532,15 @@ function setupRealtimeCompilerTracker() {
         playCompilerRunChime();
         flashCompilerLiveStat();
 
-        // Check if run already in list (deduplicate)
-        const exists = window.allCompilerRuns.some(r => r.session_id === newRun.session_id && r.created_at === newRun.created_at);
+        // Check if run already in list (deduplicate by run_id OR matching session within 4000ms)
+        const exists = window.allCompilerRuns.some(r => 
+          (r.run_id && newRun.run_id && r.run_id === newRun.run_id) ||
+          (r.session_id === newRun.session_id && Math.abs(new Date(r.created_at || Date.now()) - new Date(newRun.created_at || Date.now())) < 4000 && r.code_snippet === newRun.code_snippet)
+        );
+
         if (!exists) {
           window.allCompilerRuns.unshift(newRun);
-          if (window.allCompilerRuns.length > 300) window.allCompilerRuns.pop();
+          if (window.allCompilerRuns.length > 350) window.allCompilerRuns.pop();
         }
 
         // Update active session runs count
@@ -2532,6 +2550,9 @@ function setupRealtimeCompilerTracker() {
           targetSession.last_run_at = newRun.created_at;
           targetSession.last_heartbeat = newRun.created_at;
           targetSession.current_language = newRun.language;
+          if (newRun.user_name) targetSession.user_name = newRun.user_name;
+          if (newRun.user_mobile) targetSession.user_mobile = newRun.user_mobile;
+          if (newRun.user_email) targetSession.user_email = newRun.user_email;
           renderCompilerActiveUsers(window.allCompilerActiveSessions);
         }
 
@@ -2554,6 +2575,8 @@ function setupRealtimeCompilerTracker() {
           session_id: u.sessionId,
           user_id: u.userId,
           user_name: u.userName,
+          user_mobile: u.user_mobile || '',
+          user_email: u.user_email || '',
           current_language: u.language,
           device: u.device,
           browser: u.browser,
@@ -2571,6 +2594,27 @@ function setupRealtimeCompilerTracker() {
         }
         renderCompilerActiveUsers(window.allCompilerActiveSessions);
         updateCompilerKpiCounters();
+      })
+      // Developer Profile Updated
+      .on('broadcast', { event: 'profile_updated' }, (payload) => {
+        if (!payload || !payload.payload) return;
+        const p = payload.payload;
+        const targetSession = window.allCompilerActiveSessions.find(s => s.user_id === p.userId || s.session_id === p.sessionId);
+        if (targetSession) {
+          targetSession.user_name = p.name;
+          targetSession.user_mobile = p.mobile;
+          targetSession.user_email = p.email;
+          renderCompilerActiveUsers(window.allCompilerActiveSessions);
+        }
+        window.allCompilerRuns.forEach(r => {
+          if (r.user_id === p.userId) {
+            r.user_name = p.name;
+            r.user_mobile = p.mobile;
+            r.user_email = p.email;
+          }
+        });
+        filterCompilerRunsTable();
+        loadCompilerProfiles();
       })
       // Heartbeat ping
       .on('broadcast', { event: 'presence_heartbeat' }, (payload) => {
@@ -2591,12 +2635,27 @@ function setupRealtimeCompilerTracker() {
         renderCompilerActiveUsers(window.allCompilerActiveSessions);
         updateCompilerKpiCounters();
       })
-      // Postgres Changes on Telemetry Table (Audit sync)
+      // Postgres Changes on Telemetry Table (Audit sync without duplicate insertion)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'compiler_telemetry' }, (payload) => {
         if (!payload || !payload.new) return;
         const dbRun = payload.new;
-        const alreadyExists = window.allCompilerRuns.some(r => (r.id && r.id === dbRun.id) || (r.session_id === dbRun.session_id && r.created_at === dbRun.created_at));
-        if (!alreadyExists) {
+
+        // Check if run already in list (either by confirmed db id, by run_id, or by matching broadcast)
+        const existingIdx = window.allCompilerRuns.findIndex(r => 
+          (r.id && r.id === dbRun.id) ||
+          (r.run_id && dbRun.run_id && r.run_id === dbRun.run_id) ||
+          (r.session_id === dbRun.session_id && Math.abs(new Date(r.created_at || Date.now()) - new Date(dbRun.created_at || Date.now())) < 5000 && r.code_snippet === dbRun.code_snippet)
+        );
+
+        if (existingIdx >= 0) {
+          // Update the existing broadcast entry with verified DB ID and timestamp
+          window.allCompilerRuns[existingIdx].id = dbRun.id;
+          window.allCompilerRuns[existingIdx].created_at = dbRun.created_at;
+          if (dbRun.user_mobile) window.allCompilerRuns[existingIdx].user_mobile = dbRun.user_mobile;
+          if (dbRun.user_email) window.allCompilerRuns[existingIdx].user_email = dbRun.user_email;
+          filterCompilerRunsTable();
+        } else {
+          // Direct DB insert not previously caught via broadcast
           window.allCompilerRuns.unshift(dbRun);
           updateCompilerKpiCounters();
           renderOverviewCompilerRuns(window.allCompilerRuns.slice(0, 6));
@@ -2680,8 +2739,9 @@ async function loadCompilerActivity(isManualRefresh = false) {
 
   window.allCompilerRuns = runsList;
 
-  // Sync active coders
+  // Sync active coders & registered profiles
   await syncActiveCompilerSessions();
+  await loadCompilerProfiles();
 
   // Update Counters & Visuals
   updateCompilerKpiCounters();
@@ -3004,14 +3064,20 @@ window.filterCompilerRunsTable = function() {
     const snippet = r.code_snippet ? r.code_snippet.replace(/\n/g, ' ') : '';
     const safeSnippet = escapeHtml(snippet.substring(0, 45)) + (snippet.length > 45 ? '...' : '');
 
+    const hasContact = r.user_mobile || r.user_email || (r.system_name && r.system_name.includes('@'));
+    const contactSubtitle = r.user_mobile ? `📱 ${escapeHtml(r.user_mobile)} ${r.user_email ? `• ✉️ ${escapeHtml(r.user_email)}` : ''}` : (r.system_name && r.system_name.includes('@') ? escapeHtml(r.system_name) : escapeHtml(r.college_name || 'Web IDE'));
+
     html += `
       <tr>
         <td style="font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; white-space: nowrap;">
           ${timeStr}
         </td>
         <td>
-          <div style="font-weight: 600; color: #f8fafc; font-size: 0.85rem;">${escapeHtml(r.user_name || 'Anonymous Dev')}</div>
-          <div style="font-size: 0.7rem; color: var(--text-muted);">${escapeHtml(r.college_name || 'Web IDE')}</div>
+          <div style="font-weight: 600; color: #f8fafc; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+            ${escapeHtml(r.user_name || 'Anonymous Dev')}
+            ${hasContact ? '<span style="font-size: 0.65rem; background: rgba(16,185,129,0.2); color: #34d399; padding: 1px 5px; border-radius: 4px; font-weight: 700;">PRO</span>' : ''}
+          </div>
+          <div style="font-size: 0.72rem; color: ${hasContact ? '#38bdf8' : 'var(--text-muted)'};">${contactSubtitle}</div>
         </td>
         <td>
           <span class="compiler-lang-badge ${getLangClass(lang)}">${escapeHtml(lang.toUpperCase())}</span>
@@ -3059,6 +3125,7 @@ window.inspectCompilerCode = function(index) {
   const langBadge = document.getElementById('code-modal-lang-badge');
   const statusBadge = document.getElementById('code-modal-status-badge');
   const timeBadge = document.getElementById('code-modal-time-badge');
+  const contactBadge = document.getElementById('code-modal-contact-badge');
   const contentEl = document.getElementById('code-modal-content');
   const errorBox = document.getElementById('code-modal-error-box');
 
@@ -3069,6 +3136,16 @@ window.inspectCompilerCode = function(index) {
 
   if (titleEl) titleEl.textContent = `Executed by ${userName} (${lang.toUpperCase()})`;
   if (subEl) subEl.textContent = `${college} • ${timeFormatted} • IP: ${run.ip || 'unknown'} • ${run.device || 'Desktop'}`;
+
+  if (contactBadge) {
+    const contactText = run.user_mobile ? `📱 ${run.user_mobile} ${run.user_email ? `• ✉️ ${run.user_email}` : ''}` : (run.system_name && run.system_name.includes('@') ? run.system_name : null);
+    if (contactText) {
+      contactBadge.style.display = 'inline-block';
+      contactBadge.textContent = contactText;
+    } else {
+      contactBadge.style.display = 'none';
+    }
+  }
 
   if (langBadge) {
     langBadge.className = `compiler-lang-badge ${getLangClass(lang)}`;
@@ -3194,6 +3271,35 @@ CREATE INDEX IF NOT EXISTS idx_compiler_telemetry_created_at ON public.compiler_
 CREATE INDEX IF NOT EXISTS idx_compiler_telemetry_lang ON public.compiler_telemetry (language);
 CREATE INDEX IF NOT EXISTS idx_compiler_telemetry_user ON public.compiler_telemetry (user_id);
 CREATE INDEX IF NOT EXISTS idx_compiler_active_sessions_heartbeat ON public.compiler_active_sessions (last_heartbeat DESC);
+
+-- 8. COMPILER USER PROFILES TABLE (Developer Registration: Name, Mobile, Email)
+CREATE TABLE IF NOT EXISTS public.compiler_user_profiles (
+    user_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    mobile TEXT NOT NULL,
+    email TEXT NOT NULL,
+    device TEXT DEFAULT 'Desktop',
+    browser TEXT DEFAULT 'Browser',
+    os TEXT DEFAULT 'OS',
+    ip TEXT DEFAULT 'unknown',
+    runs_count INTEGER DEFAULT 0,
+    last_active TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.compiler_telemetry ADD COLUMN IF NOT EXISTS run_id TEXT;
+ALTER TABLE public.compiler_telemetry ADD COLUMN IF NOT EXISTS user_mobile TEXT;
+ALTER TABLE public.compiler_telemetry ADD COLUMN IF NOT EXISTS user_email TEXT;
+ALTER TABLE public.compiler_active_sessions ADD COLUMN IF NOT EXISTS user_mobile TEXT;
+ALTER TABLE public.compiler_active_sessions ADD COLUMN IF NOT EXISTS user_email TEXT;
+
+ALTER TABLE public.compiler_user_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public insert compiler_user_profiles" ON public.compiler_user_profiles FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select compiler_user_profiles" ON public.compiler_user_profiles FOR SELECT USING (true);
+CREATE POLICY "Allow public update compiler_user_profiles" ON public.compiler_user_profiles FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete compiler_user_profiles" ON public.compiler_user_profiles FOR DELETE USING (true);
+
+ALTER PUBLICATION supabase_realtime ADD TABLE public.compiler_user_profiles;
 `;
 
 window.openCompilerSqlModal = function() {
@@ -3365,6 +3471,298 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// ============================================================================
+// COMPILER DEVELOPER PROFILES (Name, Mobile Number, Email ID Management)
+// ============================================================================
+window.allCompilerProfiles = [];
+
+window.loadCompilerProfiles = async function(isManualRefresh = false) {
+  const countBadge = document.getElementById('comp-profiles-tab-count');
+  const profileMap = new Map();
+
+  // 1. Fetch from Supabase compiler_user_profiles table
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('compiler_user_profiles')
+        .select('*')
+        .order('last_active', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        data.forEach(p => {
+          const key = p.mobile || p.email || p.user_id;
+          if (key) profileMap.set(key, { ...p });
+        });
+      }
+    } catch (e) {
+      console.warn('Profiles table fetch notice:', e);
+    }
+
+    // 2. Also harvest from compiler_telemetry for any mobile / email contacts
+    try {
+      const { data: telemetryUsers } = await supabaseClient
+        .from('compiler_telemetry')
+        .select('user_id, user_name, user_mobile, user_email, system_name, device, os, browser, ip, created_at')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (Array.isArray(telemetryUsers)) {
+        telemetryUsers.forEach(tu => {
+          let mob = tu.user_mobile;
+          let mail = tu.user_email;
+          if (!mob && tu.system_name && tu.system_name.includes('|')) {
+            const parts = tu.system_name.split('|');
+            mob = parts[0]?.trim();
+            mail = parts[1]?.trim();
+          }
+          if (mob || mail) {
+            const key = mob || mail || tu.user_id;
+            if (!profileMap.has(key)) {
+              profileMap.set(key, {
+                user_id: tu.user_id,
+                name: tu.user_name || 'Developer',
+                mobile: mob || 'N/A',
+                email: mail || 'N/A',
+                device: tu.device || 'Desktop',
+                os: tu.os || 'OS',
+                browser: tu.browser || 'Browser',
+                ip: tu.ip || 'unknown',
+                runs_count: 1,
+                last_active: tu.created_at,
+                created_at: tu.created_at
+              });
+            }
+          }
+        });
+      }
+    } catch (e) {}
+
+    // 3. Harvest from leads with category 'Compiler Developer Profile'
+    try {
+      const { data: leadProfiles } = await supabaseClient
+        .from('leads')
+        .select('*')
+        .eq('category', 'Compiler Developer Profile')
+        .order('created_at', { ascending: false });
+
+      if (Array.isArray(leadProfiles)) {
+        leadProfiles.forEach(lp => {
+          const key = lp.phone || lp.email || lp.id;
+          if (!profileMap.has(key)) {
+            profileMap.set(key, {
+              user_id: lp.id,
+              name: lp.name,
+              mobile: lp.phone || 'N/A',
+              email: lp.email || 'N/A',
+              device: 'Web Client',
+              os: 'OS',
+              browser: 'Browser',
+              ip: 'Direct',
+              runs_count: 1,
+              last_active: lp.created_at,
+              created_at: lp.created_at
+            });
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
+  // Also include profiles from local sessions
+  if (Array.isArray(window.allCompilerActiveSessions)) {
+    window.allCompilerActiveSessions.forEach(s => {
+      if (s.user_mobile || s.user_email) {
+        const key = s.user_mobile || s.user_email || s.user_id;
+        if (!profileMap.has(key)) {
+          profileMap.set(key, {
+            user_id: s.user_id,
+            name: s.user_name || 'Developer',
+            mobile: s.user_mobile || 'N/A',
+            email: s.user_email || 'N/A',
+            device: s.device || 'Desktop',
+            os: s.os || 'OS',
+            browser: s.browser || 'Browser',
+            ip: s.ip || 'unknown',
+            runs_count: s.runs_count || 1,
+            last_active: s.last_heartbeat,
+            created_at: s.created_at || s.last_heartbeat
+          });
+        }
+      }
+    });
+  }
+
+  // Calculate live compilation counts for each registered profile
+  window.allCompilerProfiles = Array.from(profileMap.values());
+  window.allCompilerProfiles.forEach(prof => {
+    const runsForUser = (window.allCompilerRuns || []).filter(r => 
+      (prof.user_id && r.user_id === prof.user_id) || 
+      (prof.mobile && prof.mobile !== 'N/A' && (r.user_mobile === prof.mobile || (r.system_name && r.system_name.includes(prof.mobile))))
+    );
+    prof.runs_count = Math.max(prof.runs_count || 0, runsForUser.length, 1);
+  });
+
+  if (countBadge) countBadge.textContent = window.allCompilerProfiles.length;
+  renderCompilerProfilesTable(window.allCompilerProfiles);
+
+  if (isManualRefresh) {
+    const toast = document.createElement('div');
+    toast.textContent = `✓ Refreshed ${window.allCompilerProfiles.length} Developer Profiles`;
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;font-size:0.85rem;z-index:9999;box-shadow:0 10px 25px rgba(0,0,0,0.5);';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2200);
+  }
+};
+
+function renderCompilerProfilesTable(profiles) {
+  const tbody = document.getElementById('compiler-profiles-tbody');
+  if (!tbody) return;
+
+  if (!profiles || profiles.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+          <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--text-bright);">No Registered Developer Profiles Yet</div>
+          <div style="font-size: 0.85rem;">When users save their Name, Mobile Number and Email ID in <a href="/compiler/" target="_blank" style="color: #10b981; text-decoration: underline;">Elite IDE</a>, their verified profile will appear here instantly!</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  const avatarColors = [
+    'linear-gradient(135deg, #10b981, #047857)',
+    'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+    'linear-gradient(135deg, #f59e0b, #b45309)',
+    'linear-gradient(135deg, #ec4899, #be185d)'
+  ];
+
+  let html = '';
+  profiles.forEach((p, idx) => {
+    const initials = (p.name || 'Dev').substring(0, 2).toUpperCase();
+    const bgGrad = avatarColors[idx % avatarColors.length];
+    const registeredDate = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently';
+    const lastActiveStr = p.last_active ? formatRunTime(p.last_active) : 'Active recently';
+    const cleanPhone = (p.mobile || '').replace(/[^0-9]/g, '');
+
+    html += `
+      <tr>
+        <td>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="compiler-avatar" style="background: ${bgGrad}; width: 34px; height: 34px; font-size: 0.8rem;">
+              ${initials}
+            </div>
+            <div>
+              <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                ${escapeHtml(p.name || 'Anonymous Dev')}
+                <span style="font-size: 0.65rem; background: rgba(16,185,129,0.18); color: #34d399; padding: 1px 6px; border-radius: 4px; font-weight: 700;">VERIFIED</span>
+              </div>
+              <div style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono);">${escapeHtml(p.user_id || '')}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          ${p.mobile && p.mobile !== 'N/A' ? `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <a href="tel:${escapeHtml(p.mobile)}" style="color: #38bdf8; font-weight: 600; text-decoration: none; font-size: 0.85rem;" title="Call developer">
+                📞 ${escapeHtml(p.mobile)}
+              </a>
+              ${cleanPhone.length >= 10 ? `
+                <a href="https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}" target="_blank" style="background: rgba(37, 211, 102, 0.15); color: #25d366; border: 1px solid rgba(37, 211, 102, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-decoration: none; font-weight: 700;" title="Chat on WhatsApp">
+                  WhatsApp
+                </a>
+              ` : ''}
+            </div>
+          ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">--</span>'}
+        </td>
+        <td>
+          ${p.email && p.email !== 'N/A' ? `
+            <a href="mailto:${escapeHtml(p.email)}" style="color: #a5b4fc; text-decoration: none; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 4px;" title="Send Email">
+              ✉️ ${escapeHtml(p.email)}
+            </a>
+          ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">--</span>'}
+        </td>
+        <td>
+          <span class="device-badge ${(p.device || 'desktop').toLowerCase()}">
+            ${p.device === 'Mobile' ? '📱' : '💻'} ${escapeHtml(p.device || 'Desktop')} • ${escapeHtml(p.os || 'OS')}
+          </span>
+        </td>
+        <td>
+          <span style="font-weight: 700; color: #f59e0b; font-size: 0.88rem; background: rgba(245, 158, 11, 0.1); padding: 3px 8px; border-radius: 6px;">
+            ⚡ ${p.runs_count || 1} runs
+          </span>
+        </td>
+        <td style="font-size: 0.78rem; color: #10b981; font-family: var(--font-mono);">
+          ${lastActiveStr}
+        </td>
+        <td style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">
+          ${registeredDate}
+        </td>
+        <td>
+          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary);" onclick="filterRunsByProfile('${escapeHtml(p.user_id || p.name)}')">
+            View Runs →
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+window.filterCompilerProfilesTable = function() {
+  const query = (document.getElementById('compiler-profiles-search')?.value || '').toLowerCase();
+  if (!query) {
+    renderCompilerProfilesTable(window.allCompilerProfiles);
+    return;
+  }
+  const filtered = window.allCompilerProfiles.filter(p => {
+    const hay = [p.name, p.mobile, p.email, p.user_id, p.device, p.os].join(' ').toLowerCase();
+    return hay.includes(query);
+  });
+  renderCompilerProfilesTable(filtered);
+};
+
+window.exportCompilerProfilesCSV = function() {
+  if (!window.allCompilerProfiles || window.allCompilerProfiles.length === 0) {
+    alert('No developer profiles available to export.');
+    return;
+  }
+
+  const headers = ['User ID', 'Full Name', 'Mobile Number', 'Email ID', 'Device', 'OS', 'Browser', 'IP', 'Total Runs', 'Registered Date'];
+  const rows = window.allCompilerProfiles.map(p => [
+    `"${(p.user_id || '').replace(/"/g, '""')}"`,
+    `"${(p.name || '').replace(/"/g, '""')}"`,
+    `"${(p.mobile || '').replace(/"/g, '""')}"`,
+    `"${(p.email || '').replace(/"/g, '""')}"`,
+    `"${(p.device || '').replace(/"/g, '""')}"`,
+    `"${(p.os || '').replace(/"/g, '""')}"`,
+    `"${(p.browser || '').replace(/"/g, '""')}"`,
+    `"${(p.ip || '').replace(/"/g, '""')}"`,
+    p.runs_count || 1,
+    `"${(p.created_at || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `elitewebkingdom_compiler_developer_profiles_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
+window.filterRunsByProfile = function(query) {
+  switchCompilerSubView('stream');
+  const searchInput = document.getElementById('compiler-search-input');
+  if (searchInput) {
+    searchInput.value = query;
+    filterCompilerRunsTable();
+  }
+};
 
 
 

@@ -9,6 +9,7 @@ import { recordExecutionTelemetry } from './liveLeaderboardService';
 
 const USER_ID_KEY = 'ewk_compiler_user_id';
 const USER_NAME_KEY = 'ewk_compiler_user_name';
+const USER_PROFILE_KEY = 'ewk_user_profile';
 const LOCAL_RUNS_CACHE_KEY = 'ewk_compiler_recent_runs';
 const SESSION_COUNTED_KEY = 'ewk_compiler_pageview_logged';
 
@@ -19,6 +20,133 @@ let heartbeatIntervalId = null;
 let realtimeChannel = null;
 let activeCollegeName = 'Web IDE';
 let activeSystemName = '';
+
+// Run debounce cooldown trackers to prevent duplicate recording
+let lastLoggedCode = '';
+let lastLoggedTimestamp = 0;
+
+// Retrieve saved user profile (Name, Mobile, Email)
+export function getUserProfile() {
+  try {
+    const raw = localStorage.getItem(USER_PROFILE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+// Save & Sync User Profile across LocalStorage, Supabase Realtime & Database
+export async function saveUserProfile({ name, mobile, email }) {
+  const userId = getOrCreateUserId();
+  const cleanName = (name || '').trim().substring(0, 60);
+  const cleanMobile = (mobile || '').trim().substring(0, 25);
+  const cleanEmail = (email || '').trim().substring(0, 100);
+  const nowIso = new Date().toISOString();
+
+  const profileData = {
+    userId,
+    name: cleanName,
+    mobile: cleanMobile,
+    email: cleanEmail,
+    updated_at: nowIso
+  };
+
+  try {
+    localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profileData));
+    if (cleanName) {
+      localStorage.setItem(USER_NAME_KEY, cleanName);
+    }
+  } catch (e) {}
+
+  const device = detectDevice();
+  const browser = detectBrowser();
+  const os = detectOS();
+  const ip = cachedClientIp || (await fetchPublicIp());
+
+  // 1. Broadcast profile update to Supabase Realtime Channel (<30ms)
+  if (realtimeChannel) {
+    try {
+      realtimeChannel.send({
+        type: 'broadcast',
+        event: 'profile_updated',
+        payload: {
+          sessionId: currentSessionId,
+          userId,
+          name: cleanName,
+          mobile: cleanMobile,
+          email: cleanEmail,
+          device,
+          browser,
+          os,
+          ip,
+          timestamp: nowIso
+        }
+      });
+    } catch (e) {}
+  }
+
+  // 2. Persist to Supabase Database
+  if (supabase) {
+    try {
+      // Upsert into dedicated compiler_user_profiles table
+      supabase
+        .from('compiler_user_profiles')
+        .upsert([{
+          user_id: userId,
+          name: cleanName,
+          mobile: cleanMobile,
+          email: cleanEmail,
+          device,
+          browser,
+          os,
+          ip,
+          last_active: nowIso
+        }], { onConflict: 'user_id' })
+        .then(({ error }) => {
+          if (error) console.warn('[Telemetry] Profiles upsert notice:', error.message);
+        })
+        .catch(() => {});
+
+      // Update current active session with developer name and contacts
+      if (currentSessionId) {
+        supabase
+          .from('compiler_active_sessions')
+          .update({
+            user_name: cleanName || undefined,
+            user_mobile: cleanMobile,
+            user_email: cleanEmail
+          })
+          .eq('session_id', currentSessionId)
+          .then(() => {})
+          .catch(() => {});
+      }
+
+      // 3. Resilient fallback sync into leads table (guaranteed to be captured in Admin even without schema changes)
+      if (cleanMobile || cleanEmail) {
+        supabase.from('leads').insert([{
+          name: cleanName || 'Developer',
+          email: cleanEmail || 'developer@elitewebkingdom.in',
+          phone: cleanMobile || 'N/A',
+          company: 'Elite IDE Developer',
+          category: 'Compiler Developer Profile',
+          budget: '₹0',
+          timeline: 'Active User',
+          message: `Developer Profile [ID: ${userId}] registered from Elite IDE. Device: ${device} • ${os} • IP: ${ip}`,
+          status: 'new',
+          created_at: nowIso
+        }]).then(() => {}).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('[Telemetry] Save profile notice:', err);
+    }
+  }
+
+  return profileData;
+}
 
 // Generate persistent unique developer ID
 export function getOrCreateUserId() {
@@ -36,6 +164,10 @@ export function getOrCreateUserId() {
 
 // Generate or retrieve developer alias / student name
 export function getOrCreateUserName() {
+  const profile = getUserProfile();
+  if (profile && profile.name) {
+    return profile.name;
+  }
   try {
     let name = localStorage.getItem(USER_NAME_KEY);
     if (!name) {
@@ -148,8 +280,12 @@ export async function initCompilerTelemetry(initialLang = 'python', collegeDetai
     currentSessionId = 'ses_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
   }
 
-  const userId = getOrCreateUserId();
-  let userName = getOrCreateUserName();
+  const profile = getUserProfile();
+  const userMobile = (profile && profile.mobile) ? profile.mobile : '';
+  const userEmail = (profile && profile.email) ? profile.email : '';
+  if (profile && profile.name) {
+    userName = profile.name;
+  }
 
   if (collegeDetails) {
     if (collegeDetails.collegeName) activeCollegeName = collegeDetails.collegeName;
@@ -180,6 +316,8 @@ export async function initCompilerTelemetry(initialLang = 'python', collegeDetai
                 sessionId: currentSessionId,
                 userId,
                 userName,
+                user_mobile: userMobile,
+                user_email: userEmail,
                 language: initialLang,
                 device,
                 browser,
@@ -201,6 +339,8 @@ export async function initCompilerTelemetry(initialLang = 'python', collegeDetai
     session_id: currentSessionId,
     user_id: userId,
     user_name: userName,
+    user_mobile: userMobile,
+    user_email: userEmail,
     college_name: activeCollegeName,
     current_language: initialLang,
     device,
@@ -344,8 +484,23 @@ export async function logCompilerRun({
   runner = 'Elite Engine',
   collegeData = null
 }) {
+  const nowMs = Date.now();
+  const trimmedCode = (code || '').trim();
+
+  // Cooldown debounce (1200ms) to prevent duplicate triggers from double taps or rapid re-runs
+  if (lastLoggedCode === trimmedCode && (nowMs - lastLoggedTimestamp) < 1200) {
+    console.log('[Telemetry] Debouncing duplicate run invocation.');
+    return null;
+  }
+  lastLoggedCode = trimmedCode;
+  lastLoggedTimestamp = nowMs;
+
+  const runId = 'run_' + nowMs + '_' + Math.random().toString(36).substring(2, 8);
+  const profile = getUserProfile();
   const userId = getOrCreateUserId();
-  const userName = getOrCreateUserName();
+  const userName = (profile && profile.name) ? profile.name : getOrCreateUserName();
+  const userMobile = (profile && profile.mobile) ? profile.mobile : '';
+  const userEmail = (profile && profile.email) ? profile.email : '';
   const device = detectDevice();
   const browser = detectBrowser();
   const os = detectOS();
@@ -358,6 +513,10 @@ export async function logCompilerRun({
     if (collegeData.collegeName) collegeName = collegeData.collegeName;
     if (collegeData.systemName) systemName = collegeData.systemName;
   }
+  // Store contact in system_name as a 100% resilient fallback for existing tables
+  if (!systemName && (userMobile || userEmail)) {
+    systemName = `${userMobile} | ${userEmail}`.trim();
+  }
 
   // Prepare safe snippet (up to 700 chars)
   const codeSnippet = (code || '').trim().substring(0, 700);
@@ -365,9 +524,12 @@ export async function logCompilerRun({
   const status = success ? 'SUCCESS' : 'ERROR';
 
   const telemetryPayload = {
+    run_id: runId,
     session_id: currentSessionId || ('ses_' + Date.now()),
     user_id: userId,
     user_name: userName,
+    user_mobile: userMobile,
+    user_email: userEmail,
     college_name: collegeName,
     system_name: systemName,
     language: (language || 'python').toLowerCase(),
