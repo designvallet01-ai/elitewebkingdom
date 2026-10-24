@@ -51,13 +51,17 @@ export default function StatusBar({
           <span className="warning-dot">0</span>
         </button>
 
-        {/* Cloud Execution Runtime Health */}
+        {/* Cloud Execution Runtime Health & Realtime Indicator */}
         <div 
           className="status-bar-item runtime-indicator"
-          title="Distributed Serverless Sandbox: Operational (<10ms)"
+          title="Distributed Serverless Sandbox & Real-Time Presence: Connected & Operational"
         >
           <Wifi size={12} className="text-emerald-400" />
           <span>Elite Cloud V8: Ready</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '6px', color: '#10b981', fontSize: '11px', fontWeight: 600 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }}></span>
+            LIVE
+          </span>
         </div>
       </div>
 

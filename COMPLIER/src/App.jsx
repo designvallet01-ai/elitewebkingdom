@@ -39,6 +39,13 @@ import { diagnoseAndHealError } from './services/aiErrorHealer';
 import { executeInBrowserNode } from './services/clientNodeRunner';
 import { recordExecutionTelemetry } from './services/liveLeaderboardService';
 import { 
+  initCompilerTelemetry, 
+  updateTelemetryLanguage, 
+  logCompilerRun, 
+  getOrCreateUserName, 
+  updateCompilerUserName 
+} from './services/compilerTelemetryService';
+import { 
   subscribeToCollegeEvents, 
   broadcastMessage, 
   updateSystemStatus, 
@@ -336,6 +343,19 @@ export default function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Initialize Real-time Live Compiler Telemetry & Presence Tracking
+  useEffect(() => {
+    initCompilerTelemetry(manualLanguage !== 'auto' ? manualLanguage : (activeFile?.language || 'python'), collegeStudentInfo);
+  }, []);
+
+  // Sync active language to presence stream when language switches
+  useEffect(() => {
+    const currentLang = manualLanguage !== 'auto' ? manualLanguage : (activeFile?.language || 'python');
+    if (currentLang) {
+      updateTelemetryLanguage(currentLang);
+    }
+  }, [manualLanguage, activeFile?.language]);
 
   // When switching views on mobile, trigger Monaco layout recalculation
   useEffect(() => {
@@ -873,6 +893,17 @@ export default function App() {
           ]);
           setLastStats(jdbcResult);
           setIsRunning(false);
+          try {
+            logCompilerRun({
+              language: lang,
+              success: jdbcResult.code === 0,
+              code: codeToRun,
+              executionTime: jdbcResult.executionTime || 2,
+              errorMessage: jdbcResult.stderr || '',
+              runner: jdbcResult.runner || 'Elite JDBC In-Memory Engine',
+              collegeData: collegeStudentInfo
+            });
+          } catch (e) {}
           return;
         } catch (jdbcErr) {
           console.warn('Local JDBC runner fallback to Cloud:', jdbcErr);
@@ -896,6 +927,17 @@ export default function App() {
           ]);
           setLastStats(localResult);
           setIsRunning(false);
+          try {
+            logCompilerRun({
+              language: lang,
+              success: localResult.code === 0,
+              code: codeToRun,
+              executionTime: localResult.executionTime || 1,
+              errorMessage: localResult.stderr || '',
+              runner: 'Browser Node V8 Virtual Engine',
+              collegeData: collegeStudentInfo
+            });
+          } catch (e) {}
           return;
         } catch (localErr) {
           console.warn('Browser Node runner fallback to Cloud:', localErr);
@@ -1001,9 +1043,18 @@ export default function App() {
         }
       }
 
-      // Record real execution telemetry for authentic streaks & badges
+      // Record real execution telemetry for authentic streaks & badges, and real-time live admin monitor
       try {
         recordExecutionTelemetry(lang, data?.code === 0, codeToRun);
+        logCompilerRun({
+          language: lang,
+          success: data?.code === 0,
+          code: codeToRun,
+          executionTime: (data && data.executionTime) ? data.executionTime : Math.max(1, Math.round(performance.now() - runStartTime)),
+          errorMessage: data?.stderr || '',
+          runner: data?.runner || 'Elite Cloud Multi-Cluster Engine',
+          collegeData: collegeStudentInfo
+        });
       } catch (e) {}
 
       const entries = [

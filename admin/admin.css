@@ -713,3 +713,196 @@ select.form-control option,
     background-color: transparent;
   }
 }
+
+/* ==========================================================================
+   COMPILER REAL-TIME MONITOR & LIVE TELEMETRY STYLES
+   ========================================================================== */
+#stat-card-compiler:hover {
+  border-color: #818cf8;
+  box-shadow: 0 10px 30px rgba(129, 140, 248, 0.25);
+  transform: translateY(-3px);
+}
+
+.active-view-btn {
+  background: rgba(129, 140, 248, 0.2) !important;
+  border-color: #818cf8 !important;
+  color: #c7d2fe !important;
+  box-shadow: 0 0 15px rgba(129, 140, 248, 0.2);
+}
+
+/* Compiler Online User Card */
+.compiler-user-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  position: relative;
+  transition: all var(--transition-normal);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+.compiler-user-card:hover {
+  border-color: rgba(129, 140, 248, 0.4);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(129, 140, 248, 0.15);
+  transform: translateY(-2px);
+}
+.compiler-user-card.is-online-active {
+  border-color: rgba(16, 185, 129, 0.35);
+}
+.compiler-user-card.is-online-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #00f2fe, #818cf8);
+}
+
+.compiler-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Language Badges */
+.compiler-lang-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.compiler-lang-badge.python {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+.compiler-lang-badge.cpp, .compiler-lang-badge.c {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+.compiler-lang-badge.java {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+}
+.compiler-lang-badge.javascript, .compiler-lang-badge.js, .compiler-lang-badge.typescript {
+  background: rgba(234, 179, 8, 0.15);
+  color: #fde047;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+}
+.compiler-lang-badge.rust {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+.compiler-lang-badge.go {
+  background: rgba(6, 182, 212, 0.15);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+}
+.compiler-lang-badge.csharp, .compiler-lang-badge.cs {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+.compiler-lang-badge.default {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Execution Status Badges */
+.status-pill-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.status-pill-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Code Preview Snippet Box */
+.code-preview-cell {
+  max-width: 260px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  background: rgba(2, 6, 23, 0.6);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.code-preview-cell:hover {
+  background: rgba(2, 6, 23, 0.9);
+  border-color: rgba(129, 140, 248, 0.4);
+  color: #fff;
+}
+
+/* New Compiler Execution Flash Animation */
+.compiler-row-highlight {
+  animation: compiler-run-glow 2.8s ease-out;
+}
+@keyframes compiler-run-glow {
+  0% {
+    background-color: rgba(129, 140, 248, 0.35);
+  }
+  50% {
+    background-color: rgba(129, 140, 248, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Code Inspector Modal */
+.code-modal-snippet {
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  line-height: 1.5;
+  max-height: 360px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+

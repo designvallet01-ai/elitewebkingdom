@@ -172,6 +172,9 @@ window.switchTab = function(tabId) {
   if (tabId === 'visitors' || tabId === 'overview') {
     loadVisitorLogs();
   }
+  if (tabId === 'compiler-activity' || tabId === 'overview') {
+    loadCompilerActivity();
+  }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -185,6 +188,8 @@ function initDashboard() {
   loadRealVisitorCount();
   loadVisitorLogs();
   setupRealtimeVisitorTracker();
+  loadCompilerActivity();
+  setupRealtimeCompilerTracker();
   loadTeamMembersDropdown();
   renderAdminTeamMembers();
   renderAdminAssignedTasks();
@@ -2413,5 +2418,953 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// ============================================================================
+// COMPILER REAL-TIME MONITOR & LIVE DEVELOPER TELEMETRY ENGINE
+// Real-time tracking of active compiler coders, live executions & telemetry
+// ============================================================================
+
+window.allCompilerRuns = [];
+window.allCompilerActiveSessions = [];
+window.compilerCurrentSubView = 'presence';
+window.compilerSoundEnabled = true;
+let realtimeCompilerChannel = null;
+let currentInspectingRun = null;
+
+// Built-in Synthesizer Chime for Live Code Runs (Zero external audio assets)
+function playCompilerRunChime() {
+  if (!window.compilerSoundEnabled) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    // Soft high cyber blip (880Hz to 1320Hz)
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.22);
+  } catch (e) {}
+}
+
+window.toggleCompilerSound = function() {
+  window.compilerSoundEnabled = !window.compilerSoundEnabled;
+  const statusEl = document.getElementById('compiler-sound-status');
+  if (statusEl) statusEl.textContent = window.compilerSoundEnabled ? 'ON' : 'OFF';
+  const btn = document.getElementById('compiler-sound-toggle-btn');
+  if (btn) {
+    btn.style.color = window.compilerSoundEnabled ? '#10b981' : '#94a3b8';
+    btn.style.borderColor = window.compilerSoundEnabled ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255, 255, 255, 0.1)';
+  }
+  if (window.compilerSoundEnabled) playCompilerRunChime();
+};
+
+window.switchCompilerSubView = function(view) {
+  window.compilerCurrentSubView = view;
+  const presenceView = document.getElementById('compiler-presence-view');
+  const streamView = document.getElementById('compiler-stream-view');
+  const btnPresence = document.getElementById('view-btn-presence');
+  const btnStream = document.getElementById('view-btn-stream');
+
+  if (view === 'presence') {
+    if (presenceView) presenceView.style.display = 'block';
+    if (streamView) streamView.style.display = 'none';
+    if (btnPresence) btnPresence.classList.add('active-view-btn');
+    if (btnStream) btnStream.classList.remove('active-view-btn');
+  } else {
+    if (presenceView) presenceView.style.display = 'none';
+    if (streamView) streamView.style.display = 'block';
+    if (btnPresence) btnPresence.classList.remove('active-view-btn');
+    if (btnStream) btnStream.classList.add('active-view-btn');
+  }
+};
+
+// Flash animations on card & header
+function flashCompilerLiveStat() {
+  const card = document.getElementById('stat-card-compiler');
+  if (card) {
+    card.style.boxShadow = '0 0 35px rgba(129, 140, 248, 0.6)';
+    card.style.borderColor = '#818cf8';
+    setTimeout(() => {
+      card.style.boxShadow = '';
+      card.style.borderColor = '';
+    }, 1500);
+  }
+}
+
+// 1. Setup Supabase Realtime Channel & Broadcasts
+function setupRealtimeCompilerTracker() {
+  if (!supabaseClient) return;
+  if (realtimeCompilerChannel) return;
+
+  try {
+    realtimeCompilerChannel = supabaseClient
+      .channel('compiler_realtime_stream')
+      // Live Instant Run Broadcast (<30ms global latency)
+      .on('broadcast', { event: 'code_run' }, (payload) => {
+        if (!payload || !payload.payload) return;
+        const newRun = payload.payload;
+        console.log('[EWK Compiler Realtime] Live Code Execution Received:', newRun);
+
+        playCompilerRunChime();
+        flashCompilerLiveStat();
+
+        // Check if run already in list (deduplicate)
+        const exists = window.allCompilerRuns.some(r => r.session_id === newRun.session_id && r.created_at === newRun.created_at);
+        if (!exists) {
+          window.allCompilerRuns.unshift(newRun);
+          if (window.allCompilerRuns.length > 300) window.allCompilerRuns.pop();
+        }
+
+        // Update active session runs count
+        const targetSession = window.allCompilerActiveSessions.find(s => s.session_id === newRun.session_id);
+        if (targetSession) {
+          targetSession.runs_count = (targetSession.runs_count || 0) + 1;
+          targetSession.last_run_at = newRun.created_at;
+          targetSession.last_heartbeat = newRun.created_at;
+          targetSession.current_language = newRun.language;
+          renderCompilerActiveUsers(window.allCompilerActiveSessions);
+        }
+
+        updateCompilerKpiCounters();
+        renderOverviewCompilerRuns(window.allCompilerRuns.slice(0, 6));
+        filterCompilerRunsTable();
+
+        // Highlight first row with animation
+        const firstRow = document.querySelector('#compiler-runs-tbody tr');
+        if (firstRow) firstRow.classList.add('compiler-row-highlight');
+        const overviewRow = document.querySelector('#overview-compiler-tbody tr');
+        if (overviewRow) overviewRow.classList.add('compiler-row-highlight');
+      })
+      // User Joined IDE
+      .on('broadcast', { event: 'user_joined' }, (payload) => {
+        if (!payload || !payload.payload) return;
+        const u = payload.payload;
+        const existingIdx = window.allCompilerActiveSessions.findIndex(s => s.session_id === u.sessionId);
+        const sessionObj = {
+          session_id: u.sessionId,
+          user_id: u.userId,
+          user_name: u.userName,
+          current_language: u.language,
+          device: u.device,
+          browser: u.browser,
+          os: u.os,
+          ip: u.ip,
+          college_name: u.collegeName || 'Web IDE',
+          runs_count: 0,
+          last_heartbeat: u.timestamp || new Date().toISOString(),
+          is_online: true
+        };
+        if (existingIdx >= 0) {
+          window.allCompilerActiveSessions[existingIdx] = sessionObj;
+        } else {
+          window.allCompilerActiveSessions.unshift(sessionObj);
+        }
+        renderCompilerActiveUsers(window.allCompilerActiveSessions);
+        updateCompilerKpiCounters();
+      })
+      // Heartbeat ping
+      .on('broadcast', { event: 'presence_heartbeat' }, (payload) => {
+        if (!payload || !payload.payload) return;
+        const u = payload.payload;
+        const target = window.allCompilerActiveSessions.find(s => s.session_id === u.sessionId);
+        if (target) {
+          target.last_heartbeat = u.timestamp || new Date().toISOString();
+          target.is_online = true;
+          renderCompilerActiveUsers(window.allCompilerActiveSessions);
+        }
+      })
+      // User Left IDE
+      .on('broadcast', { event: 'user_left' }, (payload) => {
+        if (!payload || !payload.payload) return;
+        const u = payload.payload;
+        window.allCompilerActiveSessions = window.allCompilerActiveSessions.filter(s => s.session_id !== u.sessionId);
+        renderCompilerActiveUsers(window.allCompilerActiveSessions);
+        updateCompilerKpiCounters();
+      })
+      // Postgres Changes on Telemetry Table (Audit sync)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'compiler_telemetry' }, (payload) => {
+        if (!payload || !payload.new) return;
+        const dbRun = payload.new;
+        const alreadyExists = window.allCompilerRuns.some(r => (r.id && r.id === dbRun.id) || (r.session_id === dbRun.session_id && r.created_at === dbRun.created_at));
+        if (!alreadyExists) {
+          window.allCompilerRuns.unshift(dbRun);
+          updateCompilerKpiCounters();
+          renderOverviewCompilerRuns(window.allCompilerRuns.slice(0, 6));
+          filterCompilerRunsTable();
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[EWK Compiler Realtime] Subscribed to live compiler stream channel.');
+        }
+      });
+  } catch (err) {
+    console.warn('[EWK Compiler Realtime] Setup error:', err);
+  }
+
+  // Periodic polling every 12 seconds to ensure stale sessions (>60s) drop off
+  setInterval(syncActiveCompilerSessions, 12000);
+}
+
+// 2. Fetch and Sync Active Sessions from Supabase
+async function syncActiveCompilerSessions() {
+  if (!supabaseClient) return;
+  try {
+    const oneMinuteAgo = new Date(Date.now() - 65000).toISOString();
+    const { data, error } = await supabaseClient
+      .from('compiler_active_sessions')
+      .select('*')
+      .eq('is_online', true)
+      .gte('last_heartbeat', oneMinuteAgo)
+      .order('last_heartbeat', { ascending: false });
+
+    if (!error && Array.isArray(data)) {
+      window.allCompilerActiveSessions = data;
+      renderCompilerActiveUsers(window.allCompilerActiveSessions);
+      updateCompilerKpiCounters();
+    }
+  } catch (e) {
+    console.warn('[Compiler Activity] Active sessions sync warning:', e);
+  }
+}
+
+// 3. Load All Compiler Activity & Runs
+async function loadCompilerActivity(isManualRefresh = false) {
+  let runsList = [];
+  let loadedFromDb = false;
+
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('compiler_telemetry')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(250);
+
+      if (!error && Array.isArray(data)) {
+        runsList = data;
+        loadedFromDb = true;
+      }
+    } catch (err) {
+      console.warn('Compiler telemetry fetch notice:', err);
+    }
+  }
+
+  // Merge with local storage cache (for instant offline & local run preview)
+  try {
+    const localLogs = JSON.parse(localStorage.getItem('ewk_compiler_recent_runs') || '[]');
+    if (localLogs.length > 0) {
+      if (loadedFromDb) {
+        const existingTimes = new Set(runsList.map(x => x.created_at));
+        localLogs.forEach(item => {
+          if (item.created_at && !existingTimes.has(item.created_at)) {
+            runsList.push(item);
+          }
+        });
+        runsList.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      } else {
+        runsList = localLogs;
+      }
+    }
+  } catch (e) {}
+
+  window.allCompilerRuns = runsList;
+
+  // Sync active coders
+  await syncActiveCompilerSessions();
+
+  // Update Counters & Visuals
+  updateCompilerKpiCounters();
+  renderOverviewCompilerRuns(window.allCompilerRuns.slice(0, 6));
+  filterCompilerRunsTable();
+
+  if (isManualRefresh) {
+    const toast = document.createElement('div');
+    toast.textContent = `✓ Refreshed ${window.allCompilerRuns.length} Compiler Executions`;
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#818cf8;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;font-size:0.85rem;z-index:9999;box-shadow:0 10px 25px rgba(0,0,0,0.5);';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2200);
+  }
+}
+
+// 4. Update KPI Counters
+function updateCompilerKpiCounters() {
+  const activeCount = window.allCompilerActiveSessions.length;
+
+  // Sidebar count
+  const sidebarCount = document.getElementById('sidebar-compiler-active-count');
+  if (sidebarCount) sidebarCount.textContent = activeCount;
+
+  // Overview card
+  const totalCompilerActiveVal = document.getElementById('total-compiler-active-val');
+  if (totalCompilerActiveVal) totalCompilerActiveVal.textContent = activeCount;
+
+  // Compiler panel KPI
+  const compKpiOnline = document.getElementById('comp-kpi-online');
+  if (compKpiOnline) compKpiOnline.textContent = activeCount;
+
+  const compPresenceTabCount = document.getElementById('comp-presence-tab-count');
+  if (compPresenceTabCount) compPresenceTabCount.textContent = activeCount;
+
+  // Today runs count
+  const todayStr = new Date().toDateString();
+  const todayRuns = window.allCompilerRuns.filter(r => {
+    if (!r.created_at) return false;
+    return new Date(r.created_at).toDateString() === todayStr;
+  });
+
+  const compKpiToday = document.getElementById('comp-kpi-today');
+  if (compKpiToday) compKpiToday.textContent = todayRuns.length.toLocaleString('en-IN');
+
+  const compilerLiveSub = document.getElementById('compiler-live-sub');
+  if (compilerLiveSub) compilerLiveSub.textContent = `${todayRuns.length} runs logged today • View Telemetry →`;
+
+  const compStreamTabCount = document.getElementById('comp-stream-tab-count');
+  if (compStreamTabCount) compStreamTabCount.textContent = window.allCompilerRuns.length;
+
+  // Unique programmers today
+  const uniqueUsers = new Set();
+  todayRuns.forEach(r => {
+    if (r.user_id) uniqueUsers.add(r.user_id);
+    else if (r.user_name) uniqueUsers.add(r.user_name);
+  });
+  const compKpiUniqueUsers = document.getElementById('comp-kpi-unique-users');
+  if (compKpiUniqueUsers) {
+    compKpiUniqueUsers.textContent = Math.max(uniqueUsers.size, activeCount > 0 ? 1 : 0);
+  }
+
+  // Top programming language
+  const langCounts = {};
+  window.allCompilerRuns.forEach(r => {
+    const l = (r.language || 'python').toLowerCase();
+    langCounts[l] = (langCounts[l] || 0) + 1;
+  });
+  let topLang = 'Python';
+  let topCount = 0;
+  Object.keys(langCounts).forEach(l => {
+    if (langCounts[l] > topCount) {
+      topCount = langCounts[l];
+      topLang = l.charAt(0).toUpperCase() + l.slice(1);
+    }
+  });
+
+  const compKpiToplang = document.getElementById('comp-kpi-toplang');
+  if (compKpiToplang) {
+    if (window.allCompilerRuns.length > 0) {
+      const pct = Math.round((topCount / window.allCompilerRuns.length) * 100);
+      compKpiToplang.textContent = `${topLang} (${pct}%)`;
+    } else {
+      compKpiToplang.textContent = 'Python';
+    }
+  }
+}
+
+// 5. Render Active Online Coders Presence Grid
+function renderCompilerActiveUsers(sessions) {
+  const container = document.getElementById('compiler-active-users-grid');
+  if (!container) return;
+
+  if (!sessions || sessions.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: rgba(15, 23, 42, 0.4); border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.1);">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(129, 140, 248, 0.1); color: #818cf8; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+        </div>
+        <h4 style="font-size: 1.05rem; color: #f8fafc; margin-bottom: 6px;">No Coders Online Right Now</h4>
+        <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 420px; margin: 0 auto;">
+          Open <a href="/compiler/" target="_blank" style="color: #818cf8; text-decoration: underline;">Elite IDE</a> in another browser tab or have students compile code. Active developers will automatically appear here in real-time!
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  const avatarColors = [
+    'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    'linear-gradient(135deg, #10b981, #047857)',
+    'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+    'linear-gradient(135deg, #f59e0b, #b45309)',
+    'linear-gradient(135deg, #ec4899, #be185d)',
+    'linear-gradient(135deg, #06b6d4, #0e7490)'
+  ];
+
+  let html = '';
+  sessions.forEach((s, idx) => {
+    const name = s.user_name || 'Anonymous Dev';
+    const initials = name.substring(0, 2).toUpperCase();
+    const bgGrad = avatarColors[idx % avatarColors.length];
+    const lang = (s.current_language || 'python').toLowerCase();
+    const device = s.device || 'Desktop';
+    const os = s.os || 'OS';
+    const ip = s.ip && s.ip !== 'unknown' ? s.ip : 'Direct Client';
+    const college = s.college_name && s.college_name !== 'Web IDE' ? s.college_name : 'General Web IDE';
+    const runsCount = s.runs_count || 0;
+
+    // Time difference
+    let timeStr = 'Active just now';
+    if (s.last_heartbeat) {
+      const diffSec = Math.max(1, Math.round((Date.now() - new Date(s.last_heartbeat).getTime()) / 1000));
+      timeStr = diffSec < 60 ? `Active ${diffSec}s ago` : `Active ${Math.round(diffSec / 60)}m ago`;
+    }
+
+    html += `
+      <div class="compiler-user-card is-online-active">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="compiler-avatar" style="background: ${bgGrad};">
+              ${initials}
+            </div>
+            <div>
+              <div style="font-weight: 700; color: #fff; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                ${escapeHtml(name)}
+                <span class="live-now-badge" title="Live Heartbeat Active">
+                  <span class="live-dot" style="background: #10b981;"></span> ONLINE
+                </span>
+              </div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(college)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+          <span class="compiler-lang-badge ${getLangClass(lang)}">
+            💻 ${escapeHtml(lang.toUpperCase())}
+          </span>
+          <span class="device-badge ${device.toLowerCase()}">
+            ${device === 'Mobile' ? '📱' : '💻'} ${escapeHtml(device)} • ${escapeHtml(os)}
+          </span>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted);">
+          <span>Runs this session: <strong style="color: #38bdf8;">${runsCount}</strong></span>
+          <span style="font-family: var(--font-mono); color: #94a3b8;">${escapeHtml(ip)}</span>
+        </div>
+
+        <div style="margin-top: 6px; font-size: 0.7rem; color: #10b981; display: flex; align-items: center; gap: 4px;">
+          <span class="live-dot" style="background: #10b981; width: 5px; height: 5px;"></span>
+          ${timeStr}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// 6. Render Overview Recent Compiler Executions Table (Latest 6)
+function renderOverviewCompilerRuns(items) {
+  const tbody = document.getElementById('overview-compiler-tbody');
+  if (!tbody) return;
+
+  if (!items || items.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">
+          No compiler executions recorded yet today. Hit "Run" on <a href="/compiler/" target="_blank" style="color: #818cf8;">Elite IDE</a> to see live executions!
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  let html = '';
+  items.forEach((r, idx) => {
+    const timeStr = formatRunTime(r.created_at);
+    const lang = (r.language || 'python').toLowerCase();
+    const isSuccess = r.status === 'SUCCESS';
+    const statusHtml = isSuccess
+      ? `<span class="status-pill-success">✓ SUCCESS</span>`
+      : `<span class="status-pill-error">✕ ERROR</span>`;
+    const snippet = r.code_snippet ? r.code_snippet.replace(/\n/g, ' ') : '';
+    const safeSnippet = escapeHtml(snippet.substring(0, 45)) + (snippet.length > 45 ? '...' : '');
+    const userName = r.user_name || 'Anonymous Dev';
+
+    html += `
+      <tr>
+        <td style="font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; white-space: nowrap;">
+          ${timeStr}
+        </td>
+        <td>
+          <div style="font-weight: 600; color: #f8fafc; font-size: 0.85rem;">${escapeHtml(userName)}</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">${escapeHtml(r.college_name || 'Web IDE')}</div>
+        </td>
+        <td>
+          <span class="compiler-lang-badge ${getLangClass(lang)}">${escapeHtml(lang.toUpperCase())}</span>
+        </td>
+        <td>${statusHtml}</td>
+        <td style="font-family: var(--font-mono); font-size: 0.78rem; color: #a5b4fc;">
+          ${r.execution_time_ms ? `${r.execution_time_ms}ms` : '<10ms'}
+        </td>
+        <td>
+          <div class="code-preview-cell" onclick="inspectCompilerCode(${idx})" title="Click to inspect source code">
+            ${safeSnippet || '<em>[code snippet]</em>'}
+          </div>
+        </td>
+        <td>
+          <span class="device-badge ${r.device ? r.device.toLowerCase() : 'desktop'}">
+            ${escapeHtml(r.device || 'Desktop')}
+          </span>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+// 7. Filter and Render Main Compiler Runs Table
+window.filterCompilerRunsTable = function() {
+  const tbody = document.getElementById('compiler-runs-tbody');
+  if (!tbody) return;
+
+  const searchInput = (document.getElementById('compiler-search-input')?.value || '').toLowerCase();
+  const langFilter = document.getElementById('compiler-lang-filter')?.value || 'all';
+  const statusFilter = document.getElementById('compiler-status-filter')?.value || 'all';
+  const timeFilter = document.getElementById('compiler-time-filter')?.value || 'all';
+
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const yesterday = new Date(now.getTime() - 86400000);
+  const yesterdayStr = yesterday.toDateString();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+
+  const filtered = window.allCompilerRuns.filter(r => {
+    // Language filter
+    if (langFilter !== 'all') {
+      const rLang = (r.language || '').toLowerCase();
+      if (langFilter === 'cpp' && rLang !== 'cpp' && rLang !== 'c++') return false;
+      if (langFilter === 'c' && rLang !== 'c') return false;
+      if (langFilter === 'javascript' && rLang !== 'javascript' && rLang !== 'js' && rLang !== 'typescript') return false;
+      if (langFilter !== 'cpp' && langFilter !== 'c' && langFilter !== 'javascript' && !rLang.includes(langFilter)) return false;
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      if (r.status !== statusFilter) return false;
+    }
+
+    // Time filter
+    if (timeFilter !== 'all' && r.created_at) {
+      const runDate = new Date(r.created_at);
+      if (timeFilter === 'today' && runDate.toDateString() !== todayStr) return false;
+      if (timeFilter === 'yesterday' && runDate.toDateString() !== yesterdayStr) return false;
+      if (timeFilter === '7days' && runDate < sevenDaysAgo) return false;
+    }
+
+    // Search query
+    if (searchInput) {
+      const hay = [
+        r.user_name || '',
+        r.language || '',
+        r.code_snippet || '',
+        r.device || '',
+        r.os || '',
+        r.browser || '',
+        r.ip || '',
+        r.college_name || ''
+      ].join(' ').toLowerCase();
+      if (!hay.includes(searchInput)) return false;
+    }
+
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
+          <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--text-bright);">No matching compiler runs found</div>
+          <div style="font-size: 0.85rem;">Try adjusting your search query or filters above.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach((r, idx) => {
+    // Original index in window.allCompilerRuns
+    const origIdx = window.allCompilerRuns.indexOf(r);
+    const timeStr = formatRunTime(r.created_at);
+    const lang = (r.language || 'python').toLowerCase();
+    const isSuccess = r.status === 'SUCCESS';
+    const statusHtml = isSuccess
+      ? `<span class="status-pill-success">✓ SUCCESS</span>`
+      : `<span class="status-pill-error">✕ ERROR</span>`;
+    const snippet = r.code_snippet ? r.code_snippet.replace(/\n/g, ' ') : '';
+    const safeSnippet = escapeHtml(snippet.substring(0, 45)) + (snippet.length > 45 ? '...' : '');
+
+    html += `
+      <tr>
+        <td style="font-family: var(--font-mono); font-size: 0.78rem; color: #cbd5e1; white-space: nowrap;">
+          ${timeStr}
+        </td>
+        <td>
+          <div style="font-weight: 600; color: #f8fafc; font-size: 0.85rem;">${escapeHtml(r.user_name || 'Anonymous Dev')}</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">${escapeHtml(r.college_name || 'Web IDE')}</div>
+        </td>
+        <td>
+          <span class="compiler-lang-badge ${getLangClass(lang)}">${escapeHtml(lang.toUpperCase())}</span>
+        </td>
+        <td>${statusHtml}</td>
+        <td style="font-family: var(--font-mono); font-size: 0.78rem; color: #a5b4fc;">
+          ${r.execution_time_ms ? `${r.execution_time_ms}ms` : '<10ms'}
+        </td>
+        <td>
+          <div class="code-preview-cell" onclick="inspectCompilerCode(${origIdx})" title="Click to view code snippet">
+            ${safeSnippet || '<em>[code snippet]</em>'}
+          </div>
+        </td>
+        <td>
+          <span class="device-badge ${r.device ? r.device.toLowerCase() : 'desktop'}">
+            ${escapeHtml(r.device || 'Desktop')} • ${escapeHtml(r.os || 'OS')}
+          </span>
+        </td>
+        <td style="font-family: var(--font-mono); font-size: 0.75rem; color: #94a3b8;">
+          ${escapeHtml(r.ip || 'unknown')}
+        </td>
+        <td>
+          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-color: rgba(129, 140, 248, 0.4); color: #c7d2fe;" onclick="inspectCompilerCode(${origIdx})">
+            Inspect Code →
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+};
+
+// 8. Inspect Source Code Modal
+window.inspectCompilerCode = function(index) {
+  const run = window.allCompilerRuns[index];
+  if (!run) return;
+  currentInspectingRun = run;
+
+  const modal = document.getElementById('compiler-code-modal');
+  if (!modal) return;
+
+  const titleEl = document.getElementById('code-modal-title');
+  const subEl = document.getElementById('code-modal-sub');
+  const langBadge = document.getElementById('code-modal-lang-badge');
+  const statusBadge = document.getElementById('code-modal-status-badge');
+  const timeBadge = document.getElementById('code-modal-time-badge');
+  const contentEl = document.getElementById('code-modal-content');
+  const errorBox = document.getElementById('code-modal-error-box');
+
+  const lang = (run.language || 'python').toLowerCase();
+  const userName = run.user_name || 'Developer';
+  const college = run.college_name || 'Web IDE';
+  const timeFormatted = run.created_at ? new Date(run.created_at).toLocaleString() : 'Just now';
+
+  if (titleEl) titleEl.textContent = `Executed by ${userName} (${lang.toUpperCase()})`;
+  if (subEl) subEl.textContent = `${college} • ${timeFormatted} • IP: ${run.ip || 'unknown'} • ${run.device || 'Desktop'}`;
+
+  if (langBadge) {
+    langBadge.className = `compiler-lang-badge ${getLangClass(lang)}`;
+    langBadge.textContent = lang.toUpperCase();
+  }
+
+  if (statusBadge) {
+    statusBadge.className = run.status === 'SUCCESS' ? 'status-pill-success' : 'status-pill-error';
+    statusBadge.textContent = run.status === 'SUCCESS' ? '✓ SUCCESS' : '✕ ERROR';
+  }
+
+  if (timeBadge) {
+    timeBadge.textContent = `Runtime: ${run.execution_time_ms || 1}ms | Lines: ${run.line_count || 1}`;
+  }
+
+  if (contentEl) {
+    contentEl.textContent = run.code_snippet || '// No code snippet recorded';
+  }
+
+  if (errorBox) {
+    if (run.error_message) {
+      errorBox.style.display = 'block';
+      errorBox.textContent = `Console Diagnostic / Stderr:\n${run.error_message}`;
+    } else {
+      errorBox.style.display = 'none';
+    }
+  }
+
+  modal.style.display = 'flex';
+};
+
+window.closeCompilerCodeModal = function() {
+  const modal = document.getElementById('compiler-code-modal');
+  if (modal) modal.style.display = 'none';
+  currentInspectingRun = null;
+};
+
+window.copyModalCodeSnippet = function() {
+  if (!currentInspectingRun || !currentInspectingRun.code_snippet) return;
+  navigator.clipboard.writeText(currentInspectingRun.code_snippet).then(() => {
+    alert('✓ Code snippet copied to clipboard!');
+  }).catch(() => {
+    const el = document.getElementById('code-modal-content');
+    if (el) {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('copy');
+      alert('✓ Code copied!');
+    }
+  });
+};
+
+// 9. Supabase SQL Schema Modal Handler
+const COMPILER_SCHEMA_SQL = `-- =================================================================
+-- ELITE WEB KINGDOM - REAL-TIME COMPILER TELEMETRY & PRESENCE SCHEMA
+-- Run this SQL in your Supabase SQL Editor:
+-- https://supabase.com/dashboard/project/jgvgqgbhzadxvcolgvly/sql
+-- =================================================================
+
+-- 1. COMPILER EXECUTION TELEMETRY TABLE (All Code Runs & History)
+CREATE TABLE IF NOT EXISTS public.compiler_telemetry (
+    id BIGSERIAL PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    user_name TEXT DEFAULT 'Anonymous Dev',
+    college_name TEXT DEFAULT 'Web IDE',
+    system_name TEXT DEFAULT '',
+    language TEXT NOT NULL,
+    status TEXT NOT NULL, -- 'SUCCESS' | 'ERROR'
+    line_count INTEGER DEFAULT 1,
+    code_snippet TEXT,
+    execution_time_ms INTEGER DEFAULT 0,
+    error_message TEXT,
+    device TEXT DEFAULT 'Desktop',
+    browser TEXT DEFAULT 'Browser',
+    os TEXT DEFAULT 'OS',
+    ip TEXT DEFAULT 'unknown',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 2. COMPILER ACTIVE SESSIONS TABLE (Real-Time Live Online Coders)
+CREATE TABLE IF NOT EXISTS public.compiler_active_sessions (
+    session_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    user_name TEXT DEFAULT 'Anonymous Dev',
+    college_name TEXT DEFAULT 'Web IDE',
+    current_language TEXT DEFAULT 'python',
+    device TEXT DEFAULT 'Desktop',
+    browser TEXT DEFAULT 'Browser',
+    os TEXT DEFAULT 'OS',
+    ip TEXT DEFAULT 'unknown',
+    runs_count INTEGER DEFAULT 0,
+    last_run_at TIMESTAMP WITH TIME ZONE,
+    last_heartbeat TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    is_online BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 3. ENABLE ROW LEVEL SECURITY (RLS)
+ALTER TABLE public.compiler_telemetry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.compiler_active_sessions ENABLE ROW LEVEL SECURITY;
+
+-- 4. POLICIES FOR COMPILER TELEMETRY
+CREATE POLICY "Allow public insert compiler_telemetry" ON public.compiler_telemetry FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select compiler_telemetry" ON public.compiler_telemetry FOR SELECT USING (true);
+CREATE POLICY "Allow public delete compiler_telemetry" ON public.compiler_telemetry FOR DELETE USING (true);
+
+-- 5. POLICIES FOR COMPILER ACTIVE SESSIONS
+CREATE POLICY "Allow public insert compiler_active_sessions" ON public.compiler_active_sessions FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public select compiler_active_sessions" ON public.compiler_active_sessions FOR SELECT USING (true);
+CREATE POLICY "Allow public update compiler_active_sessions" ON public.compiler_active_sessions FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete compiler_active_sessions" ON public.compiler_active_sessions FOR DELETE USING (true);
+
+-- 6. ENABLE REALTIME PUBLICATION
+ALTER PUBLICATION supabase_realtime ADD TABLE public.compiler_telemetry;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.compiler_active_sessions;
+
+-- 7. PERFORMANCE INDEXES
+CREATE INDEX IF NOT EXISTS idx_compiler_telemetry_created_at ON public.compiler_telemetry (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_compiler_telemetry_lang ON public.compiler_telemetry (language);
+CREATE INDEX IF NOT EXISTS idx_compiler_telemetry_user ON public.compiler_telemetry (user_id);
+CREATE INDEX IF NOT EXISTS idx_compiler_active_sessions_heartbeat ON public.compiler_active_sessions (last_heartbeat DESC);
+`;
+
+window.openCompilerSqlModal = function() {
+  const modal = document.getElementById('compiler-sql-modal');
+  const txt = document.getElementById('sql-schema-content');
+  if (txt) txt.value = COMPILER_SCHEMA_SQL;
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeCompilerSqlModal = function() {
+  const modal = document.getElementById('compiler-sql-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.copySqlSchemaToClipboard = function() {
+  navigator.clipboard.writeText(COMPILER_SCHEMA_SQL).then(() => {
+    alert('✓ Supabase SQL schema copied to clipboard! Paste and run it in your Supabase SQL Editor.');
+  }).catch(() => {
+    const txt = document.getElementById('sql-schema-content');
+    if (txt) {
+      txt.select();
+      document.execCommand('copy');
+      alert('✓ SQL schema copied!');
+    }
+  });
+};
+
+// 10. Simulate Live Run for Instant Verification
+window.simulateTestCompilerRun = async function() {
+  const langs = ['python', 'cpp', 'java', 'javascript', 'rust', 'go'];
+  const testLang = langs[Math.floor(Math.random() * langs.length)];
+  const testDevs = ['Gowri Narayana', 'Sita Ram', 'CyberCoder-404', 'ApexDev-91', 'Student-JNTUH', 'Kiran Kumar'];
+  const devName = testDevs[Math.floor(Math.random() * testDevs.length)];
+  const isSuccess = Math.random() > 0.15;
+  const runtime = Math.floor(12 + Math.random() * 85);
+  const nowIso = new Date().toISOString();
+
+  const codeSnippets = {
+    python: `def fibonacci(n):\n    if n <= 1: return n\n    return fibonacci(n-1) + fibonacci(n-2)\n\nprint("Fibonacci(10):", fibonacci(10))`,
+    cpp: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Elite IDE C++ 14.1 high performance execution" << endl;\n    return 0;\n}`,
+    java: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello from JDK 17 Virtual Sandbox!");\n    }\n}`,
+    javascript: `const users = ['Alice', 'Bob', 'Charlie'];\nconsole.log('Active users:', users.map(u => u.toUpperCase()));`,
+    rust: `fn main() {\n    println!("Rust 1.85 memory safety guarantees active!");\n}`,
+    go: `package main\nimport "fmt"\nfunc main() {\n    fmt.Println("Concurrency with Go 1.23 goroutines")\n}`
+  };
+
+  const simulatedRun = {
+    session_id: 'ses_test_' + Date.now(),
+    user_id: 'usr_test_' + Math.random().toString(36).substring(2, 7),
+    user_name: devName,
+    college_name: 'Elite Web Kingdom Dev Lab',
+    system_name: 'Test Rig #1',
+    language: testLang,
+    status: isSuccess ? 'SUCCESS' : 'ERROR',
+    line_count: 6,
+    code_snippet: codeSnippets[testLang] || 'print("Test code run")',
+    execution_time_ms: runtime,
+    error_message: isSuccess ? null : 'Simulated syntax error: unexpected EOF on line 6',
+    device: Math.random() > 0.4 ? 'Desktop' : 'Mobile',
+    browser: 'Chrome',
+    os: 'Windows',
+    ip: '103.212.145.' + Math.floor(10 + Math.random() * 200),
+    created_at: nowIso
+  };
+
+  // Broadcast to Realtime Channel
+  if (realtimeCompilerChannel) {
+    try {
+      realtimeCompilerChannel.send({
+        type: 'broadcast',
+        event: 'code_run',
+        payload: simulatedRun
+      });
+    } catch (e) {}
+  }
+
+  // Insert to Supabase if connected
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('compiler_telemetry').insert([simulatedRun]);
+    } catch (e) {}
+  }
+
+  // Prepend to local runs list
+  window.allCompilerRuns.unshift(simulatedRun);
+  playCompilerRunChime();
+  flashCompilerLiveStat();
+  updateCompilerKpiCounters();
+  renderOverviewCompilerRuns(window.allCompilerRuns.slice(0, 6));
+  filterCompilerRunsTable();
+
+  const firstRow = document.querySelector('#compiler-runs-tbody tr');
+  if (firstRow) firstRow.classList.add('compiler-row-highlight');
+
+  alert(`⚡ Live Test Run Simulated!\nDeveloper: ${devName}\nLanguage: ${testLang.toUpperCase()}\nStatus: ${simulatedRun.status}\nRuntime: ${runtime}ms`);
+};
+
+// 11. Export Compiler Telemetry CSV
+window.exportCompilerLogsCSV = function() {
+  if (!window.allCompilerRuns || window.allCompilerRuns.length === 0) {
+    alert('No compiler execution logs to export.');
+    return;
+  }
+
+  const headers = ['Timestamp', 'User Name', 'User ID', 'College / Lab', 'Language', 'Status', 'Execution Time (ms)', 'Lines', 'Device', 'OS', 'Browser', 'IP Address', 'Code Snippet'];
+  const rows = window.allCompilerRuns.map(r => [
+    `"${r.created_at || ''}"`,
+    `"${(r.user_name || '').replace(/"/g, '""')}"`,
+    `"${r.user_id || ''}"`,
+    `"${(r.college_name || '').replace(/"/g, '""')}"`,
+    `"${r.language || ''}"`,
+    `"${r.status || ''}"`,
+    r.execution_time_ms || 0,
+    r.line_count || 1,
+    `"${r.device || ''}"`,
+    `"${r.os || ''}"`,
+    `"${r.browser || ''}"`,
+    `"${r.ip || ''}"`,
+    `"${(r.code_snippet || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`
+  ]);
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `elitewebkingdom_compiler_telemetry_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
+// Helper: Format Timestamp
+function formatRunTime(isoStr) {
+  if (!isoStr) return 'Just now';
+  try {
+    const d = new Date(isoStr);
+    const now = new Date();
+    const diffSec = Math.round((now - d) / 1000);
+    if (diffSec < 45) return 'Just now';
+    if (diffSec < 3600) return `${Math.round(diffSec / 60)}m ago`;
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch (e) {
+    return isoStr;
+  }
+}
+
+// Helper: Language CSS class
+function getLangClass(lang) {
+  if (!lang) return 'default';
+  const l = lang.toLowerCase();
+  if (l.includes('python') || l === 'py') return 'python';
+  if (l.includes('cpp') || l === 'c++') return 'cpp';
+  if (l === 'c') return 'c';
+  if (l.includes('java') && !l.includes('javascript')) return 'java';
+  if (l.includes('javascript') || l === 'js' || l.includes('node') || l.includes('typescript')) return 'javascript';
+  if (l.includes('rust')) return 'rust';
+  if (l.includes('go')) return 'go';
+  if (l.includes('csharp') || l === 'cs' || l.includes('net')) return 'csharp';
+  return 'default';
+}
+
+// Helper: HTML escaper
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 
 
