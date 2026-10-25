@@ -111,53 +111,7 @@ export async function saveUserProfile({ name, mobile, email }) {
         })
         .catch(() => {});
 
-      // 2b. Guaranteed permanent persistence: Save into leads table with all mandatory constraints
-      if (cleanMobile || cleanEmail) {
-        const leadId = Date.now().toString();
-        // Check if lead already exists for this contact to update or insert
-        supabase
-          .from('leads')
-          .select('id')
-          .or(`phone.eq.${cleanMobile},email.eq.${cleanEmail}`)
-          .limit(1)
-          .then(async ({ data: existingLead }) => {
-            if (existingLead && existingLead.length > 0) {
-              await supabase
-                .from('leads')
-                .update({
-                  name: cleanName || 'Developer',
-                  email: cleanEmail || 'developer@elitewebkingdom.in',
-                  phone: cleanMobile || 'N/A',
-                  company: 'Elite IDE Developer',
-                  category: 'Compiler Developer Profile',
-                  budget: '₹0',
-                  timeline: 'Active User',
-                  message: `Developer Profile [ID: ${userId}] registered from Elite IDE. Device: ${device} • ${os} • IP: ${ip}`,
-                  status: 'new'
-                })
-                .eq('id', existingLead[0].id);
-            } else {
-              await supabase
-                .from('leads')
-                .insert([{
-                  id: leadId,
-                  name: cleanName || 'Developer',
-                  email: cleanEmail || 'developer@elitewebkingdom.in',
-                  phone: cleanMobile || 'N/A',
-                  company: 'Elite IDE Developer',
-                  category: 'Compiler Developer Profile',
-                  budget: '₹0',
-                  timeline: 'Active User',
-                  message: `Developer Profile [ID: ${userId}] registered from Elite IDE. Device: ${device} • ${os} • IP: ${ip}`,
-                  status: 'new',
-                  created_at: nowIso
-                }]);
-            }
-          })
-          .catch(err => {
-            console.warn('[Telemetry] Leads table profile sync notice:', err);
-          });
-      }
+      // Note: Compiler developer profiles are tracked in compiler_user_profiles and compiler_active_sessions, not in client project proposals (leads).
 
       // 2c. Update active session with developer name and phone in college_name
       if (currentSessionId) {

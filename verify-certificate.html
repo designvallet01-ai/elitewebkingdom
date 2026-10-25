@@ -553,8 +553,7 @@
     }
 
     /* =================================================================
-       VINTAGE ROYAL PARCHMENT CERTIFICATE CANVAS
-       (Faithfully matched to user's uploaded official certificate template)
+       DIGITAL LUXURY GOLD CERTIFICATE CANVAS (RESTORED)
        ================================================================= */
     .certificate-viewport {
       width: 100%;
@@ -564,46 +563,56 @@
 
     .cert-award-canvas {
       width: 100%;
-      min-width: 820px;
-      max-width: 900px;
-      background: #faf7ee;
-      background-image: 
-        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.75) 0%, rgba(243, 237, 224, 0.95) 100%);
-      border: 3px solid #8c6d46;
-      border-radius: 8px;
+      min-width: 640px;
+      max-width: 860px;
+      background: radial-gradient(circle at 50% 30%, #0f172a 0%, #030712 100%);
+      border: 3px solid #d4af37;
+      border-radius: 12px;
       position: relative;
-      padding: 46px 54px;
+      padding: 38px 44px;
       box-shadow: 
-        0 0 0 6px #faf7ee, 
-        0 0 0 9px #8c6d46,
-        0 20px 60px rgba(0, 0, 0, 0.7);
-      color: #1e1b18;
+        0 0 0 6px #030712, 
+        0 0 0 8px rgba(212, 175, 55, 0.4),
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 50px rgba(245, 158, 11, 0.15);
+      color: #ffffff;
       overflow: hidden;
       margin: 0 auto;
     }
 
-    /* Baroque Ornate Corner Accents */
-    .cert-filigree-corner {
+    .cert-inner-border {
       position: absolute;
-      width: 140px;
-      height: 140px;
+      inset: 14px;
+      border: 1px solid rgba(212, 175, 55, 0.5);
       pointer-events: none;
-      z-index: 1;
-      opacity: 0.85;
+      border-radius: 6px;
     }
 
-    .cert-filigree-corner.top-left { top: 0; left: 0; }
-    .cert-filigree-corner.top-right { top: 0; right: 0; transform: scaleX(-1); }
-    .cert-filigree-corner.bottom-left { bottom: 0; left: 0; transform: scaleY(-1); }
-    .cert-filigree-corner.bottom-right { bottom: 0; right: 0; transform: scale(-1); }
-
-    .cert-inner-frame-border {
+    .cert-corner {
       position: absolute;
-      inset: 12px;
-      border: 1.5px solid rgba(140, 109, 70, 0.45);
-      border-radius: 4px;
+      width: 22px;
+      height: 22px;
+      border-color: #d4af37;
+      border-style: solid;
       pointer-events: none;
-      z-index: 1;
+    }
+
+    .cert-corner.top-left { top: 18px; left: 18px; border-width: 3px 0 0 3px; }
+    .cert-corner.top-right { top: 18px; right: 18px; border-width: 3px 3px 0 0; }
+    .cert-corner.bottom-left { bottom: 18px; left: 18px; border-width: 0 0 3px 3px; }
+    .cert-corner.bottom-right { bottom: 18px; right: 18px; border-width: 0 3px 3px 0; }
+
+    .cert-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.04;
+      width: 400px;
+      height: 400px;
+      pointer-events: none;
+      filter: grayscale(100%);
+      z-index: 0;
     }
 
     .cert-content {
@@ -615,207 +624,217 @@
       align-items: center;
     }
 
-    /* TOP HEADER: LEFT LOGO, CENTER TITLE, RIGHT MSME/GOVT EMBLEM */
-    .cert-top-header-row {
-      width: 100%;
-      display: grid;
-      grid-template-columns: 110px 1fr 140px;
-      align-items: center;
-      margin-bottom: 12px;
-      gap: 14px;
-    }
-
-    .cert-top-left-logo {
+    .cert-brand-row {
       display: flex;
-      justify-content: flex-start;
       align-items: center;
-    }
-
-    .cert-round-emblem {
-      width: 82px;
-      height: 82px;
-      border-radius: 50%;
-      object-fit: cover;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    .cert-top-center-brand {
-      text-align: center;
-    }
-
-    .cert-brand-main-title {
-      font-family: var(--font-ornate);
-      font-size: 1.55rem;
-      font-weight: 800;
-      letter-spacing: 4px;
-      color: #1e1b18;
-      text-transform: uppercase;
-      line-height: 1.2;
-    }
-
-    .cert-brand-sub-title {
-      font-family: var(--font-ornate);
-      font-size: 0.74rem;
-      letter-spacing: 3px;
-      color: #443b34;
-      text-transform: uppercase;
-      font-weight: 600;
-      margin-top: 3px;
-    }
-
-    .cert-top-right-govt {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
       justify-content: center;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
-    .govt-msme-lockup {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .cert-logo-img {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      border: 1px solid rgba(212, 175, 55, 0.6);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
     }
 
-    .msme-tag-line {
-      font-size: 0.58rem;
-      color: #332d27;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-align: right;
-      margin-top: 2px;
-    }
-
-    /* MAIN TITLE */
-    .cert-achievement-title {
+    .cert-authority-title {
       font-family: var(--font-ornate);
-      font-size: 2.35rem;
+      font-size: 1.15rem;
       font-weight: 800;
-      letter-spacing: 2px;
-      color: #1e1b18;
+      letter-spacing: 3px;
+      color: #f8fafc;
       text-transform: uppercase;
-      margin: 8px 0 4px;
-      line-height: 1.2;
     }
 
-    .cert-presented-line {
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-size: 1.05rem;
-      color: #38312b;
-      margin-bottom: 4px;
-    }
-
-    /* RECIPIENT NAME CALLIGRAPHY */
-    .cert-recipient-calligraphy {
-      font-family: var(--font-calligraphy);
-      font-size: 3.4rem;
-      font-weight: 400;
-      color: #1e1b18;
-      line-height: 1.1;
-      margin: 2px 0 4px;
-      padding-bottom: 2px;
-      border-bottom: 1.5px solid #8c6d46;
-      display: inline-block;
-      min-width: 320px;
-      text-align: center;
-    }
-
-    /* DESCRIPTION PARAGRAPH */
-    .cert-description-para {
-      font-family: var(--font-serif);
-      font-size: 0.96rem;
-      color: #2b2520;
-      line-height: 1.6;
-      max-width: 720px;
-      margin: 10px auto 14px;
-      text-align: center;
-    }
-
-    /* METADATA ROW: ID & ISSUE DATE */
-    .cert-meta-row {
-      width: 100%;
-      max-width: 720px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 6px auto 26px;
-      font-size: 0.95rem;
-      color: #1e1b18;
+    .cert-authority-sub {
+      font-size: 0.72rem;
+      color: var(--cyan-primary);
+      letter-spacing: 2px;
+      text-transform: uppercase;
       font-weight: 600;
     }
 
-    .cert-meta-item strong {
-      font-weight: 800;
-      color: #1e1b18;
-    }
-
-    /* BOTTOM ROW: EXECUTIVE DIRECTOR SIGNATURE, HERALDIC FLOURISH, VERIFY */
-    .cert-signatories-row {
-      width: 100%;
-      display: grid;
-      grid-template-columns: 240px 1fr 240px;
-      align-items: flex-end;
-      gap: 14px;
-      margin-top: 6px;
-    }
-
-    .signatory-column {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .executive-signature-text {
-      font-family: var(--font-signature);
+    .cert-main-heading {
+      font-family: var(--font-ornate);
       font-size: 2.1rem;
-      color: #1e1b18;
-      line-height: 1;
-      margin-bottom: 4px;
-      letter-spacing: 1px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #d4af37;
+      text-transform: uppercase;
+      margin: 10px 0 4px;
+      background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #b45309 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
     }
 
-    .signatory-line-rule {
-      width: 100%;
-      border-top: 1.5px solid #73532f;
+    .cert-tagline {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .cert-presented-text {
+      font-style: italic;
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      color: #cbd5e1;
       margin-bottom: 6px;
     }
 
-    .signatory-role-title {
-      font-family: var(--font-sans);
+    .cert-recipient-name {
+      font-family: var(--font-serif);
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+      position: relative;
+      display: inline-block;
+      padding-bottom: 6px;
+    }
+
+    .cert-recipient-name::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #d4af37, #00f2fe, #d4af37, transparent);
+    }
+
+    .cert-award-category-pill {
+      display: inline-block;
+      margin: 8px 0 14px;
+      padding: 5px 18px;
+      border-radius: 20px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--gold-light);
+      font-weight: 700;
       font-size: 0.95rem;
-      font-weight: 800;
-      color: #1e1b18;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .cert-reason-desc {
+      max-width: 580px;
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .cert-month-line {
+      font-size: 0.85rem;
+      color: var(--cyan-primary);
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .cert-footer-row {
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 20px;
+    }
+
+    .cert-footer-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .cert-qr-box {
+      width: 78px;
+      height: 78px;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      margin-bottom: 6px;
+    }
+
+    .cert-qr-box canvas, .cert-qr-box img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .cert-seal-graphic {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #f59e0b 0%, #b45309 80%, #78350f 100%);
+      border: 3px double #fef08a;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 4px;
+      font-size: 0.58rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      line-height: 1.1;
+      padding: 4px;
+    }
+
+    .cert-seal-graphic svg {
+      margin-bottom: 2px;
+      color: #fef08a;
+    }
+
+    .cert-signature-img {
+      font-family: 'Herr Von Muellerhoff', 'Playfair Display', cursive, serif;
+      font-size: 2rem;
+      color: #f8fafc;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.6);
+      padding: 0 20px 4px;
+      margin-bottom: 4px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+      line-height: 1;
+    }
+
+    .cert-sign-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .cert-sign-role {
+      font-size: 0.72rem;
+      color: #fbbf24;
+      font-weight: 600;
       letter-spacing: 0.5px;
     }
 
-    .signatory-org-subtitle {
-      font-family: var(--font-sans);
-      font-size: 0.82rem;
-      color: #4a423a;
-    }
-
-    .center-floral-crest {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .verify-link-text {
-      font-family: var(--font-sans);
-      font-size: 0.74rem;
-      color: #4a423a;
-      word-break: break-all;
-    }
-
-    /* BOTTOM DISCLAIMER */
-    .cert-bottom-disclaimer {
-      font-size: 0.64rem;
-      color: #554c44;
-      text-align: center;
-      margin-top: 22px;
-      line-height: 1.4;
-      max-width: 740px;
+    .cert-id-tag {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--cyan-primary);
+      font-weight: 700;
     }
 
     /* FOOTER */
@@ -1213,153 +1232,61 @@
               </div>
             </div>
 
-            <!-- LUXURY VINTAGE CERTIFICATE VIEWPORT -->
+            <!-- LUXURY DIGITAL CERTIFICATE CARD (RESTORED) -->
             <div class="certificate-viewport">
               <div class="cert-award-canvas" id="printable-certificate">
-                <!-- Inner Border Frame -->
-                <div class="cert-inner-frame-border"></div>
-
-                <!-- 4 Baroque Filigree Corner Ornaments (SVG) -->
-                <svg class="cert-filigree-corner top-left" viewBox="0 0 100 100" fill="none">
-                  <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
-                  <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
-                  <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
-                  <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-                  <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-                  <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
-                </svg>
-
-                <svg class="cert-filigree-corner top-right" viewBox="0 0 100 100" fill="none">
-                  <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
-                  <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
-                  <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
-                  <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-                  <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-                  <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
-                </svg>
-
-                <svg class="cert-filigree-corner bottom-left" viewBox="0 0 100 100" fill="none">
-                  <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
-                  <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
-                  <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
-                  <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-                  <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-                  <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
-                </svg>
-
-                <svg class="cert-filigree-corner bottom-right" viewBox="0 0 100 100" fill="none">
-                  <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
-                  <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
-                  <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
-                  <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-                  <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-                  <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
-                </svg>
+                <div class="cert-inner-border"></div>
+                <div class="cert-corner top-left"></div>
+                <div class="cert-corner top-right"></div>
+                <div class="cert-corner bottom-left"></div>
+                <div class="cert-corner bottom-right"></div>
+                
+                <img src="/logo.jpeg" alt="Watermark" class="cert-watermark">
 
                 <div class="cert-content">
-                  <!-- TOP HEADER: LEFT LOGO, CENTER TITLE, RIGHT GOVT/MSME LOGOS -->
-                  <div class="cert-top-header-row">
-                    <!-- Left: Circular Logo -->
-                    <div class="cert-top-left-logo">
-                      <img src="/logo.jpeg" alt="Elite Web Kingdom Logo" class="cert-round-emblem">
+                  <div class="cert-brand-row">
+                    <img src="/logo.jpeg" alt="Logo" class="cert-logo-img">
+                    <div>
+                      <div class="cert-authority-title">Elite Web Kingdom</div>
+                      <div class="cert-authority-sub">Engineering Distinction</div>
                     </div>
+                  </div>
 
-                    <!-- Center: Brand Heading -->
-                    <div class="cert-top-center-brand">
-                      <h2 class="cert-brand-main-title">ELITE WEB KINGDOM</h2>
-                      <div class="cert-brand-sub-title">ELITE IDE — MONTHLY DEVELOPER</div>
-                      <div class="cert-brand-sub-title" style="letter-spacing: 4px; font-weight: 700;">EXCELLENCE AWARDS</div>
-                    </div>
+                  <h1 class="cert-main-heading">${escapeHtml(cert.main_heading || 'Certificate of Achievement')}</h1>
+                  <p class="cert-tagline">Official Credential of Engineering Distinction</p>
 
-                    <!-- Right: State Emblem of India + MSME Ministry Logo -->
-                    <div class="cert-top-right-govt">
-                      <div class="govt-msme-lockup">
-                        <!-- Ashoka Lion Emblem (Vector) -->
-                        <svg width="34" height="48" viewBox="0 0 100 140" fill="#2d241e">
-                          <!-- Ashoka Stambh Stylized Vector -->
-                          <path d="M50 5 C 45 5, 38 10, 36 18 C 34 26, 38 32, 42 36 C 36 38, 30 45, 32 54 C 34 62, 42 66, 50 66 C 58 66, 66 62, 68 54 C 70 45, 64 38, 58 36 C 62 32, 66 26, 64 18 C 62 10, 55 5, 50 5 Z"/>
-                          <circle cx="50" cy="24" r="5" fill="#faf7ee"/>
-                          <path d="M25 80 L 75 80 L 72 94 L 28 94 Z"/>
-                          <circle cx="50" cy="87" r="5" fill="#faf7ee"/>
-                          <rect x="20" y="98" width="60" height="10" rx="2"/>
-                          <text x="50" y="125" font-size="12" font-family="'Times New Roman', serif" font-weight="bold" text-anchor="middle" fill="#2d241e">सत्यमेव जयते</text>
-                        </svg>
+                  <p class="cert-presented-text">This is proudly presented to</p>
+                  <div class="cert-recipient-name">${escapeHtml(cert.recipient_name)}</div>
 
-                        <!-- MSME Logo Block -->
-                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                          <div style="font-family: 'Arial Black', Impact, sans-serif; font-size: 1.45rem; font-weight: 900; letter-spacing: 1px; color: #1e1b18; line-height: 1;">
-                            msme
-                          </div>
-                          <div style="font-size: 0.42rem; font-weight: 800; color: #1e1b18; line-height: 1.1; text-transform: uppercase;">
-                            MICRO, SMALL &amp; MEDIUM ENTERPRISES
-                          </div>
-                          <div style="font-size: 0.42rem; font-weight: 700; color: #443b34; line-height: 1.1;">
-                            सूक्ष्म, लघु एवं मध्यम उद्यम
-                          </div>
-                          <div style="font-size: 0.4rem; font-weight: 700; color: #1e1b18; letter-spacing: 0.5px;">
-                            OUR STRENGTH हमारी शक्ति
-                          </div>
-                        </div>
+                  <div class="cert-award-category-pill">${escapeHtml(cert.award_category)}</div>
+
+                  <p class="cert-reason-desc">${escapeHtml(descText)}</p>
+                  <div class="cert-month-line">Performance Month: ${escapeHtml(cert.performance_month)}</div>
+
+                  <!-- Footer -->
+                  <div class="cert-footer-row">
+                    <div class="cert-footer-col" style="align-items: flex-start;">
+                      <div class="cert-qr-box" id="cert-qr-container"></div>
+                      <div class="cert-id-tag">ID: ${escapeHtml(cert.certificate_id)}</div>
+                      <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                        Issue Date: ${escapeHtml(cert.issue_date)}
                       </div>
-                      <div class="msme-tag-line">Ministry of MSME, Govt. of India</div>
-                    </div>
-                  </div>
-
-                  <!-- MAIN CERTIFICATE TITLE -->
-                  <h1 class="cert-achievement-title">${escapeHtml(cert.main_heading || 'CERTIFICATE OF ACHIEVEMENT')}</h1>
-                  <p class="cert-presented-line">This certificate is proudly presented to :</p>
-
-                  <!-- RECIPIENT NAME IN CURSIVE CALLIGRAPHY -->
-                  <div class="cert-recipient-calligraphy">${escapeHtml(cert.recipient_name)}</div>
-
-                  <!-- ACHIEVEMENT DESCRIPTION -->
-                  <p class="cert-description-para">
-                    ${escapeHtml(descText)}
-                  </p>
-
-                  <!-- METADATA ROW -->
-                  <div class="cert-meta-row">
-                    <div class="cert-meta-item">
-                      <strong>Certificate ID:</strong> [${escapeHtml(cert.certificate_id)}]
-                    </div>
-                    <div class="cert-meta-item">
-                      <strong>Date of Issue:</strong> [${escapeHtml(displayDate)}]
-                    </div>
-                  </div>
-
-                  <!-- SIGNATORIES & VERIFICATION ROW -->
-                  <div class="cert-signatories-row">
-                    <!-- Left: Bathala Harika - Executive Director -->
-                    <div class="signatory-column">
-                      <div class="executive-signature-text">Bathala Harika</div>
-                      <div class="signatory-line-rule"></div>
-                      <div class="signatory-role-title">Executive Director</div>
-                      <div class="signatory-org-subtitle">Elite Web Kingdom</div>
                     </div>
 
-                    <!-- Center: Antique Floral Baroque Crest Motif -->
-                    <div class="center-floral-crest">
-                      <svg width="84" height="42" viewBox="0 0 120 60" fill="#8c6d46">
-                        <path d="M60 10 C 66 18, 76 22, 85 18 C 76 28, 80 38, 90 42 C 78 40, 70 48, 60 55 C 50 48, 42 40, 30 42 C 40 38, 44 28, 35 18 C 44 22, 54 18, 60 10 Z"/>
-                        <circle cx="60" cy="28" r="4" fill="#faf7ee"/>
-                        <circle cx="60" cy="28" r="2" fill="#8c6d46"/>
-                      </svg>
-                    </div>
-
-                    <!-- Right: Verification Line & URL -->
-                    <div class="signatory-column">
-                      <div style="font-family: var(--font-mono); font-size: 0.76rem; color: #1e1b18; font-weight: 700; margin-bottom: 6px;">
-                        REGISTRY AUTHENTICATED
+                    <div class="cert-footer-col">
+                      <div class="cert-seal-graphic">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <span>ELITE<br>VERIFIED</span>
                       </div>
-                      <div class="signatory-line-rule"></div>
-                      <div class="signatory-role-title">VERIFY</div>
-                      <div class="verify-link-text">https://www.elitewebkingdom.in/verify-certificate</div>
+                      <span style="font-size: 0.62rem; color: #d4af37; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;">Verified Seal</span>
                     </div>
-                  </div>
 
-                  <!-- BOTTOM DISCLAIMER -->
-                  <div class="cert-bottom-disclaimer">
-                    This certificate is issued by Elite Web Kingdom in recognition of verified achievements on Elite IDE. Certificate authenticity can be verified through the official verification portal using the certificate ID or QR code.
+                    <div class="cert-footer-col" style="align-items: flex-end;">
+                      <div class="cert-signature-img">Bathala Harika</div>
+                      <div class="cert-sign-title">Bathala Harika</div>
+                      <div class="cert-sign-role">Executive Director</div>
+                      <div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 1px;">Elite Web Kingdom</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1368,6 +1295,7 @@
         </div>
       `;
 
+      renderQRCode(shareUrl, 'cert-qr-container');
       statusSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -1386,7 +1314,7 @@
           scale: 2.5,
           useCORS: true,
           allowTaint: true,
-          backgroundColor: '#faf7ee',
+          backgroundColor: '#030712',
           logging: false
         }).then(canvas => {
           const link = document.createElement('a');
@@ -1408,6 +1336,41 @@
         window.print();
       }
     };
+
+    function renderQRCode(text, containerId = 'cert-qr-container') {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
+        const canvas = document.createElement('canvas');
+        window.QRCode.toCanvas(canvas, text, {
+          width: 70,
+          margin: 1,
+          color: {
+            dark: '#030712',
+            light: '#ffffff'
+          }
+        }, function(error) {
+          if (!error) {
+            container.appendChild(canvas);
+          } else {
+            renderQRPlaceholder(container, text);
+          }
+        });
+      } else {
+        renderQRPlaceholder(container, text);
+      }
+    }
+
+    function renderQRPlaceholder(container, text) {
+      const img = document.createElement('img');
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(text)}`;
+      img.alt = "QR Code";
+      img.style.width = "70px";
+      img.style.height = "70px";
+      container.appendChild(img);
+    }
 
     function copyVerificationLink(url) {
       navigator.clipboard.writeText(url).then(() => {

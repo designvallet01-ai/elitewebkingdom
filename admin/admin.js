@@ -1139,6 +1139,9 @@ async function loadLeads() {
   // 1. Attempt to load from Supabase Database
   if (supabaseClient) {
     try {
+      // Purge any accidental compiler telemetry rows from client proposals table
+      supabaseClient.from('leads').delete().eq('category', 'Compiler Developer Profile').then(() => {}).catch(() => {});
+
       const { data, error } = await supabaseClient
         .from('leads')
         .select('*')
@@ -1147,19 +1150,21 @@ async function loadLeads() {
       if (error) throw error;
       
       if (data) {
-        leads = data.map(item => ({
-          id: item.id,
-          name: item.name,
-          email: item.email,
-          phone: item.phone || 'N/A',
-          company: item.company || 'N/A',
-          category: item.category,
-          budget: item.budget || 'N/A',
-          timeline: item.timeline || 'N/A',
-          message: item.message,
-          date: item.created_at ? new Date(item.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
-          status: item.status || 'new'
-        }));
+        leads = data
+          .filter(item => item.category !== 'Compiler Developer Profile' && item.company !== 'Elite IDE Developer')
+          .map(item => ({
+            id: item.id,
+            name: item.name,
+            email: item.email,
+            phone: item.phone || 'N/A',
+            company: item.company || 'N/A',
+            category: item.category,
+            budget: item.budget || 'N/A',
+            timeline: item.timeline || 'N/A',
+            message: item.message,
+            date: item.created_at ? new Date(item.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+            status: item.status || 'new'
+          }));
         loadedFromSupabase = true;
       }
     } catch (dbErr) {
@@ -1167,8 +1172,10 @@ async function loadLeads() {
     }
   }
 
-  // 2. Sync & Merge with LocalStorage
-  const localLeads = JSON.parse(localStorage.getItem('ewk_leads')) || [];
+  // 2. Sync & Merge with LocalStorage (clean compiler telemetry profiles)
+  let localLeads = (JSON.parse(localStorage.getItem('ewk_leads')) || [])
+    .filter(l => l && l.category !== 'Compiler Developer Profile' && l.company !== 'Elite IDE Developer');
+
   if (loadedFromSupabase) {
     // If local storage has proposals not yet in Supabase, preserve and merge them
     const existingIds = new Set(leads.map(l => l.id));
@@ -4835,175 +4842,145 @@ function formatAdminCertDate(dateStr) {
   }
 }
 
-// 9. Generate Royal Parchment Certificate HTML
-function generateCertificateParchmentHtml(cert, canvasId) {
-  const displayDate = formatAdminCertDate(cert.issue_date);
+// 9. Generate Digital Luxury Gold Certificate HTML (with QR Code & Executive Director Bathala Harika)
+function generateAdminLuxuryCertHtml(cert, canvasId, qrContainerId) {
   const descText = cert.achievement_description || 
-    `in recognition of outstanding coding performance, problem-solving skills, and demonstrated technical excellence through Elite IDE. This award recognizes the recipient's dedication to programming, consistent performance, and commitment to innovation during the ${cert.performance_month || 'October 2026'} evaluation period.`;
+    "Awarded in recognition of exceptional engineering leadership, delivering high-impact code across core platforms, and exemplary technical excellence.";
 
   return `
-    <div id="${canvasId}" style="min-width: 820px; max-width: 880px; width: 100%; margin: 0 auto; background: #faf7ee; background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.75) 0%, rgba(243, 237, 224, 0.95) 100%); border: 3px solid #8c6d46; border-radius: 8px; position: relative; padding: 42px 48px; box-shadow: 0 0 0 6px #faf7ee, 0 0 0 9px #8c6d46, 0 16px 50px rgba(0, 0, 0, 0.5); color: #1e1b18; overflow: hidden; box-sizing: border-box; text-align: center;">
-      <!-- Corner Filigree Ornaments -->
-      <svg viewBox="0 0 100 100" fill="none" style="position: absolute; top: 0; left: 0; width: 130px; height: 130px; pointer-events: none; z-index: 1; opacity: 0.85;">
-        <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
-        <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
-        <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
-        <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-        <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-        <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
-      </svg>
-      <svg viewBox="0 0 100 100" fill="none" style="position: absolute; top: 0; right: 0; width: 130px; height: 130px; pointer-events: none; z-index: 1; opacity: 0.85; transform: scaleX(-1);">
-        <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
-        <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
-        <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
-        <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-        <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-        <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
-      </svg>
-      <svg viewBox="0 0 100 100" fill="none" style="position: absolute; bottom: 0; left: 0; width: 130px; height: 130px; pointer-events: none; z-index: 1; opacity: 0.85; transform: scaleY(-1);">
-        <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
-        <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
-        <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
-        <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-        <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-        <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
-      </svg>
-      <svg viewBox="0 0 100 100" fill="none" style="position: absolute; bottom: 0; right: 0; width: 130px; height: 130px; pointer-events: none; z-index: 1; opacity: 0.85; transform: scale(-1);">
-        <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
-        <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
-        <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
-        <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-        <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
-        <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
-      </svg>
+    <div id="${canvasId}" style="min-width: 720px; max-width: 820px; width: 100%; margin: 0 auto; background: radial-gradient(circle at 50% 30%, #0f172a 0%, #030712 100%); border: 3px solid #d4af37; border-radius: 12px; position: relative; padding: 36px 42px; box-shadow: 0 0 0 6px #030712, 0 0 0 8px rgba(212, 175, 55, 0.4), 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 50px rgba(245, 158, 11, 0.15); color: #ffffff; overflow: hidden; box-sizing: border-box; text-align: center;">
+      <!-- Inner Border -->
+      <div style="position: absolute; inset: 12px; border: 1px solid rgba(212, 175, 55, 0.5); pointer-events: none; border-radius: 6px;"></div>
 
-      <!-- Inner Frame Border -->
-      <div style="position: absolute; inset: 10px; border: 1.5px solid rgba(140, 109, 70, 0.45); border-radius: 4px; pointer-events: none; z-index: 1;"></div>
+      <!-- Gold Corner Accents -->
+      <div style="position: absolute; top: 16px; left: 16px; width: 22px; height: 22px; border-top: 3px solid #d4af37; border-left: 3px solid #d4af37; pointer-events: none;"></div>
+      <div style="position: absolute; top: 16px; right: 16px; width: 22px; height: 22px; border-top: 3px solid #d4af37; border-right: 3px solid #d4af37; pointer-events: none;"></div>
+      <div style="position: absolute; bottom: 16px; left: 16px; width: 22px; height: 22px; border-bottom: 3px solid #d4af37; border-left: 3px solid #d4af37; pointer-events: none;"></div>
+      <div style="position: absolute; bottom: 16px; right: 16px; width: 22px; height: 22px; border-bottom: 3px solid #d4af37; border-right: 3px solid #d4af37; pointer-events: none;"></div>
+
+      <!-- Center Watermark -->
+      <img src="/logo.jpeg" alt="Watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.04; width: 360px; height: 360px; pointer-events: none; filter: grayscale(100%); z-index: 0;">
 
       <div style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center;">
-        <!-- Top Header: Logo, Center Brand, State Emblem & MSME -->
-        <div style="width: 100%; display: grid; grid-template-columns: 100px 1fr 140px; align-items: center; margin-bottom: 12px; gap: 12px;">
-          <!-- Left Logo -->
-          <div style="display: flex; justify-content: flex-start;">
-            <img src="/logo.jpeg" alt="Logo" style="width: 78px; height: 78px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-          </div>
-
-          <!-- Center Brand -->
-          <div style="text-align: center;">
-            <div style="font-family: 'Cinzel', serif; font-size: 1.45rem; font-weight: 800; letter-spacing: 3.5px; color: #1e1b18; text-transform: uppercase; line-height: 1.2;">
+        <!-- Brand Row -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px;">
+          <img src="/logo.jpeg" alt="Logo" style="width: 46px; height: 46px; border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.6); box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);">
+          <div>
+            <div style="font-family: 'Cinzel', serif; font-size: 1.15rem; font-weight: 800; letter-spacing: 3px; color: #f8fafc; text-transform: uppercase;">
               ELITE WEB KINGDOM
             </div>
-            <div style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 3px; color: #443b34; text-transform: uppercase; font-weight: 600; margin-top: 3px;">
-              ELITE IDE — MONTHLY DEVELOPER
-            </div>
-            <div style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 4px; color: #443b34; text-transform: uppercase; font-weight: 700;">
-              EXCELLENCE AWARDS
-            </div>
-          </div>
-
-          <!-- Right: Ashoka Stambh + MSME -->
-          <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <svg width="30" height="42" viewBox="0 0 100 140" fill="#2d241e">
-                <path d="M50 5 C 45 5, 38 10, 36 18 C 34 26, 38 32, 42 36 C 36 38, 30 45, 32 54 C 34 62, 42 66, 50 66 C 58 66, 66 62, 68 54 C 70 45, 64 38, 58 36 C 62 32, 66 26, 64 18 C 62 10, 55 5, 50 5 Z"/>
-                <circle cx="50" cy="24" r="5" fill="#faf7ee"/>
-                <path d="M25 80 L 75 80 L 72 94 L 28 94 Z"/>
-                <circle cx="50" cy="87" r="5" fill="#faf7ee"/>
-                <rect x="20" y="98" width="60" height="10" rx="2"/>
-                <text x="50" y="125" font-size="12" font-family="'Times New Roman', serif" font-weight="bold" text-anchor="middle" fill="#2d241e">सत्यमेव जयते</text>
-              </svg>
-              <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                <div style="font-family: 'Arial Black', Impact, sans-serif; font-size: 1.35rem; font-weight: 900; letter-spacing: 1px; color: #1e1b18; line-height: 1;">
-                  msme
-                </div>
-                <div style="font-size: 0.4rem; font-weight: 800; color: #1e1b18; line-height: 1.1; text-transform: uppercase;">
-                  MICRO, SMALL &amp; MEDIUM ENTERPRISES
-                </div>
-                <div style="font-size: 0.4rem; font-weight: 700; color: #443b34; line-height: 1.1;">
-                  सूक्ष्म, लघु एवं मध्यम उद्यम
-                </div>
-                <div style="font-size: 0.38rem; font-weight: 700; color: #1e1b18; letter-spacing: 0.5px;">
-                  OUR STRENGTH हमारी शक्ति
-                </div>
-              </div>
-            </div>
-            <div style="font-size: 0.55rem; color: #332d27; font-weight: 700; letter-spacing: 0.5px; text-align: right; margin-top: 2px;">
-              Ministry of MSME, Govt. of India
+            <div style="font-size: 0.72rem; color: #00f2fe; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;">
+              ENGINEERING DISTINCTION
             </div>
           </div>
         </div>
 
         <!-- Main Heading -->
-        <h2 style="font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.15rem; font-weight: 900; letter-spacing: 2px; color: #1e1b18; text-transform: uppercase; margin: 6px 0 3px; line-height: 1.2;">
+        <h2 style="font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 900; letter-spacing: 3px; color: #fbbf24; text-transform: uppercase; margin: 8px 0 3px; line-height: 1.2;">
           ${escapeHtml(cert.main_heading || 'CERTIFICATE OF ACHIEVEMENT')}
         </h2>
-        <div style="font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 1rem; color: #38312b; margin-bottom: 2px;">
-          This certificate is proudly presented to :
+        <div style="font-size: 0.8rem; color: #94a3b8; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px;">
+          Official Credential of Engineering Distinction
         </div>
 
-        <!-- Recipient Name Calligraphy -->
-        <div style="font-family: 'Great Vibes', cursive; font-size: 3.3rem; font-weight: 400; color: #1e1b18; line-height: 1.1; margin: 2px 0 4px; padding-bottom: 2px; border-bottom: 1.5px solid #8c6d46; display: inline-block; min-width: 320px; text-align: center;">
+        <div style="font-style: italic; font-family: 'Playfair Display', serif; font-size: 1rem; color: #cbd5e1; margin-bottom: 6px;">
+          This is proudly presented to
+        </div>
+
+        <!-- Recipient Name -->
+        <div style="font-family: 'Playfair Display', serif; font-size: 2.3rem; font-weight: 700; color: #ffffff; letter-spacing: 1px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 242, 254, 0.3); border-bottom: 2px solid rgba(212, 175, 55, 0.6); padding-bottom: 4px; display: inline-block; min-width: 280px;">
           ${escapeHtml(cert.recipient_name)}
         </div>
 
-        <!-- Achievement Description -->
-        <p style="font-family: 'Playfair Display', Georgia, serif; font-size: 0.94rem; color: #2b2520; line-height: 1.55; max-width: 710px; margin: 10px auto 12px; text-align: center;">
-          ${escapeHtml(descText)}
-        </p>
-
-        <!-- Metadata Bar -->
-        <div style="width: 100%; max-width: 710px; display: flex; justify-content: space-between; align-items: center; margin: 6px auto 24px; font-size: 0.94rem; color: #1e1b18; font-weight: 600;">
-          <div><strong>Certificate ID:</strong> [${escapeHtml(cert.certificate_id)}]</div>
-          <div><strong>Date of Issue:</strong> [${escapeHtml(displayDate)}]</div>
+        <!-- Award Category Pill -->
+        <div style="display: inline-block; margin: 6px 0 12px; padding: 4px 16px; border-radius: 20px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase;">
+          ${escapeHtml(cert.award_category)}
         </div>
 
-        <!-- Signatories Row -->
-        <div style="width: 100%; display: grid; grid-template-columns: 230px 1fr 230px; align-items: flex-end; gap: 12px; margin-top: 4px;">
-          <!-- Left: Bathala Harika - Executive Director -->
-          <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
-            <div style="font-family: 'Herr Von Muellerhoff', cursive; font-size: 2.1rem; color: #1e1b18; line-height: 1; margin-bottom: 3px; letter-spacing: 1px;">
+        <!-- Achievement Description -->
+        <p style="max-width: 600px; font-size: 0.9rem; color: #cbd5e1; line-height: 1.55; margin: 0 auto 8px; font-style: italic;">
+          "${escapeHtml(descText)}"
+        </p>
+
+        <div style="font-size: 0.82rem; color: #00f2fe; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 22px;">
+          Performance Period: ${escapeHtml(cert.performance_month)}
+        </div>
+
+        <!-- Footer Row -->
+        <div style="width: 100%; display: flex; align-items: flex-end; justify-content: space-between; margin-top: 6px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); gap: 16px;">
+          <!-- Left: QR Code Box + ID -->
+          <div style="display: flex; flex-direction: column; align-items: flex-start; flex: 1;">
+            <div id="${qrContainerId}" style="width: 74px; height: 74px; background: #ffffff; border-radius: 8px; padding: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); margin-bottom: 5px;"></div>
+            <div style="font-family: monospace; font-size: 0.75rem; color: #00f2fe; font-weight: 700;">
+              ID: ${escapeHtml(cert.certificate_id)}
+            </div>
+            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">
+              Issued: ${escapeHtml(cert.issue_date)}
+            </div>
+          </div>
+
+          <!-- Center: Verified Seal Graphic -->
+          <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
+            <div style="width: 68px; height: 68px; border-radius: 50%; background: radial-gradient(circle, #f59e0b 0%, #b45309 80%, #78350f 100%); border: 3px double #fef08a; box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff; text-align: center; margin-bottom: 4px; font-size: 0.56rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.1; padding: 4px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fef08a" stroke-width="2.5" style="margin-bottom: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>ELITE<br>VERIFIED</span>
+            </div>
+            <span style="font-size: 0.6rem; color: #d4af37; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;">Verified Seal</span>
+          </div>
+
+          <!-- Right: Signatory Bathala Harika - Executive Director -->
+          <div style="display: flex; flex-direction: column; align-items: flex-end; flex: 1;">
+            <div style="font-family: 'Herr Von Muellerhoff', cursive; font-size: 2rem; color: #f8fafc; letter-spacing: 1px; border-bottom: 1px solid rgba(212, 175, 55, 0.6); padding: 0 16px 2px; margin-bottom: 3px; line-height: 1;">
               Bathala Harika
             </div>
-            <div style="width: 100%; border-top: 1.5px solid #73532f; margin-bottom: 5px;"></div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 0.92rem; font-weight: 800; color: #1e1b18; letter-spacing: 0.5px;">
+            <div style="font-size: 0.85rem; font-weight: 700; color: #ffffff;">
+              Bathala Harika
+            </div>
+            <div style="font-size: 0.72rem; color: #fbbf24; font-weight: 600; letter-spacing: 0.5px;">
               Executive Director
             </div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; color: #4a423a;">
+            <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 1px;">
               Elite Web Kingdom
             </div>
           </div>
-
-          <!-- Center Floral Heraldic Motif -->
-          <div style="display: flex; justify-content: center; align-items: center;">
-            <svg width="80" height="40" viewBox="0 0 120 60" fill="#8c6d46">
-              <path d="M60 10 C 66 18, 76 22, 85 18 C 76 28, 80 38, 90 42 C 78 40, 70 48, 60 55 C 50 48, 42 40, 30 42 C 40 38, 44 28, 35 18 C 44 22, 54 18, 60 10 Z"/>
-              <circle cx="60" cy="28" r="4" fill="#faf7ee"/>
-              <circle cx="60" cy="28" r="2" fill="#8c6d46"/>
-            </svg>
-          </div>
-
-          <!-- Right: Verification & Registry Link -->
-          <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: #1e1b18; font-weight: 700; margin-bottom: 5px;">
-              REGISTRY AUTHENTICATED
-            </div>
-            <div style="width: 100%; border-top: 1.5px solid #73532f; margin-bottom: 5px;"></div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 0.92rem; font-weight: 800; color: #1e1b18;">
-              VERIFY
-            </div>
-            <div style="font-family: 'Outfit', sans-serif; font-size: 0.7rem; color: #4a423a; word-break: break-all;">
-              https://www.elitewebkingdom.in/verify-certificate
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom Disclaimer -->
-        <div style="font-size: 0.62rem; color: #554c44; text-align: center; margin-top: 20px; line-height: 1.4; max-width: 720px;">
-          This certificate is issued by Elite Web Kingdom in recognition of verified achievements on Elite IDE. Certificate authenticity can be verified through the official verification portal using the certificate ID or QR code.
         </div>
       </div>
     </div>
   `;
+}
+
+function renderAdminCertQR(text, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
+    const canvas = document.createElement('canvas');
+    window.QRCode.toCanvas(canvas, text, {
+      width: 66,
+      margin: 1,
+      color: {
+        dark: '#030712',
+        light: '#ffffff'
+      }
+    }, function(error) {
+      if (!error) {
+        container.appendChild(canvas);
+      } else {
+        const img = document.createElement('img');
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(text)}`;
+        img.style.width = '66px';
+        img.style.height = '66px';
+        container.appendChild(img);
+      }
+    });
+  } else {
+    const img = document.createElement('img');
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=${encodeURIComponent(text)}`;
+    img.style.width = '66px';
+    img.style.height = '66px';
+    container.appendChild(img);
+  }
 }
 
 // 10. Certificate Preview Modal
@@ -5017,7 +4994,9 @@ window.openCertPreviewModal = function(certId) {
 
   if (!modal || !modalBody) return;
 
-  modalBody.innerHTML = generateCertificateParchmentHtml(cert, 'admin-active-cert-canvas');
+  modalBody.innerHTML = generateAdminLuxuryCertHtml(cert, 'admin-active-cert-canvas', 'admin-modal-qr-container');
+  const verifyUrl = `${window.location.origin}/verify-certificate.html?id=${encodeURIComponent(cert.certificate_id)}`;
+  renderAdminCertQR(verifyUrl, 'admin-modal-qr-container');
   modal.style.display = 'flex';
 };
 
@@ -5038,7 +5017,7 @@ window.downloadAdminCertPNG = function() {
       scale: 2.5,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: '#faf7ee',
+      backgroundColor: '#030712',
       logging: false
     }).then(canvas => {
       const link = document.createElement('a');
@@ -5065,43 +5044,49 @@ window.downloadAdminRowCert = function(certId) {
   tempContainer.style.position = 'fixed';
   tempContainer.style.left = '-9999px';
   tempContainer.style.top = '0';
-  tempContainer.style.width = '880px';
+  tempContainer.style.width = '820px';
   tempContainer.style.zIndex = '-9999';
-  tempContainer.innerHTML = generateCertificateParchmentHtml(cert, 'temp-admin-row-canvas');
+  const qrId = `temp-row-qr-${Date.now()}`;
+  tempContainer.innerHTML = generateAdminLuxuryCertHtml(cert, 'temp-admin-row-canvas', qrId);
   document.body.appendChild(tempContainer);
+
+  const verifyUrl = `${window.location.origin}/verify-certificate.html?id=${encodeURIComponent(cert.certificate_id)}`;
+  renderAdminCertQR(verifyUrl, qrId);
 
   const canvasTarget = document.getElementById('temp-admin-row-canvas') || tempContainer;
 
-  if (window.html2canvas) {
-    window.html2canvas(canvasTarget, {
-      scale: 2.5,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#faf7ee',
-      logging: false
-    }).then(canvas => {
-      const link = document.createElement('a');
-      link.download = `Certificate_${cert.certificate_id}.png`;
-      link.href = canvas.toDataURL('image/png');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      if (document.body.contains(tempContainer)) {
-        document.body.removeChild(tempContainer);
-      }
-    }).catch(err => {
-      console.error("Row cert download error:", err);
+  setTimeout(() => {
+    if (window.html2canvas) {
+      window.html2canvas(canvasTarget, {
+        scale: 2.5,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#030712',
+        logging: false
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Certificate_${cert.certificate_id}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        if (document.body.contains(tempContainer)) {
+          document.body.removeChild(tempContainer);
+        }
+      }).catch(err => {
+        console.error("Row cert download error:", err);
+        if (document.body.contains(tempContainer)) {
+          document.body.removeChild(tempContainer);
+        }
+        window.openCertPreviewModal(certId);
+      });
+    } else {
       if (document.body.contains(tempContainer)) {
         document.body.removeChild(tempContainer);
       }
       window.openCertPreviewModal(certId);
-    });
-  } else {
-    if (document.body.contains(tempContainer)) {
-      document.body.removeChild(tempContainer);
     }
-    window.openCertPreviewModal(certId);
-  }
+  }, 100);
 };
 
 // 13. Print Certificate
