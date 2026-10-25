@@ -662,14 +662,14 @@ const DEFAULT_TEAM_CERTIFICATES = [
     id: "cert-seed-001",
     certificate_id: "EIDE-2026-10-0001",
     main_heading: "Certificate of Achievement",
-    recipient_name: "Gowri Narayana Guduru",
-    award_category: "Top Performer & Engineering Excellence",
-    achievement_description: "Awarded for exceptional leadership in enterprise full-stack software architecture, architecting the Elite IDE multi-cluster compiler engine, and continuous top-tier technical delivery.",
+    recipient_name: "Korina Villanueva",
+    award_category: "Top Performer & Coding Excellence",
+    achievement_description: "in recognition of outstanding coding performance, problem-solving skills, and demonstrated technical excellence through Elite IDE. This award recognizes the recipient's dedication to programming, consistent performance, and commitment to innovation during the October 2026 evaluation period.",
     performance_month: "October 2026",
     issue_date: "2026-10-25",
     issuer_name: "Elite Web Kingdom & Elite IDE",
-    signatory_name: "Gowri Narayana Guduru",
-    signatory_role: "Principal System Architect & Founder",
+    signatory_name: "Bathala Harika",
+    signatory_role: "Executive Director",
     status: "Verified"
   }
 ];
@@ -683,7 +683,13 @@ window.loadTeamCertificates = async function() {
         .select('*')
         .order('created_at', { ascending: false });
       if (!error && Array.isArray(data) && data.length > 0) {
-        certs = data;
+        certs = data.map(c => {
+          if (!c.signatory_name || c.signatory_name === 'Gowri Narayana Guduru') {
+            c.signatory_name = 'Bathala Harika';
+            c.signatory_role = 'Executive Director';
+          }
+          return c;
+        });
         try { localStorage.setItem('ewk_certificates', JSON.stringify(certs)); } catch(e){}
       }
     } catch (err) {
@@ -696,7 +702,15 @@ window.loadTeamCertificates = async function() {
       const local = localStorage.getItem('ewk_certificates');
       if (local) {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) certs = parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          certs = parsed.map(c => {
+            if (!c.signatory_name || c.signatory_name === 'Gowri Narayana Guduru') {
+              c.signatory_name = 'Bathala Harika';
+              c.signatory_role = 'Executive Director';
+            }
+            return c;
+          });
+        }
       }
     } catch(e){}
   }
@@ -789,8 +803,8 @@ window.handleTeamCertRegister = async function(e) {
     performance_month: month,
     issue_date: issueDate,
     issuer_name: "Elite Web Kingdom & Elite IDE",
-    signatory_name: "Gowri Narayana Guduru",
-    signatory_role: "Principal System Architect & Founder",
+    signatory_name: "Bathala Harika",
+    signatory_role: "Executive Director",
     status: "Verified",
     created_at: new Date().toISOString()
   };
@@ -853,17 +867,318 @@ window.renderTeamCertificates = function() {
       <td style="color: var(--text-muted); font-size: 0.82rem; font-family: monospace;">${escapeHtml(c.issue_date)}</td>
       <td><span class="badge" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem;">✓ Verified</span></td>
       <td>
-        <div style="display: flex; gap: 6px;">
-          <a href="../verify-certificate.html?id=${encodeURIComponent(c.certificate_id)}" target="_blank" class="btn btn-secondary btn-sm" style="color: var(--cyan-primary);">
-            👁️ Verify
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <a href="../verify-certificate.html?id=${encodeURIComponent(c.certificate_id)}" target="_blank" class="btn btn-secondary btn-sm" style="color: var(--cyan-primary);" title="Verify Certificate">
+            👁️
           </a>
-          <button class="btn btn-secondary btn-sm" onclick="copyTeamCertLink('${escapeHtml(c.certificate_id)}')">
-            📋 Link
+          <button class="btn btn-secondary btn-sm" onclick="openTeamCertPreviewModal('${escapeHtml(c.certificate_id)}')" style="color: #fbbf24; border-color: rgba(245,158,11,0.4);" title="View Certificate Preview">
+            🖨️ View
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="downloadTeamRowCert('${escapeHtml(c.certificate_id)}')" style="color: #34d399; border-color: rgba(16,185,129,0.4);" title="Download Certificate PNG">
+            📥 Download
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="copyTeamCertLink('${escapeHtml(c.certificate_id)}')" title="Copy Link">
+            📋
           </button>
         </div>
       </td>
     </tr>
   `).join('');
+};
+
+window.activeTeamPreviewCert = null;
+
+function formatTeamCertDate(dateStr) {
+  if (!dateStr) return '25 October 2026';
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const y = parts[0];
+      const m = months[parseInt(parts[1], 10) - 1] || parts[1];
+      const d = parts[2];
+      return `${d} ${m} ${y}`;
+    }
+    return dateStr;
+  } catch(e) {
+    return dateStr;
+  }
+}
+
+function generateTeamCertificateParchmentHtml(cert, canvasId) {
+  const displayDate = formatTeamCertDate(cert.issue_date);
+  const descText = cert.achievement_description || 
+    `in recognition of outstanding coding performance, problem-solving skills, and demonstrated technical excellence through Elite IDE. This award recognizes the recipient's dedication to programming, consistent performance, and commitment to innovation during the ${cert.performance_month || 'October 2026'} evaluation period.`;
+
+  return `
+    <div id="${canvasId}" style="min-width: 820px; max-width: 880px; width: 100%; margin: 0 auto; background: #faf7ee; background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.75) 0%, rgba(243, 237, 224, 0.95) 100%); border: 3px solid #8c6d46; border-radius: 8px; position: relative; padding: 42px 48px; box-shadow: 0 0 0 6px #faf7ee, 0 0 0 9px #8c6d46, 0 16px 50px rgba(0, 0, 0, 0.5); color: #1e1b18; overflow: hidden; box-sizing: border-box; text-align: center;">
+      <!-- Corner Filigree Ornaments -->
+      <svg viewBox="0 0 100 100" fill="none" style="position: absolute; top: 0; left: 0; width: 130px; height: 130px; pointer-events: none; z-index: 1; opacity: 0.85;">
+        <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
+        <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
+        <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
+        <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
+        <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
+        <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
+      </svg>
+      <svg viewBox="0 0 100 100" fill="none" style="position: absolute; top: 0; right: 0; width: 130px; height: 130px; pointer-events: none; z-index: 1; opacity: 0.85; transform: scaleX(-1);">
+        <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
+        <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
+        <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
+        <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
+        <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
+        <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
+      </svg>
+      <svg viewBox="0 0 100 100" fill="none" style="position: absolute; bottom: 0; left: 0; width: 130px; height: 130px; pointer-events: none; z-index: 1; opacity: 0.85; transform: scaleY(-1);">
+        <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
+        <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
+        <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
+        <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
+        <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
+        <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
+      </svg>
+      <svg viewBox="0 0 100 100" fill="none" style="position: absolute; bottom: 0; right: 0; width: 130px; height: 130px; pointer-events: none; z-index: 1; opacity: 0.85; transform: scale(-1);">
+        <path d="M12 12 C 28 10, 48 20, 52 35 C 55 46, 44 56, 34 50 C 26 45, 29 32, 38 31 C 45 30, 48 38, 42 42" stroke="#8c6d46" stroke-width="1.8" fill="none"/>
+        <path d="M10 28 C 15 42, 28 55, 42 60 C 28 62, 14 52, 12 36" fill="#8c6d46" opacity="0.3"/>
+        <path d="M28 10 C 42 15, 55 28, 60 42 C 62 28, 52 14, 36 12" fill="#8c6d46" opacity="0.3"/>
+        <path d="M14 14 Q 30 14 42 22 Q 54 30 65 24 Q 75 18 85 14" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
+        <path d="M14 14 Q 14 30 22 42 Q 30 54 24 65 Q 18 75 14 85" stroke="#8c6d46" stroke-width="1.4" fill="none"/>
+        <circle cx="20" cy="20" r="3" fill="#8c6d46"/>
+      </svg>
+
+      <!-- Inner Frame Border -->
+      <div style="position: absolute; inset: 10px; border: 1.5px solid rgba(140, 109, 70, 0.45); border-radius: 4px; pointer-events: none; z-index: 1;"></div>
+
+      <div style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center;">
+        <!-- Top Header: Logo, Center Brand, State Emblem & MSME -->
+        <div style="width: 100%; display: grid; grid-template-columns: 100px 1fr 140px; align-items: center; margin-bottom: 12px; gap: 12px;">
+          <!-- Left Logo -->
+          <div style="display: flex; justify-content: flex-start;">
+            <img src="/logo.jpeg" alt="Logo" style="width: 78px; height: 78px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+          </div>
+
+          <!-- Center Brand -->
+          <div style="text-align: center;">
+            <div style="font-family: 'Cinzel', serif; font-size: 1.45rem; font-weight: 800; letter-spacing: 3.5px; color: #1e1b18; text-transform: uppercase; line-height: 1.2;">
+              ELITE WEB KINGDOM
+            </div>
+            <div style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 3px; color: #443b34; text-transform: uppercase; font-weight: 600; margin-top: 3px;">
+              ELITE IDE — MONTHLY DEVELOPER
+            </div>
+            <div style="font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 4px; color: #443b34; text-transform: uppercase; font-weight: 700;">
+              EXCELLENCE AWARDS
+            </div>
+          </div>
+
+          <!-- Right: Ashoka Stambh + MSME -->
+          <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg width="30" height="42" viewBox="0 0 100 140" fill="#2d241e">
+                <path d="M50 5 C 45 5, 38 10, 36 18 C 34 26, 38 32, 42 36 C 36 38, 30 45, 32 54 C 34 62, 42 66, 50 66 C 58 66, 66 62, 68 54 C 70 45, 64 38, 58 36 C 62 32, 66 26, 64 18 C 62 10, 55 5, 50 5 Z"/>
+                <circle cx="50" cy="24" r="5" fill="#faf7ee"/>
+                <path d="M25 80 L 75 80 L 72 94 L 28 94 Z"/>
+                <circle cx="50" cy="87" r="5" fill="#faf7ee"/>
+                <rect x="20" y="98" width="60" height="10" rx="2"/>
+                <text x="50" y="125" font-size="12" font-family="'Times New Roman', serif" font-weight="bold" text-anchor="middle" fill="#2d241e">सत्यमेव जयते</text>
+              </svg>
+              <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                <div style="font-family: 'Arial Black', Impact, sans-serif; font-size: 1.35rem; font-weight: 900; letter-spacing: 1px; color: #1e1b18; line-height: 1;">
+                  msme
+                </div>
+                <div style="font-size: 0.4rem; font-weight: 800; color: #1e1b18; line-height: 1.1; text-transform: uppercase;">
+                  MICRO, SMALL &amp; MEDIUM ENTERPRISES
+                </div>
+                <div style="font-size: 0.4rem; font-weight: 700; color: #443b34; line-height: 1.1;">
+                  सूक्ष्म, लघु एवं मध्यम उद्यम
+                </div>
+                <div style="font-size: 0.38rem; font-weight: 700; color: #1e1b18; letter-spacing: 0.5px;">
+                  OUR STRENGTH हमारी शक्ति
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 0.55rem; color: #332d27; font-weight: 700; letter-spacing: 0.5px; text-align: right; margin-top: 2px;">
+              Ministry of MSME, Govt. of India
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Heading -->
+        <h2 style="font-family: 'Cinzel Decorative', 'Cinzel', serif; font-size: 2.15rem; font-weight: 900; letter-spacing: 2px; color: #1e1b18; text-transform: uppercase; margin: 6px 0 3px; line-height: 1.2;">
+          ${escapeHtml(cert.main_heading || 'CERTIFICATE OF ACHIEVEMENT')}
+        </h2>
+        <div style="font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: 1rem; color: #38312b; margin-bottom: 2px;">
+          This certificate is proudly presented to :
+        </div>
+
+        <!-- Recipient Name Calligraphy -->
+        <div style="font-family: 'Great Vibes', cursive; font-size: 3.3rem; font-weight: 400; color: #1e1b18; line-height: 1.1; margin: 2px 0 4px; padding-bottom: 2px; border-bottom: 1.5px solid #8c6d46; display: inline-block; min-width: 320px; text-align: center;">
+          ${escapeHtml(cert.recipient_name)}
+        </div>
+
+        <!-- Achievement Description -->
+        <p style="font-family: 'Playfair Display', Georgia, serif; font-size: 0.94rem; color: #2b2520; line-height: 1.55; max-width: 710px; margin: 10px auto 12px; text-align: center;">
+          ${escapeHtml(descText)}
+        </p>
+
+        <!-- Metadata Bar -->
+        <div style="width: 100%; max-width: 710px; display: flex; justify-content: space-between; align-items: center; margin: 6px auto 24px; font-size: 0.94rem; color: #1e1b18; font-weight: 600;">
+          <div><strong>Certificate ID:</strong> [${escapeHtml(cert.certificate_id)}]</div>
+          <div><strong>Date of Issue:</strong> [${escapeHtml(displayDate)}]</div>
+        </div>
+
+        <!-- Signatories Row -->
+        <div style="width: 100%; display: grid; grid-template-columns: 230px 1fr 230px; align-items: flex-end; gap: 12px; margin-top: 4px;">
+          <!-- Left: Bathala Harika - Executive Director -->
+          <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <div style="font-family: 'Herr Von Muellerhoff', cursive; font-size: 2.1rem; color: #1e1b18; line-height: 1; margin-bottom: 3px; letter-spacing: 1px;">
+              Bathala Harika
+            </div>
+            <div style="width: 100%; border-top: 1.5px solid #73532f; margin-bottom: 5px;"></div>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 0.92rem; font-weight: 800; color: #1e1b18; letter-spacing: 0.5px;">
+              Executive Director
+            </div>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; color: #4a423a;">
+              Elite Web Kingdom
+            </div>
+          </div>
+
+          <!-- Center Floral Heraldic Motif -->
+          <div style="display: flex; justify-content: center; align-items: center;">
+            <svg width="80" height="40" viewBox="0 0 120 60" fill="#8c6d46">
+              <path d="M60 10 C 66 18, 76 22, 85 18 C 76 28, 80 38, 90 42 C 78 40, 70 48, 60 55 C 50 48, 42 40, 30 42 C 40 38, 44 28, 35 18 C 44 22, 54 18, 60 10 Z"/>
+              <circle cx="60" cy="28" r="4" fill="#faf7ee"/>
+              <circle cx="60" cy="28" r="2" fill="#8c6d46"/>
+            </svg>
+          </div>
+
+          <!-- Right: Verification & Registry Link -->
+          <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: #1e1b18; font-weight: 700; margin-bottom: 5px;">
+              REGISTRY AUTHENTICATED
+            </div>
+            <div style="width: 100%; border-top: 1.5px solid #73532f; margin-bottom: 5px;"></div>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 0.92rem; font-weight: 800; color: #1e1b18;">
+              VERIFY
+            </div>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 0.7rem; color: #4a423a; word-break: break-all;">
+              https://www.elitewebkingdom.in/verify-certificate
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Disclaimer -->
+        <div style="font-size: 0.62rem; color: #554c44; text-align: center; margin-top: 20px; line-height: 1.4; max-width: 720px;">
+          This certificate is issued by Elite Web Kingdom in recognition of verified achievements on Elite IDE. Certificate authenticity can be verified through the official verification portal using the certificate ID or QR code.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.openTeamCertPreviewModal = function(certId) {
+  const cert = (window.teamCertificates || []).find(c => c.certificate_id === certId);
+  if (!cert) return;
+
+  window.activeTeamPreviewCert = cert;
+  const modal = document.getElementById('team-cert-preview-modal');
+  const modalBody = document.getElementById('team-cert-modal-body');
+
+  if (!modal || !modalBody) return;
+
+  modalBody.innerHTML = generateTeamCertificateParchmentHtml(cert, 'team-active-cert-canvas');
+  modal.style.display = 'flex';
+};
+
+window.closeTeamCertPreviewModal = function() {
+  const modal = document.getElementById('team-cert-preview-modal');
+  if (modal) modal.style.display = 'none';
+  window.activeTeamPreviewCert = null;
+};
+
+window.downloadTeamCertPNG = function() {
+  const certEl = document.getElementById('team-active-cert-canvas');
+  if (!certEl) return;
+  const certId = window.activeTeamPreviewCert ? window.activeTeamPreviewCert.certificate_id : 'EIDE-CERT';
+
+  if (window.html2canvas) {
+    window.html2canvas(certEl, {
+      scale: 2.5,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#faf7ee',
+      logging: false
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `Certificate_${certId}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }).catch(err => {
+      console.error("Team canvas export error:", err);
+      window.printTeamCert();
+    });
+  } else {
+    window.printTeamCert();
+  }
+};
+
+window.downloadTeamRowCert = function(certId) {
+  const cert = (window.teamCertificates || []).find(c => c.certificate_id === certId);
+  if (!cert) return;
+
+  const tempContainer = document.createElement('div');
+  tempContainer.style.position = 'fixed';
+  tempContainer.style.left = '-9999px';
+  tempContainer.style.top = '0';
+  tempContainer.style.width = '880px';
+  tempContainer.style.zIndex = '-9999';
+  tempContainer.innerHTML = generateTeamCertificateParchmentHtml(cert, 'temp-team-row-canvas');
+  document.body.appendChild(tempContainer);
+
+  const canvasTarget = document.getElementById('temp-team-row-canvas') || tempContainer;
+
+  if (window.html2canvas) {
+    window.html2canvas(canvasTarget, {
+      scale: 2.5,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#faf7ee',
+      logging: false
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `Certificate_${cert.certificate_id}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
+      }
+    }).catch(err => {
+      console.error("Row cert download error:", err);
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
+      }
+      window.openTeamCertPreviewModal(certId);
+    });
+  } else {
+    if (document.body.contains(tempContainer)) {
+      document.body.removeChild(tempContainer);
+    }
+    window.openTeamCertPreviewModal(certId);
+  }
+};
+
+window.printTeamCert = function() {
+  window.print();
+};
+
+window.openTeamCertDirectVerifier = function() {
+  if (window.activeTeamPreviewCert) {
+    const url = `../verify-certificate.html?id=${encodeURIComponent(window.activeTeamPreviewCert.certificate_id)}`;
+    window.open(url, '_blank');
+  }
 };
 
 window.copyTeamCertLink = function(certId) {

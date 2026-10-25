@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS public.certificates (
     performance_month TEXT NOT NULL,
     issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
     issuer_name TEXT NOT NULL DEFAULT 'Elite Web Kingdom',
-    signatory_name TEXT NOT NULL DEFAULT 'Gowri Narayana Guduru',
-    signatory_role TEXT NOT NULL DEFAULT 'Principal System Architect & Founder',
+    signatory_name TEXT NOT NULL DEFAULT 'Bathala Harika',
+    signatory_role TEXT NOT NULL DEFAULT 'Executive Director',
     status TEXT NOT NULL DEFAULT 'Verified',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -30,25 +30,21 @@ CREATE INDEX IF NOT EXISTS idx_certificates_created_at ON public.certificates (c
 ALTER TABLE public.certificates ENABLE ROW LEVEL SECURITY;
 
 -- 4. POLICIES FOR PUBLIC VERIFICATION & MANAGEMENT
--- Allow anyone to verify certificates by reading records
 CREATE POLICY "Allow public select certificates" 
 ON public.certificates 
 FOR SELECT 
 USING (true);
 
--- Allow inserting new certificates (Admin and Team portals)
 CREATE POLICY "Allow public insert certificates" 
 ON public.certificates 
 FOR INSERT 
 WITH CHECK (true);
 
--- Allow updating certificates
 CREATE POLICY "Allow public update certificates" 
 ON public.certificates 
 FOR UPDATE 
 USING (true);
 
--- Allow deleting certificates
 CREATE POLICY "Allow public delete certificates" 
 ON public.certificates 
 FOR DELETE 
@@ -72,13 +68,15 @@ INSERT INTO public.certificates (
     'cert-seed-001',
     'EIDE-2026-10-0001',
     'Certificate of Achievement',
-    'Gowri Narayana Guduru',
-    'Top Performer & Engineering Excellence',
-    'Awarded for outstanding system architecture, real-time multi-cluster compiler engine delivery, and relentless leadership in enterprise engineering.',
+    'Korina Villanueva',
+    'Top Performer & Coding Excellence',
+    'in recognition of outstanding coding performance, problem-solving skills, and demonstrated technical excellence through Elite IDE. This award recognizes the recipient''s dedication to programming, consistent performance, and commitment to innovation during the October 2026 evaluation period.',
     'October 2026',
     '2026-10-25',
     'Elite Web Kingdom & Elite IDE',
-    'Gowri Narayana Guduru',
-    'Principal System Architect & Founder',
+    'Bathala Harika',
+    'Executive Director',
     'Verified'
-) ON CONFLICT (certificate_id) DO NOTHING;
+) ON CONFLICT (certificate_id) DO UPDATE SET
+    signatory_name = 'Bathala Harika',
+    signatory_role = 'Executive Director';

@@ -10,11 +10,17 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/jpeg" href="/logo.jpeg">
 
+  <!-- Google Fonts: Luxury Serif, Calligraphy Script, Ornate Headings -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cinzel:wght@600;700;800;900&family=Cinzel+Decorative:wght@700;900&family=Great+Vibes&family=Herr+Von+Muellerhoff&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,400;1,600;1,700&display=swap" rel="stylesheet">
+
   <!-- CSS Stylesheets -->
   <link rel="stylesheet" href="/team/team.css?v=3.0">
 
-  <!-- Supabase JS Client SDK -->
+  <!-- Supabase JS Client & html2canvas SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -538,6 +544,35 @@
         </div>
 
       </main>
+    </div>
+  </div>
+
+  <!-- TEAM CERTIFICATE PREVIEW MODAL -->
+  <div id="team-cert-preview-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+    <div class="glass-card" style="max-width: 960px; width: 100%; padding: 24px; margin: auto; border: 1px solid rgba(140, 109, 70, 0.5);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #fbbf24;">Official Digital Certificate Preview</h3>
+        <button onclick="closeTeamCertPreviewModal()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.4rem;">&times;</button>
+      </div>
+
+      <div id="team-cert-modal-body" style="margin-bottom: 20px; overflow-x: auto;">
+        <!-- Dynamic Certificate Preview Content -->
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="closeTeamCertPreviewModal()">Close</button>
+        <button class="btn btn-primary" onclick="downloadTeamCertPNG()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>📥 Download Certificate (PNG)</span>
+        </button>
+        <button class="btn btn-secondary" onclick="printTeamCert()" style="border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          <span>🖨️ Save as PDF</span>
+        </button>
+        <button class="btn btn-primary" onclick="openTeamCertDirectVerifier()" style="border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary);">
+          ↗ Open in Public Verifier
+        </button>
+      </div>
     </div>
   </div>
 
