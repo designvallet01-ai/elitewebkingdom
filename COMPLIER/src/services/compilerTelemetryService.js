@@ -111,7 +111,22 @@ export async function saveUserProfile({ name, mobile, email }) {
         })
         .catch(() => {});
 
-      // Note: Compiler developer profiles are tracked in compiler_user_profiles and compiler_active_sessions, not in client project proposals (leads).
+      // 2b. Backup save into leads table (ensures persistence even if SQL table compiler_user_profiles was not run in Supabase)
+      supabase
+        .from('leads')
+        .insert([{
+          name: cleanName,
+          email: cleanEmail || `${cleanMobile || userId}@compiler.user`,
+          phone: cleanMobile || 'N/A',
+          company: 'Elite IDE Developer',
+          category: 'Compiler Developer Profile',
+          budget: '₹0',
+          timeline: 'Active User',
+          message: `Developer Profile from Elite IDE.\nUser ID: ${userId}\nDevice: ${device} | ${os} (${browser})\nIP: ${ip}`,
+          status: 'Proposal Received'
+        }])
+        .then(() => {})
+        .catch(() => {});
 
       // 2c. Update active session with developer name and phone in college_name
       if (currentSessionId) {
