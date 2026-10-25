@@ -246,6 +246,10 @@ window.switchTab = function(tabId) {
     }
   });
 
+  if (tabId === 'certificates') {
+    loadTeamCertificates();
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -256,6 +260,7 @@ async function initDashboardData() {
   renderProjects();
   renderStandupHistory();
   renderTeamRoster();
+  loadTeamCertificates();
   
   await loadTeamPortalDataFromSupabase();
 }
@@ -646,3 +651,237 @@ function renderTeamRoster() {
 
 // INITIAL CHECK
 checkSession();
+
+// =================================================================
+// --- TEAM CERTIFICATES MANAGEMENT SUITE ---
+// =================================================================
+window.teamCertificates = [];
+
+const DEFAULT_TEAM_CERTIFICATES = [
+  {
+    id: "cert-seed-001",
+    certificate_id: "EIDE-2026-10-0001",
+    main_heading: "Certificate of Achievement",
+    recipient_name: "Gowri Narayana Guduru",
+    award_category: "Top Performer & Engineering Excellence",
+    achievement_description: "Awarded for exceptional leadership in enterprise full-stack software architecture, architecting the Elite IDE multi-cluster compiler engine, and continuous top-tier technical delivery.",
+    performance_month: "October 2026",
+    issue_date: "2026-10-25",
+    issuer_name: "Elite Web Kingdom & Elite IDE",
+    signatory_name: "Gowri Narayana Guduru",
+    signatory_role: "Principal System Architect & Founder",
+    status: "Verified"
+  }
+];
+
+window.loadTeamCertificates = async function() {
+  let certs = [];
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('certificates')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data) && data.length > 0) {
+        certs = data;
+        try { localStorage.setItem('ewk_certificates', JSON.stringify(certs)); } catch(e){}
+      }
+    } catch (err) {
+      console.warn("Supabase team certs load error:", err);
+    }
+  }
+
+  if (certs.length === 0) {
+    try {
+      const local = localStorage.getItem('ewk_certificates');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) certs = parsed;
+      }
+    } catch(e){}
+  }
+
+  if (certs.length === 0) certs = DEFAULT_TEAM_CERTIFICATES;
+
+  window.teamCertificates = certs;
+
+  const countBadge = document.getElementById('team-certificates-count');
+  if (countBadge) countBadge.textContent = certs.length;
+
+  const dateInput = document.getElementById('team-cert-date');
+  if (dateInput && !dateInput.value) {
+    dateInput.value = new Date().toISOString().split('T')[0];
+  }
+
+  const idInput = document.getElementById('team-cert-id');
+  if (idInput && !idInput.value) {
+    window.generateTeamCertId();
+  }
+
+  window.renderTeamCertificates();
+};
+
+window.generateTeamCertId = function() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const prefix = `EIDE-${year}-${month}-`;
+
+  let maxSeq = 0;
+  (window.teamCertificates || []).forEach(c => {
+    if (c.certificate_id && c.certificate_id.startsWith(prefix)) {
+      const parts = c.certificate_id.split('-');
+      const num = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(num) && num > maxSeq) maxSeq = num;
+    }
+  });
+
+  const nextId = `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
+  const input = document.getElementById('team-cert-id');
+  if (input) input.value = nextId;
+  return nextId;
+};
+
+window.toggleTeamCertForm = function() {
+  const card = document.getElementById('team-cert-form-card');
+  const btn = document.getElementById('btn-toggle-team-cert-form');
+  if (!card) return;
+
+  if (card.style.display === 'none') {
+    card.style.display = 'block';
+    if (btn) btn.textContent = '✕ Close Form';
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    card.style.display = 'none';
+    if (btn) btn.textContent = '+ Register New Certificate';
+  }
+};
+
+window.handleTeamCertRegister = async function(e) {
+  if (e) e.preventDefault();
+
+  const heading = document.getElementById('team-cert-heading')?.value || 'Certificate of Achievement';
+  const name = document.getElementById('team-cert-name')?.value.trim();
+  const category = document.getElementById('team-cert-category')?.value || 'Top Performer';
+  const month = document.getElementById('team-cert-month')?.value.trim() || 'October 2026';
+  const issueDate = document.getElementById('team-cert-date')?.value || new Date().toISOString().split('T')[0];
+  const certId = (document.getElementById('team-cert-id')?.value.trim() || window.generateTeamCertId()).toUpperCase();
+  const desc = document.getElementById('team-cert-desc')?.value.trim();
+
+  if (!name || !desc || !certId) {
+    alert("Please fill in recipient name, certificate ID and description.");
+    return;
+  }
+
+  const existing = (window.teamCertificates || []).find(c => c.certificate_id.toLowerCase() === certId.toLowerCase());
+  if (existing) {
+    alert(`Certificate ID '${certId}' is already registered for ${existing.recipient_name}.`);
+    return;
+  }
+
+  const newCert = {
+    id: `cert-${Date.now()}`,
+    certificate_id: certId,
+    main_heading: heading,
+    recipient_name: name,
+    award_category: category,
+    achievement_description: desc,
+    performance_month: month,
+    issue_date: issueDate,
+    issuer_name: "Elite Web Kingdom & Elite IDE",
+    signatory_name: "Gowri Narayana Guduru",
+    signatory_role: "Principal System Architect & Founder",
+    status: "Verified",
+    created_at: new Date().toISOString()
+  };
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('certificates').insert([newCert]);
+    } catch(err) {
+      console.warn("Supabase insert cert error:", err);
+    }
+  }
+
+  window.teamCertificates.unshift(newCert);
+  try { localStorage.setItem('ewk_certificates', JSON.stringify(window.teamCertificates)); } catch(e){}
+
+  // Reset form
+  const nameInput = document.getElementById('team-cert-name');
+  const descInput = document.getElementById('team-cert-desc');
+  if (nameInput) nameInput.value = '';
+  if (descInput) descInput.value = '';
+  window.generateTeamCertId();
+
+  window.loadTeamCertificates();
+
+  const verifyUrl = `${window.location.origin}/verify-certificate.html?id=${encodeURIComponent(certId)}`;
+  const open = confirm(`🎉 Certificate Successfully Registered!\n\nID: ${certId}\nDeveloper: ${name}\nCategory: ${category}\n\nOpen Verification Portal in new window now?`);
+  if (open) {
+    window.open(verifyUrl, '_blank');
+  }
+};
+
+window.renderTeamCertificates = function() {
+  const query = (document.getElementById('team-cert-search')?.value || '').toLowerCase().trim();
+  const tbody = document.getElementById('team-certificates-tbody');
+  if (!tbody) return;
+
+  const filtered = (window.teamCertificates || []).filter(c => {
+    return !query || 
+      (c.certificate_id && c.certificate_id.toLowerCase().includes(query)) ||
+      (c.recipient_name && c.recipient_name.toLowerCase().includes(query)) ||
+      (c.award_category && c.award_category.toLowerCase().includes(query)) ||
+      (c.performance_month && c.performance_month.toLowerCase().includes(query));
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 24px; color: var(--text-muted);">No certificates found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => `
+    <tr>
+      <td><strong style="color: var(--cyan-primary); font-family: monospace;">${escapeHtml(c.certificate_id)}</strong></td>
+      <td style="font-weight: 700; color: #fff;">${escapeHtml(c.recipient_name)}</td>
+      <td>
+        <span style="display:inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; background: rgba(245,158,11,0.15); color: #fbbf24;">
+          ${escapeHtml(c.award_category)}
+        </span>
+      </td>
+      <td style="color: var(--text-muted); font-size: 0.85rem;">${escapeHtml(c.performance_month)}</td>
+      <td style="color: var(--text-muted); font-size: 0.82rem; font-family: monospace;">${escapeHtml(c.issue_date)}</td>
+      <td><span class="badge" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem;">✓ Verified</span></td>
+      <td>
+        <div style="display: flex; gap: 6px;">
+          <a href="../verify-certificate.html?id=${encodeURIComponent(c.certificate_id)}" target="_blank" class="btn btn-secondary btn-sm" style="color: var(--cyan-primary);">
+            👁️ Verify
+          </a>
+          <button class="btn btn-secondary btn-sm" onclick="copyTeamCertLink('${escapeHtml(c.certificate_id)}')">
+            📋 Link
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+};
+
+window.copyTeamCertLink = function(certId) {
+  const url = `${window.location.origin}/verify-certificate.html?id=${encodeURIComponent(certId)}`;
+  navigator.clipboard.writeText(url).then(() => {
+    alert(`Verification link copied to clipboard:\n${url}`);
+  }).catch(() => {
+    prompt("Copy this verification URL:", url);
+  });
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+

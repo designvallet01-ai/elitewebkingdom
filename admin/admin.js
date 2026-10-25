@@ -175,6 +175,11 @@ window.switchTab = function(tabId) {
   if (tabId === 'compiler-activity' || tabId === 'overview') {
     loadCompilerActivity();
   }
+  if (tabId === 'certificates' || tabId === 'overview') {
+    if (typeof window.loadCertificates === 'function') {
+      window.loadCertificates();
+    }
+  }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -197,6 +202,9 @@ function initDashboard() {
   renderAdminProjects();
   renderAdminStoreItems();
   loadTeamDataFromSupabase();
+  if (typeof window.loadCertificates === 'function') {
+    window.loadCertificates();
+  }
 }
 
 // --- SUPABASE TEAM DATA LOAD & UPLOAD ENGINE ---
@@ -763,10 +771,109 @@ function renderOverviewVisitors(items) {
   });
 }
 
+// ============================================================================
+// DATE-RANGE FILTERING & EXPORT UTILITIES
+// ============================================================================
+window.applyDatePreset = function(preset, fromInputId, toInputId, onApplyCallback) {
+  const fromEl = document.getElementById(fromInputId);
+  const toEl = document.getElementById(toInputId);
+  if (!fromEl || !toEl) return;
+
+  const now = new Date();
+  const formatYMD = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  if (preset === 'today') {
+    const todayStr = formatYMD(now);
+    fromEl.value = todayStr;
+    toEl.value = todayStr;
+  } else if (preset === 'yesterday') {
+    const yest = new Date(now.getTime() - 86400000);
+    const yestStr = formatYMD(yest);
+    fromEl.value = yestStr;
+    toEl.value = yestStr;
+  } else if (preset === '7days') {
+    const past7 = new Date(now.getTime() - 7 * 86400000);
+    fromEl.value = formatYMD(past7);
+    toEl.value = formatYMD(now);
+  } else if (preset === '30days') {
+    const past30 = new Date(now.getTime() - 30 * 86400000);
+    fromEl.value = formatYMD(past30);
+    toEl.value = formatYMD(now);
+  } else if (preset === 'this_month') {
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    fromEl.value = formatYMD(firstDay);
+    toEl.value = formatYMD(now);
+  } else if (preset === 'all') {
+    fromEl.value = '';
+    toEl.value = '';
+  }
+
+  if (typeof onApplyCallback === 'function') {
+    onApplyCallback();
+  }
+};
+
+window.isDateInRange = function(itemDateStr, fromStr, toStr) {
+  if (!itemDateStr) return false;
+  try {
+    const d = new Date(itemDateStr);
+    if (isNaN(d.getTime())) return true;
+    if (fromStr) {
+      const fromDate = new Date(fromStr + 'T00:00:00');
+      if (d < fromDate) return false;
+    }
+    if (toStr) {
+      const toDate = new Date(toStr + 'T23:59:59.999');
+      if (d > toDate) return false;
+    }
+    return true;
+  } catch (e) {
+    return true;
+  }
+};
+
+window.getDateSuffix = function(fromStr, toStr) {
+  if (fromStr && toStr) return `_${fromStr}_to_${toStr}`;
+  if (fromStr) return `_from_${fromStr}`;
+  if (toStr) return `_upto_${toStr}`;
+  return `_${new Date().toISOString().slice(0, 10)}`;
+};
+
+// Site Visitors Date Controls
+window.onVisitorTimePresetChange = function() {
+  const preset = document.getElementById('visitor-time-filter')?.value || 'all';
+  window.applyDatePreset(preset, 'visitor-date-from', 'visitor-date-to', () => {
+    window.filterVisitorsTable();
+  });
+};
+
+window.onVisitorDateInputChange = function() {
+  const select = document.getElementById('visitor-time-filter');
+  if (select) select.value = 'custom';
+  window.filterVisitorsTable();
+};
+
+window.clearVisitorDateFilter = function() {
+  const fromEl = document.getElementById('visitor-date-from');
+  const toEl = document.getElementById('visitor-date-to');
+  const select = document.getElementById('visitor-time-filter');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  if (select) select.value = 'all';
+  window.filterVisitorsTable();
+};
+
 window.filterVisitorsTable = function() {
   const search = (document.getElementById('visitor-search-input')?.value || '').toLowerCase();
   const deviceFilter = document.getElementById('visitor-device-filter')?.value || 'all';
   const timeFilter = document.getElementById('visitor-time-filter')?.value || 'all';
+  const fromVal = document.getElementById('visitor-date-from')?.value || '';
+  const toVal = document.getElementById('visitor-date-to')?.value || '';
 
   const tbody = document.getElementById('visitors-tbody');
   if (!tbody) return;
@@ -782,8 +889,10 @@ window.filterVisitorsTable = function() {
     // Device filter
     if (deviceFilter !== 'all' && v.device !== deviceFilter) return false;
 
-    // Time filter
-    if (v.created_at) {
+    // Date Range / Time filter
+    if (fromVal || toVal) {
+      if (!window.isDateInRange(v.created_at, fromVal, toVal)) return false;
+    } else if (timeFilter !== 'all' && v.created_at) {
       const vDate = new Date(v.created_at);
       if (timeFilter === 'today' && vDate.toDateString() !== todayStr) return false;
       if (timeFilter === 'yesterday' && vDate.toDateString() !== yesterdayStr) return false;
@@ -798,6 +907,14 @@ window.filterVisitorsTable = function() {
 
     return true;
   });
+
+  window.lastFilteredVisitorLogs = filtered;
+
+  const summaryEl = document.getElementById('visitor-filter-summary');
+  if (summaryEl) {
+    const totalAll = (window.allVisitorLogs || []).length;
+    summaryEl.textContent = `Showing ${filtered.length} of ${totalAll} visits`;
+  }
 
   tbody.innerHTML = '';
 
@@ -940,12 +1057,21 @@ window.simulateTestVisitor = async function() {
 };
 
 window.exportVisitorLogsCSV = function() {
-  if (!window.allVisitorLogs || window.allVisitorLogs.length === 0) {
-    alert('No visitor logs available to export.');
+  const listToExport = (window.lastFilteredVisitorLogs && window.lastFilteredVisitorLogs.length > 0)
+    ? window.lastFilteredVisitorLogs
+    : (window.allVisitorLogs || []);
+
+  if (!listToExport || listToExport.length === 0) {
+    alert('No visitor logs available to export for selected range.');
     return;
   }
+
+  const fromVal = document.getElementById('visitor-date-from')?.value || '';
+  const toVal = document.getElementById('visitor-date-to')?.value || '';
+  const dateSuffix = window.getDateSuffix(fromVal, toVal);
+
   const headers = ['Time', 'Page Title', 'URL', 'Device', 'OS', 'Browser', 'Referrer', 'Hostname', 'ISO Timestamp'];
-  const rows = window.allVisitorLogs.map(v => [
+  const rows = listToExport.map(v => [
     `"${v.timeStr || ''}"`,
     `"${(v.pageName || '').replace(/"/g, '""')}"`,
     `"${(v.route || '').replace(/"/g, '""')}"`,
@@ -961,7 +1087,7 @@ window.exportVisitorLogsCSV = function() {
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement('a');
   link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `elitewebkingdom_visitors_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('download', `elitewebkingdom_visitors${dateSuffix}.csv`);
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -1136,76 +1262,181 @@ async function loadLeads() {
     });
   }
 
-  // Populate Proposals Table (new, under-review, archived, denied)
-  const leadsTbody = document.getElementById('leads-tbody');
-  if (leadsTbody) {
-    leadsTbody.innerHTML = '';
-    const proposals = leads.filter(l => l.status === 'new' || l.status === 'under-review' || l.status === 'archived' || l.status === 'denied');
-    if (proposals.length === 0) {
-      leadsTbody.innerHTML = `
-        <tr>
-          <td colspan="6" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
-            <div style="font-size: 1.05rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">No incoming proposals found yet.</div>
-            <div style="font-size: 0.82rem;">When clients submit proposals on the website, they will immediately appear here.</div>
-          </td>
-        </tr>
-      `;
-    } else {
-      proposals.forEach((l) => {
-      const tr = document.createElement('tr');
-      const companyLabel = l.company && l.company !== 'N/A' ? `<span style="font-size:0.75rem; color: var(--accent-cyan); display:block;">${l.company}</span>` : '';
-      const origIndex = leads.findIndex(item => item.id === l.id);
-      const idArg = l.id ? `'${l.id}'` : 'null';
-      const phoneVal = l.phone || 'N/A';
-      
-      tr.innerHTML = `
-        <td>
-          <strong>${l.date}</strong>
-          <span style="font-size: 0.75rem; color: var(--accent-cyan); display:block;">ID: ${l.id}</span>
-        </td>
-        <td>
-          <strong>${l.name}</strong>
-          ${companyLabel}
-          <span style="font-size: 0.75rem; color: var(--text-muted); display:block;">Email: ${l.email}</span>
-          <span style="font-size: 0.75rem; color: var(--text-muted); display:block;">Phone: ${phoneVal}</span>
-        </td>
-        <td><span class="badge">${l.category}</span></td>
-        <td>
-          <strong>${l.budget}</strong>
-          <span style="font-size: 0.75rem; color: var(--text-secondary); display:block;">Timeline: ${l.timeline}</span>
-        </td>
-        <td>
-          <select class="form-control status-select" style="background: #08091a; padding: 4px 8px; font-size: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--glass-border); color: #fff; cursor: pointer;" onchange="changeLeadStatus(${origIndex}, ${idArg}, this.value)">
-            <option value="new" ${l.status === 'new' ? 'selected' : ''}>Proposal Received</option>
-            <option value="under-review" ${l.status === 'under-review' ? 'selected' : ''}>Under Review</option>
-            <option value="accepted" ${l.status === 'accepted' ? 'selected' : ''}>Accepted</option>
-            <option value="in-progress" ${l.status === 'in-progress' ? 'selected' : ''}>Development</option>
-            <option value="completed" ${l.status === 'completed' ? 'selected' : ''}>Completed & Live</option>
-            <option value="archived" ${l.status === 'archived' ? 'selected' : ''}>Archived / Closed</option>
-            <option value="denied" ${l.status === 'denied' ? 'selected' : ''}>Denied / Rejected</option>
-          </select>
-        </td>
-        <td>
-          <div class="table-actions">
-            <button class="action-icon-btn" title="Contact & Send Tracker Link" onclick="contactLeadViaWhatsApp('${l.name}', '${phoneVal}', '${l.id}')">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.528 2.01 14.069.99 11.519.99c-5.44 0-9.866 4.372-9.87 9.802 0 1.698.459 3.356 1.321 4.8l-.299.988-.888 3.243 3.33-.874.944-.287zm12.56-8.528c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.568-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/></svg>
-            </button>
-            <button class="action-icon-btn" title="Delete Lead" onclick="deleteLead(${origIndex}, ${idArg})">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-            </button>
-          </div>
-        </td>
-      `;
-      leadsTbody.appendChild(tr);
-    });
-    }
-  }
+  // Populate Proposals Table via Filter Engine
+  window.filterLeadsTable();
 
   // Populate Taken Projects Table (accepted, in-progress, completed)
   const takenProjects = leads.filter(l => l.status === 'accepted' || l.status === 'in-progress' || l.status === 'completed');
   window.allTakenProjects = takenProjects;
   renderTakenRows(takenProjects);
 }
+
+// ============================================================================
+// PROPOSALS / LEADS DATE FILTERING & EXPORT
+// ============================================================================
+window.onLeadsTimePresetChange = function() {
+  const preset = document.getElementById('leads-time-filter')?.value || 'all';
+  window.applyDatePreset(preset, 'leads-date-from', 'leads-date-to', () => {
+    window.filterLeadsTable();
+  });
+};
+
+window.onLeadsDateInputChange = function() {
+  const select = document.getElementById('leads-time-filter');
+  if (select) select.value = 'custom';
+  window.filterLeadsTable();
+};
+
+window.clearLeadsDateFilter = function() {
+  const fromEl = document.getElementById('leads-date-from');
+  const toEl = document.getElementById('leads-date-to');
+  const select = document.getElementById('leads-time-filter');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  if (select) select.value = 'all';
+  window.filterLeadsTable();
+};
+
+window.filterLeadsTable = function() {
+  const leadsTbody = document.getElementById('leads-tbody');
+  if (!leadsTbody) return;
+
+  const search = (document.getElementById('leads-search-input')?.value || '').toLowerCase();
+  const categoryFilter = document.getElementById('leads-category-filter')?.value || 'all';
+  const fromVal = document.getElementById('leads-date-from')?.value || '';
+  const toVal = document.getElementById('leads-date-to')?.value || '';
+
+  const allLeads = window.currentLeadsList || [];
+  const filtered = allLeads.filter(l => {
+    // Only proposals
+    if (l.status !== 'new' && l.status !== 'under-review' && l.status !== 'archived' && l.status !== 'denied') return false;
+
+    // Category
+    if (categoryFilter !== 'all' && l.category !== categoryFilter) return false;
+
+    // Date Range
+    if (fromVal || toVal) {
+      if (!window.isDateInRange(l.created_at || l.date, fromVal, toVal)) return false;
+    }
+
+    // Search query
+    if (search) {
+      const hay = [l.name, l.email, l.phone, l.company, l.category, l.budget, l.message, l.id].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+
+    return true;
+  });
+
+  window.lastFilteredLeads = filtered;
+
+  const summaryEl = document.getElementById('leads-filter-summary');
+  if (summaryEl) {
+    const totalProposals = allLeads.filter(l => l.status === 'new' || l.status === 'under-review' || l.status === 'archived' || l.status === 'denied').length;
+    summaryEl.textContent = `Showing ${filtered.length} of ${totalProposals} proposals`;
+  }
+
+  leadsTbody.innerHTML = '';
+  if (filtered.length === 0) {
+    leadsTbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+          <div style="font-size: 1.05rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">No incoming proposals found matching filters.</div>
+          <div style="font-size: 0.82rem;">Try adjusting the date range or search terms above.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  filtered.forEach((l) => {
+    const tr = document.createElement('tr');
+    const companyLabel = l.company && l.company !== 'N/A' ? `<span style="font-size:0.75rem; color: var(--accent-cyan); display:block;">${l.company}</span>` : '';
+    const origIndex = allLeads.findIndex(item => item.id === l.id);
+    const idArg = l.id ? `'${l.id}'` : 'null';
+    const phoneVal = l.phone || 'N/A';
+
+    tr.innerHTML = `
+      <td>
+        <strong>${l.date}</strong>
+        <span style="font-size: 0.75rem; color: var(--accent-cyan); display:block;">ID: ${l.id}</span>
+      </td>
+      <td>
+        <strong>${l.name}</strong>
+        ${companyLabel}
+        <span style="font-size: 0.75rem; color: var(--text-muted); display:block;">Email: ${l.email}</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted); display:block;">Phone: ${phoneVal}</span>
+      </td>
+      <td><span class="badge">${l.category}</span></td>
+      <td>
+        <strong>${l.budget}</strong>
+        <span style="font-size: 0.75rem; color: var(--text-secondary); display:block;">Timeline: ${l.timeline}</span>
+      </td>
+      <td>
+        <select class="form-control status-select" style="background: #08091a; padding: 4px 8px; font-size: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--glass-border); color: #fff; cursor: pointer;" onchange="changeLeadStatus(${origIndex}, ${idArg}, this.value)">
+          <option value="new" ${l.status === 'new' ? 'selected' : ''}>Proposal Received</option>
+          <option value="under-review" ${l.status === 'under-review' ? 'selected' : ''}>Under Review</option>
+          <option value="accepted" ${l.status === 'accepted' ? 'selected' : ''}>Accepted</option>
+          <option value="in-progress" ${l.status === 'in-progress' ? 'selected' : ''}>Development</option>
+          <option value="completed" ${l.status === 'completed' ? 'selected' : ''}>Completed & Live</option>
+          <option value="archived" ${l.status === 'archived' ? 'selected' : ''}>Archived / Closed</option>
+          <option value="denied" ${l.status === 'denied' ? 'selected' : ''}>Denied / Rejected</option>
+        </select>
+      </td>
+      <td>
+        <div class="table-actions">
+          <button class="action-icon-btn" title="Contact & Send Tracker Link" onclick="contactLeadViaWhatsApp('${l.name}', '${phoneVal}', '${l.id}')">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.965C16.528 2.01 14.069.99 11.519.99c-5.44 0-9.866 4.372-9.87 9.802 0 1.698.459 3.356 1.321 4.8l-.299.988-.888 3.243 3.33-.874.944-.287zm12.56-8.528c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.568-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/></svg>
+          </button>
+          <button class="action-icon-btn" title="Delete Lead" onclick="deleteLead(${origIndex}, ${idArg})">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </button>
+        </div>
+      </td>
+    `;
+    leadsTbody.appendChild(tr);
+  });
+};
+
+window.exportLeadsCSV = function() {
+  const listToExport = (window.lastFilteredLeads && window.lastFilteredLeads.length > 0)
+    ? window.lastFilteredLeads
+    : (window.currentLeadsList || []).filter(l => l.status === 'new' || l.status === 'under-review' || l.status === 'archived' || l.status === 'denied');
+
+  if (!listToExport || listToExport.length === 0) {
+    alert('No proposals available to export.');
+    return;
+  }
+
+  const fromVal = document.getElementById('leads-date-from')?.value || '';
+  const toVal = document.getElementById('leads-date-to')?.value || '';
+  const dateSuffix = window.getDateSuffix(fromVal, toVal);
+
+  const headers = ['Proposal ID', 'Date', 'Client Name', 'Email', 'Phone', 'Company', 'Category', 'Budget', 'Timeline', 'Status', 'Message'];
+  const rows = listToExport.map(l => [
+    `"${l.id || ''}"`,
+    `"${l.date || ''}"`,
+    `"${(l.name || '').replace(/"/g, '""')}"`,
+    `"${(l.email || '').replace(/"/g, '""')}"`,
+    `"${(l.phone || '').replace(/"/g, '""')}"`,
+    `"${(l.company || '').replace(/"/g, '""')}"`,
+    `"${(l.category || '').replace(/"/g, '""')}"`,
+    `"${(l.budget || '').replace(/"/g, '""')}"`,
+    `"${(l.timeline || '').replace(/"/g, '""')}"`,
+    `"${(l.status || '').replace(/"/g, '""')}"`,
+    `"${(l.message || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`
+  ]);
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `elitewebkingdom_proposals${dateSuffix}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
 
 // Separate function to render taken projects rows (called initially and during search filter)
 function renderTakenRows(projectsList) {
@@ -3048,6 +3279,72 @@ function renderOverviewCompilerRuns(items) {
   tbody.innerHTML = html;
 }
 
+// Compiler Date Range Controls
+window.onCompilerTimePresetChange = function() {
+  const preset = document.getElementById('compiler-time-filter')?.value || 'all';
+  window.applyDatePreset(preset, 'compiler-date-from', 'compiler-date-to', () => {
+    window.filterCompilerRunsTable();
+  });
+};
+
+window.onCompilerDateInputChange = function() {
+  const select = document.getElementById('compiler-time-filter');
+  if (select) select.value = 'custom';
+  window.filterCompilerRunsTable();
+};
+
+window.clearCompilerDateFilter = function() {
+  const fromEl = document.getElementById('compiler-date-from');
+  const toEl = document.getElementById('compiler-date-to');
+  const select = document.getElementById('compiler-time-filter');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  if (select) select.value = 'all';
+  window.filterCompilerRunsTable();
+};
+
+window.fetchCompilerRunsCloudRange = async function() {
+  const fromStr = document.getElementById('compiler-date-from')?.value || '';
+  const toStr = document.getElementById('compiler-date-to')?.value || '';
+  if (!fromStr && !toStr) {
+    alert('Please select a Start Date or End Date first.');
+    return;
+  }
+  if (!supabaseClient) {
+    alert('Supabase client is offline. Local cache in use.');
+    return;
+  }
+  try {
+    let query = supabaseClient.from('compiler_telemetry').select('*').order('created_at', { ascending: false });
+    if (fromStr) {
+      query = query.gte('created_at', new Date(fromStr + 'T00:00:00').toISOString());
+    }
+    if (toStr) {
+      query = query.lte('created_at', new Date(toStr + 'T23:59:59.999').toISOString());
+    }
+    const { data, error } = await query.limit(1000);
+    if (error) throw error;
+    if (Array.isArray(data)) {
+      const existingIds = new Set(window.allCompilerRuns.map(r => r.id || r.created_at));
+      let added = 0;
+      data.forEach(item => {
+        const key = item.id || item.created_at;
+        if (!existingIds.has(key)) {
+          window.allCompilerRuns.push(item);
+          existingIds.add(key);
+          added++;
+        }
+      });
+      window.allCompilerRuns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      window.filterCompilerRunsTable();
+      alert(`⚡ Successfully loaded ${data.length} runs from Supabase Cloud (${added} newly added).`);
+    }
+  } catch (err) {
+    console.error('Error fetching cloud compiler range:', err);
+    alert('Error fetching from cloud: ' + err.message);
+  }
+};
+
 // 7. Filter and Render Main Compiler Runs Table
 window.filterCompilerRunsTable = function() {
   const tbody = document.getElementById('compiler-runs-tbody');
@@ -3057,6 +3354,8 @@ window.filterCompilerRunsTable = function() {
   const langFilter = document.getElementById('compiler-lang-filter')?.value || 'all';
   const statusFilter = document.getElementById('compiler-status-filter')?.value || 'all';
   const timeFilter = document.getElementById('compiler-time-filter')?.value || 'all';
+  const fromVal = document.getElementById('compiler-date-from')?.value || '';
+  const toVal = document.getElementById('compiler-date-to')?.value || '';
 
   const now = new Date();
   const todayStr = now.toDateString();
@@ -3079,8 +3378,10 @@ window.filterCompilerRunsTable = function() {
       if (r.status !== statusFilter) return false;
     }
 
-    // Time filter
-    if (timeFilter !== 'all' && r.created_at) {
+    // Date Range / Time filter
+    if (fromVal || toVal) {
+      if (!window.isDateInRange(r.created_at, fromVal, toVal)) return false;
+    } else if (timeFilter !== 'all' && r.created_at) {
       const runDate = new Date(r.created_at);
       if (timeFilter === 'today' && runDate.toDateString() !== todayStr) return false;
       if (timeFilter === 'yesterday' && runDate.toDateString() !== yesterdayStr) return false;
@@ -3097,13 +3398,23 @@ window.filterCompilerRunsTable = function() {
         r.os || '',
         r.browser || '',
         r.ip || '',
-        r.college_name || ''
+        r.college_name || '',
+        r.user_mobile || '',
+        r.user_email || ''
       ].join(' ').toLowerCase();
       if (!hay.includes(searchInput)) return false;
     }
 
     return true;
   });
+
+  window.lastFilteredCompilerRuns = filtered;
+
+  const summaryEl = document.getElementById('compiler-filter-summary');
+  if (summaryEl) {
+    const totalAll = window.allCompilerRuns.length;
+    summaryEl.textContent = `Showing ${filtered.length} of ${totalAll} runs`;
+  }
 
   if (filtered.length === 0) {
     tbody.innerHTML = `
@@ -3463,15 +3774,22 @@ window.simulateTestCompilerRun = async function() {
   alert(`⚡ Live Test Run Simulated!\nDeveloper: ${devName}\nLanguage: ${testLang.toUpperCase()}\nStatus: ${simulatedRun.status}\nRuntime: ${runtime}ms`);
 };
 
-// 11. Export Compiler Telemetry CSV
 window.exportCompilerLogsCSV = function() {
-  if (!window.allCompilerRuns || window.allCompilerRuns.length === 0) {
-    alert('No compiler execution logs to export.');
+  const listToExport = (window.lastFilteredCompilerRuns && window.lastFilteredCompilerRuns.length > 0)
+    ? window.lastFilteredCompilerRuns
+    : (window.allCompilerRuns || []);
+
+  if (!listToExport || listToExport.length === 0) {
+    alert('No compiler execution logs available to export for selected range.');
     return;
   }
 
+  const fromVal = document.getElementById('compiler-date-from')?.value || '';
+  const toVal = document.getElementById('compiler-date-to')?.value || '';
+  const dateSuffix = window.getDateSuffix(fromVal, toVal);
+
   const headers = ['Timestamp', 'User Name', 'User ID', 'College / Lab', 'Language', 'Status', 'Execution Time (ms)', 'Lines', 'Device', 'OS', 'Browser', 'IP Address', 'Code Snippet'];
-  const rows = window.allCompilerRuns.map(r => [
+  const rows = listToExport.map(r => [
     `"${r.created_at || ''}"`,
     `"${(r.user_name || '').replace(/"/g, '""')}"`,
     `"${r.user_id || ''}"`,
@@ -3491,7 +3809,7 @@ window.exportCompilerLogsCSV = function() {
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement('a');
   link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `elitewebkingdom_compiler_telemetry_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('download', `elitewebkingdom_compiler_telemetry${dateSuffix}.csv`);
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -3778,27 +4096,72 @@ function renderCompilerProfilesTable(profiles) {
   tbody.innerHTML = html;
 }
 
+// Profiles Date Controls
+window.onProfilesTimePresetChange = function() {
+  const preset = document.getElementById('profiles-time-filter')?.value || 'all';
+  window.applyDatePreset(preset, 'profiles-date-from', 'profiles-date-to', () => {
+    window.filterCompilerProfilesTable();
+  });
+};
+
+window.onProfilesDateInputChange = function() {
+  const select = document.getElementById('profiles-time-filter');
+  if (select) select.value = 'custom';
+  window.filterCompilerProfilesTable();
+};
+
+window.clearProfilesDateFilter = function() {
+  const fromEl = document.getElementById('profiles-date-from');
+  const toEl = document.getElementById('profiles-date-to');
+  const select = document.getElementById('profiles-time-filter');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  if (select) select.value = 'all';
+  window.filterCompilerProfilesTable();
+};
+
 window.filterCompilerProfilesTable = function() {
   const query = (document.getElementById('compiler-profiles-search')?.value || '').toLowerCase();
-  if (!query) {
-    renderCompilerProfilesTable(window.allCompilerProfiles);
-    return;
-  }
-  const filtered = window.allCompilerProfiles.filter(p => {
-    const hay = [p.name, p.mobile, p.email, p.user_id, p.device, p.os].join(' ').toLowerCase();
-    return hay.includes(query);
+  const fromVal = document.getElementById('profiles-date-from')?.value || '';
+  const toVal = document.getElementById('profiles-date-to')?.value || '';
+
+  const filtered = (window.allCompilerProfiles || []).filter(p => {
+    if (fromVal || toVal) {
+      const pDate = p.created_at || p.last_active;
+      if (!window.isDateInRange(pDate, fromVal, toVal)) return false;
+    }
+    if (query) {
+      const hay = [p.name, p.mobile, p.email, p.user_id, p.device, p.os].join(' ').toLowerCase();
+      if (!hay.includes(query)) return false;
+    }
+    return true;
   });
+
+  window.lastFilteredCompilerProfiles = filtered;
+  const summaryEl = document.getElementById('profiles-filter-summary');
+  if (summaryEl) {
+    const totalAll = (window.allCompilerProfiles || []).length;
+    summaryEl.textContent = `Showing ${filtered.length} of ${totalAll} profiles`;
+  }
   renderCompilerProfilesTable(filtered);
 };
 
 window.exportCompilerProfilesCSV = function() {
-  if (!window.allCompilerProfiles || window.allCompilerProfiles.length === 0) {
-    alert('No developer profiles available to export.');
+  const listToExport = (window.lastFilteredCompilerProfiles && window.lastFilteredCompilerProfiles.length > 0)
+    ? window.lastFilteredCompilerProfiles
+    : (window.allCompilerProfiles || []);
+
+  if (!listToExport || listToExport.length === 0) {
+    alert('No developer profiles available to export for selected range.');
     return;
   }
 
+  const fromVal = document.getElementById('profiles-date-from')?.value || '';
+  const toVal = document.getElementById('profiles-date-to')?.value || '';
+  const dateSuffix = window.getDateSuffix(fromVal, toVal);
+
   const headers = ['User ID', 'Full Name', 'Mobile Number', 'Email ID', 'Device', 'OS', 'Browser', 'IP', 'Total Runs', 'Registered Date'];
-  const rows = window.allCompilerProfiles.map(p => [
+  const rows = listToExport.map(p => [
     `"${(p.user_id || '').replace(/"/g, '""')}"`,
     `"${(p.name || '').replace(/"/g, '""')}"`,
     `"${(p.mobile || '').replace(/"/g, '""')}"`,
@@ -3808,17 +4171,170 @@ window.exportCompilerProfilesCSV = function() {
     `"${(p.browser || '').replace(/"/g, '""')}"`,
     `"${(p.ip || '').replace(/"/g, '""')}"`,
     p.runs_count || 1,
-    `"${(p.created_at || '').replace(/"/g, '""')}"`
+    `"${(p.created_at || p.last_active || '').replace(/"/g, '""')}"`
   ]);
 
   const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement('a');
   link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `elitewebkingdom_compiler_developer_profiles_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('download', `elitewebkingdom_compiler_developer_profiles${dateSuffix}.csv`);
   document.body.appendChild(link);
   link.click();
   link.remove();
+};
+
+// ============================================================================
+// MASTER DATE-RANGE EXPORT & VIEW HUB MODAL CONTROLS
+// ============================================================================
+window.openMasterDateExportModal = function() {
+  const modal = document.getElementById('master-date-export-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    window.updateMasterExportPreview();
+  }
+};
+
+window.closeMasterDateExportModal = function() {
+  const modal = document.getElementById('master-date-export-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.setMasterPreset = function(preset) {
+  window.applyDatePreset(preset, 'hub-date-from', 'hub-date-to', () => {
+    window.updateMasterExportPreview();
+  });
+};
+
+window.updateMasterExportPreview = function() {
+  const dataset = document.getElementById('hub-dataset-select')?.value || 'compiler';
+  const fromVal = document.getElementById('hub-date-from')?.value || '';
+  const toVal = document.getElementById('hub-date-to')?.value || '';
+  const countEl = document.getElementById('hub-match-count');
+  if (!countEl) return;
+
+  let total = 0;
+  if (dataset === 'compiler') {
+    const list = window.allCompilerRuns || [];
+    total = list.filter(r => window.isDateInRange(r.created_at, fromVal, toVal)).length;
+    countEl.textContent = `${total} code executions`;
+  } else if (dataset === 'visitors') {
+    const list = window.allVisitorLogs || [];
+    total = list.filter(v => window.isDateInRange(v.created_at, fromVal, toVal)).length;
+    countEl.textContent = `${total} visitor sessions`;
+  } else if (dataset === 'profiles') {
+    const list = window.allCompilerProfiles || [];
+    total = list.filter(p => window.isDateInRange(p.created_at || p.last_active, fromVal, toVal)).length;
+    countEl.textContent = `${total} developer profiles`;
+  } else if (dataset === 'leads') {
+    const list = window.currentLeadsList || [];
+    total = list.filter(l => window.isDateInRange(l.created_at || l.date, fromVal, toVal)).length;
+    countEl.textContent = `${total} proposals`;
+  } else if (dataset === 'certificates') {
+    const list = window.allCertificates || [];
+    total = list.filter(c => window.isDateInRange(c.issue_date || c.created_at, fromVal, toVal)).length;
+    countEl.textContent = `${total} certificates`;
+  }
+};
+
+window.executeMasterDateView = function() {
+  const dataset = document.getElementById('hub-dataset-select')?.value || 'compiler';
+  const fromVal = document.getElementById('hub-date-from')?.value || '';
+  const toVal = document.getElementById('hub-date-to')?.value || '';
+  window.closeMasterDateExportModal();
+
+  if (dataset === 'compiler') {
+    switchTab('compiler-activity');
+    switchCompilerSubView('stream');
+    const fromEl = document.getElementById('compiler-date-from');
+    const toEl = document.getElementById('compiler-date-to');
+    const timeSelect = document.getElementById('compiler-time-filter');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    if (timeSelect) timeSelect.value = (fromVal || toVal) ? 'custom' : 'all';
+    window.filterCompilerRunsTable();
+  } else if (dataset === 'visitors') {
+    switchTab('visitors');
+    const fromEl = document.getElementById('visitor-date-from');
+    const toEl = document.getElementById('visitor-date-to');
+    const timeSelect = document.getElementById('visitor-time-filter');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    if (timeSelect) timeSelect.value = (fromVal || toVal) ? 'custom' : 'all';
+    window.filterVisitorsTable();
+  } else if (dataset === 'profiles') {
+    switchTab('compiler-activity');
+    switchCompilerSubView('profiles');
+    const fromEl = document.getElementById('profiles-date-from');
+    const toEl = document.getElementById('profiles-date-to');
+    const timeSelect = document.getElementById('profiles-time-filter');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    if (timeSelect) timeSelect.value = (fromVal || toVal) ? 'custom' : 'all';
+    window.filterCompilerProfilesTable();
+  } else if (dataset === 'leads') {
+    switchTab('leads');
+    const fromEl = document.getElementById('leads-date-from');
+    const toEl = document.getElementById('leads-date-to');
+    const timeSelect = document.getElementById('leads-time-filter');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    if (timeSelect) timeSelect.value = (fromVal || toVal) ? 'custom' : 'all';
+    window.filterLeadsTable();
+  } else if (dataset === 'certificates') {
+    switchTab('certificates');
+    const fromEl = document.getElementById('cert-filter-from');
+    const toEl = document.getElementById('cert-filter-to');
+    const timeSelect = document.getElementById('cert-time-preset');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    if (timeSelect) timeSelect.value = (fromVal || toVal) ? 'custom' : 'all';
+    window.filterCertificatesTable();
+  }
+};
+
+window.executeMasterDateExport = function() {
+  const dataset = document.getElementById('hub-dataset-select')?.value || 'compiler';
+  const fromVal = document.getElementById('hub-date-from')?.value || '';
+  const toVal = document.getElementById('hub-date-to')?.value || '';
+
+  if (dataset === 'compiler') {
+    const fromEl = document.getElementById('compiler-date-from');
+    const toEl = document.getElementById('compiler-date-to');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    window.filterCompilerRunsTable();
+    window.exportCompilerLogsCSV();
+  } else if (dataset === 'visitors') {
+    const fromEl = document.getElementById('visitor-date-from');
+    const toEl = document.getElementById('visitor-date-to');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    window.filterVisitorsTable();
+    window.exportVisitorLogsCSV();
+  } else if (dataset === 'profiles') {
+    const fromEl = document.getElementById('profiles-date-from');
+    const toEl = document.getElementById('profiles-date-to');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    window.filterCompilerProfilesTable();
+    window.exportCompilerProfilesCSV();
+  } else if (dataset === 'leads') {
+    const fromEl = document.getElementById('leads-date-from');
+    const toEl = document.getElementById('leads-date-to');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    window.filterLeadsTable();
+    window.exportLeadsCSV();
+  } else if (dataset === 'certificates') {
+    const fromEl = document.getElementById('cert-filter-from');
+    const toEl = document.getElementById('cert-filter-to');
+    if (fromEl) fromEl.value = fromVal;
+    if (toEl) toEl.value = toVal;
+    window.filterCertificatesTable();
+    window.exportCertificatesCSV();
+  }
+  window.closeMasterDateExportModal();
 };
 
 window.filterRunsByProfile = function(query) {
@@ -3829,6 +4345,553 @@ window.filterRunsByProfile = function(query) {
     filterCompilerRunsTable();
   }
 };
+
+// =================================================================
+// --- CERTIFICATES & TOP PERFORMER MANAGEMENT SUITE ---
+// =================================================================
+
+window.allCertificates = [];
+window.lastFilteredCertificates = [];
+window.activePreviewCert = null;
+
+const DEFAULT_ADMIN_CERTIFICATES = [
+  {
+    id: "cert-seed-001",
+    certificate_id: "EIDE-2026-10-0001",
+    main_heading: "Certificate of Achievement",
+    recipient_name: "Gowri Narayana Guduru",
+    award_category: "Top Performer & Engineering Excellence",
+    achievement_description: "Awarded for exceptional leadership in enterprise full-stack software architecture, architecting the Elite IDE multi-cluster compiler engine, and continuous top-tier technical delivery.",
+    performance_month: "October 2026",
+    issue_date: "2026-10-25",
+    issuer_name: "Elite Web Kingdom & Elite IDE",
+    signatory_name: "Gowri Narayana Guduru",
+    signatory_role: "Principal System Architect & Founder",
+    status: "Verified"
+  }
+];
+
+// Helper: Read from Local Storage
+function getStoredCertificates() {
+  try {
+    const raw = localStorage.getItem('ewk_certificates');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (err) {
+    console.warn("Failed reading local certs:", err);
+  }
+  return DEFAULT_ADMIN_CERTIFICATES;
+}
+
+function persistCertificates(list) {
+  try {
+    localStorage.setItem('ewk_certificates', JSON.stringify(list));
+  } catch (err) {
+    console.warn("Failed saving local certs:", err);
+  }
+}
+
+// 1. Load Certificates (Supabase + Local fallback)
+window.loadCertificates = async function() {
+  let certs = [];
+
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('certificates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        certs = data;
+        persistCertificates(certs);
+      }
+    } catch (err) {
+      console.warn("Supabase certificates fetch warning:", err);
+    }
+  }
+
+  if (certs.length === 0) {
+    certs = getStoredCertificates();
+  }
+
+  window.allCertificates = certs;
+
+  // Update KPI counters
+  const totalCountEl = document.getElementById('admin-cert-total-count');
+  const sidebarCountEl = document.getElementById('sidebar-certificates-count');
+  const topCountEl = document.getElementById('admin-cert-top-performers-count');
+  const monthCountEl = document.getElementById('admin-cert-month-count');
+
+  if (totalCountEl) totalCountEl.textContent = certs.length;
+  if (sidebarCountEl) sidebarCountEl.textContent = certs.length;
+
+  if (topCountEl) {
+    const topCount = certs.filter(c => (c.award_category || '').toLowerCase().includes('top performer')).length;
+    topCountEl.textContent = topCount;
+  }
+
+  if (monthCountEl) {
+    const currentMonthStr = 'October 2026';
+    const monthCount = certs.filter(c => (c.performance_month || '').toLowerCase() === currentMonthStr.toLowerCase() || (c.issue_date || '').startsWith('2026-10')).length;
+    monthCountEl.textContent = monthCount;
+  }
+
+  // Pre-fill default form fields if empty
+  const issueDateInput = document.getElementById('cert-form-issue-date');
+  if (issueDateInput && !issueDateInput.value) {
+    issueDateInput.value = new Date().toISOString().split('T')[0];
+  }
+
+  const certIdInput = document.getElementById('cert-form-id');
+  if (certIdInput && !certIdInput.value) {
+    certIdInput.value = window.generateCertificateId();
+  }
+
+  window.filterCertificatesTable();
+};
+
+// 2. Generate Unique Verifiable ID
+window.generateCertificateId = function() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const prefix = `EIDE-${year}-${month}-`;
+
+  // Find existing sequence numbers for this prefix
+  let maxSeq = 0;
+  const list = window.allCertificates || getStoredCertificates();
+  list.forEach(c => {
+    if (c.certificate_id && c.certificate_id.startsWith(prefix)) {
+      const parts = c.certificate_id.split('-');
+      const num = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(num) && num > maxSeq) {
+        maxSeq = num;
+      }
+    }
+  });
+
+  const nextSeq = String(maxSeq + 1).padStart(4, '0');
+  return `${prefix}${nextSeq}`;
+};
+
+window.generateAndSetCertId = function() {
+  const input = document.getElementById('cert-form-id');
+  if (input) {
+    input.value = window.generateCertificateId();
+  }
+};
+
+// 3. Description Templates
+window.applyCertDescTemplate = function(templateType) {
+  const textarea = document.getElementById('cert-form-desc');
+  if (!textarea) return;
+
+  if (templateType === 'top_performer') {
+    textarea.value = "Recognized for exceptional engineering leadership, delivering high-impact code across core platforms, optimizing real-time execution velocity, and exemplary peer mentorship.";
+  } else if (templateType === 'coding_excellence') {
+    textarea.value = "Awarded for stellar algorithmic precision, maintaining 100% test coverage, zero-defect code delivery, and outstanding problem-solving in high-performance computing.";
+  } else if (templateType === 'architecture') {
+    textarea.value = "Honored for pioneering architecture contributions to the Elite Web Kingdom and Elite IDE distributed infrastructure, cloud database resilience, and high-concurrency microservices.";
+  }
+};
+
+// 4. Toggle Registration Form
+window.toggleCertForm = function() {
+  const card = document.getElementById('cert-registration-card');
+  const btn = document.getElementById('btn-toggle-cert-form');
+  if (!card) return;
+
+  if (card.style.display === 'none') {
+    card.style.display = 'block';
+    if (btn) btn.textContent = '✕ Close Form';
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    card.style.display = 'none';
+    if (btn) btn.textContent = '+ Issue New Certificate';
+  }
+};
+
+// 5. Handle Certificate Register Form Submit
+window.handleCertificateRegister = async function(e) {
+  if (e) e.preventDefault();
+
+  const headingEl = document.getElementById('cert-form-heading');
+  const nameEl = document.getElementById('cert-form-name');
+  const categoryEl = document.getElementById('cert-form-category');
+  const monthEl = document.getElementById('cert-form-month');
+  const issueDateEl = document.getElementById('cert-form-issue-date');
+  const certIdEl = document.getElementById('cert-form-id');
+  const descEl = document.getElementById('cert-form-desc');
+  const submitBtn = document.getElementById('btn-submit-cert');
+
+  const heading = headingEl?.value.trim() || 'Certificate of Achievement';
+  const name = nameEl?.value.trim();
+  const category = categoryEl?.value.trim() || 'Top Performer';
+  const month = monthEl?.value.trim() || 'October 2026';
+  const issueDate = issueDateEl?.value.trim() || new Date().toISOString().split('T')[0];
+  const certId = (certIdEl?.value.trim() || window.generateCertificateId()).toUpperCase();
+  const desc = descEl?.value.trim();
+
+  if (!name || !desc || !certId) {
+    alert("Please fill in all required fields (Recipient Name, Certificate ID, and Achievement Description).");
+    return;
+  }
+
+  // Check ID collision
+  const existing = window.allCertificates.find(c => c.certificate_id.toLowerCase() === certId.toLowerCase());
+  if (existing) {
+    alert(`Certificate ID '${certId}' is already registered for ${existing.recipient_name}. Please generate a new unique ID.`);
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Registering Credential...";
+  }
+
+  const newCert = {
+    id: `cert-${Date.now()}`,
+    certificate_id: certId,
+    main_heading: heading,
+    recipient_name: name,
+    award_category: category,
+    achievement_description: desc,
+    performance_month: month,
+    issue_date: issueDate,
+    issuer_name: "Elite Web Kingdom & Elite IDE",
+    signatory_name: "Gowri Narayana Guduru",
+    signatory_role: "Principal System Architect & Founder",
+    status: "Verified",
+    created_at: new Date().toISOString()
+  };
+
+  // 1. Insert to Supabase
+  if (supabaseClient) {
+    try {
+      const { error } = await supabaseClient
+        .from('certificates')
+        .insert([newCert]);
+      if (error) {
+        console.warn("Supabase insert warning (falling back to local persistence):", error);
+      }
+    } catch (err) {
+      console.warn("Supabase insert error:", err);
+    }
+  }
+
+  // 2. Add to active array and persist locally
+  window.allCertificates.unshift(newCert);
+  persistCertificates(window.allCertificates);
+
+  // 3. Reset form
+  if (nameEl) nameEl.value = '';
+  if (descEl) descEl.value = '';
+  if (certIdEl) certIdEl.value = window.generateCertificateId();
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "🛡️ Register & Issue Official Certificate";
+  }
+
+  // 4. Reload table & stats
+  window.loadCertificates();
+
+  // 5. Success toast and confirm
+  const verifyUrl = `${window.location.origin}/verify-certificate.html?id=${encodeURIComponent(certId)}`;
+  const openNow = confirm(`🎉 Certificate Registered Successfully!\n\nID: ${certId}\nRecipient: ${name}\nCategory: ${category}\n\nWould you like to open the official verification page in a new window now?`);
+  if (openNow) {
+    window.open(verifyUrl, '_blank');
+  }
+};
+
+// 6. Delete / Revoke Certificate
+window.deleteCertificate = async function(certId) {
+  const confirmed = confirm(`Are you sure you want to revoke / delete Certificate ID: ${certId}?\nThis action will remove it from the central registry.`);
+  if (!confirmed) return;
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient
+        .from('certificates')
+        .delete()
+        .eq('certificate_id', certId);
+    } catch (err) {
+      console.warn("Error deleting from Supabase:", err);
+    }
+  }
+
+  window.allCertificates = window.allCertificates.filter(c => c.certificate_id !== certId);
+  persistCertificates(window.allCertificates);
+  window.loadCertificates();
+};
+
+// 7. Date Range and Search Filtering
+window.onCertTimePresetChange = function(preset) {
+  const fromEl = document.getElementById('cert-filter-from');
+  const toEl = document.getElementById('cert-filter-to');
+  window.applyDatePreset(preset, fromEl, toEl);
+  window.filterCertificatesTable();
+};
+
+window.onCertDateInputChange = function() {
+  const presetEl = document.getElementById('cert-time-preset');
+  if (presetEl) presetEl.value = 'custom';
+  window.filterCertificatesTable();
+};
+
+window.clearCertDateFilter = function() {
+  const fromEl = document.getElementById('cert-filter-from');
+  const toEl = document.getElementById('cert-filter-to');
+  const presetEl = document.getElementById('cert-time-preset');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  if (presetEl) presetEl.value = 'all';
+  window.filterCertificatesTable();
+};
+
+window.filterCertificatesTable = function() {
+  const query = (document.getElementById('cert-search-input')?.value || '').toLowerCase().trim();
+  const fromVal = document.getElementById('cert-filter-from')?.value || '';
+  const toVal = document.getElementById('cert-filter-to')?.value || '';
+  const tbody = document.getElementById('admin-certificates-tbody');
+  const chip = document.getElementById('cert-filter-count-chip');
+
+  if (!tbody) return;
+
+  const filtered = (window.allCertificates || []).filter(c => {
+    // 1. Text Search
+    const matchText = !query || 
+      (c.certificate_id && c.certificate_id.toLowerCase().includes(query)) ||
+      (c.recipient_name && c.recipient_name.toLowerCase().includes(query)) ||
+      (c.award_category && c.award_category.toLowerCase().includes(query)) ||
+      (c.performance_month && c.performance_month.toLowerCase().includes(query)) ||
+      (c.achievement_description && c.achievement_description.toLowerCase().includes(query));
+
+    if (!matchText) return false;
+
+    // 2. Date Range Filter (issue_date or created_at)
+    const dateToCheck = c.issue_date || c.created_at;
+    return window.isDateInRange(dateToCheck, fromVal, toVal);
+  });
+
+  window.lastFilteredCertificates = filtered;
+
+  if (chip) {
+    if (fromVal || toVal || query) {
+      chip.textContent = `Showing ${filtered.length} of ${window.allCertificates.length}`;
+    } else {
+      chip.textContent = `Showing All (${window.allCertificates.length})`;
+    }
+  }
+
+  // Render Table Rows
+  if (filtered.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+          No certificates found matching your active search / date filter.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(c => {
+    const isTop = (c.award_category || '').toLowerCase().includes('top performer');
+    const badgeColor = isTop ? '#fbbf24' : '#38bdf8';
+    const badgeBg = isTop ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)';
+
+    return `
+      <tr>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <code style="font-family: var(--font-mono, monospace); font-weight: 700; color: var(--cyan-primary); font-size: 0.85rem;">
+              ${escapeHtml(c.certificate_id)}
+            </code>
+            <button class="action-icon-btn" onclick="copyCertDirectLink('${escapeHtml(c.certificate_id)}')" title="Copy Verification Link" style="padding: 2px 6px; font-size: 0.72rem;">
+              📋
+            </button>
+          </div>
+        </td>
+        <td>
+          <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">${escapeHtml(c.recipient_name)}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(c.issuer_name || 'Elite Web Kingdom')}</div>
+        </td>
+        <td>
+          <div style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">${escapeHtml(c.main_heading || 'Certificate of Achievement')}</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; background: ${badgeBg}; color: ${badgeColor}; margin-top: 3px;">
+            ${escapeHtml(c.award_category)}
+          </span>
+        </td>
+        <td style="font-size: 0.85rem; color: #cbd5e1;">${escapeHtml(c.performance_month)}</td>
+        <td style="font-size: 0.82rem; font-family: var(--font-mono, monospace); color: var(--text-muted);">${escapeHtml(c.issue_date)}</td>
+        <td>
+          <span class="badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; font-size: 0.72rem; padding: 3px 8px;">
+            ✓ ${escapeHtml(c.status || 'Verified')}
+          </span>
+        </td>
+        <td>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <a href="../verify-certificate.html?id=${encodeURIComponent(c.certificate_id)}" target="_blank" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary);" title="Open Public Verifier">
+              👁️ Verify
+            </a>
+            <button class="btn btn-secondary" onclick="openCertPreviewModal('${escapeHtml(c.certificate_id)}')" style="padding: 4px 8px; font-size: 0.75rem; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;" title="Preview Certificate">
+              🖨️ View
+            </button>
+            <button class="btn btn-secondary" onclick="deleteCertificate('${escapeHtml(c.certificate_id)}')" style="padding: 4px 8px; font-size: 0.75rem; border-color: rgba(244, 63, 94, 0.4); color: #f43f5e;" title="Delete / Revoke">
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+};
+
+// 8. Export Filtered Certificates to CSV
+window.exportCertificatesCSV = function() {
+  const records = window.lastFilteredCertificates || window.allCertificates || [];
+  if (records.length === 0) {
+    alert("No certificate records available to export for the selected filter.");
+    return;
+  }
+
+  const fromVal = document.getElementById('cert-filter-from')?.value || '';
+  const toVal = document.getElementById('cert-filter-to')?.value || '';
+  const suffix = window.getDateSuffix(fromVal, toVal);
+
+  const headers = [
+    "Certificate ID",
+    "Recipient Full Name",
+    "Certificate Heading",
+    "Award Category",
+    "Performance Month",
+    "Issue Date",
+    "Achievement Description",
+    "Status",
+    "Issuer"
+  ];
+
+  const escapeCSV = (field) => {
+    if (field === null || field === undefined) return '""';
+    const str = String(field).replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
+  const rows = records.map(c => [
+    escapeCSV(c.certificate_id),
+    escapeCSV(c.recipient_name),
+    escapeCSV(c.main_heading),
+    escapeCSV(c.award_category),
+    escapeCSV(c.performance_month),
+    escapeCSV(c.issue_date),
+    escapeCSV(c.achievement_description),
+    escapeCSV(c.status || 'Verified'),
+    escapeCSV(c.issuer_name || 'Elite Web Kingdom')
+  ].join(','));
+
+  const csvContent = [headers.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `elitewebkingdom_certificates_${suffix}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+// 9. Certificate Preview Modal
+window.openCertPreviewModal = function(certId) {
+  const cert = (window.allCertificates || []).find(c => c.certificate_id === certId);
+  if (!cert) return;
+
+  window.activePreviewCert = cert;
+  const modal = document.getElementById('admin-cert-preview-modal');
+  const modalBody = document.getElementById('admin-cert-modal-body');
+
+  if (!modal || !modalBody) return;
+
+  modalBody.innerHTML = `
+    <div style="background: radial-gradient(circle at 50% 30%, #0f172a 0%, #030712 100%); border: 3px solid #d4af37; border-radius: 12px; padding: 32px; color: #fff; text-align: center; position: relative;">
+      <div style="font-family: 'Cinzel', serif; font-size: 0.9rem; letter-spacing: 3px; color: var(--cyan-primary); text-transform: uppercase;">
+        ELITE WEB KINGDOM • ELITE IDE
+      </div>
+      <h2 style="font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 900; color: #fbbf24; margin: 10px 0 4px; text-transform: uppercase;">
+        ${escapeHtml(cert.main_heading || 'Certificate of Achievement')}
+      </h2>
+      <p style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px;">
+        Official Credential of Engineering Distinction
+      </p>
+
+      <p style="font-style: italic; font-size: 0.95rem; color: #cbd5e1;">Proudly conferred upon</p>
+      <div style="font-size: 2rem; font-weight: 700; color: #ffffff; margin: 6px 0 12px; font-family: 'Playfair Display', serif;">
+        ${escapeHtml(cert.recipient_name)}
+      </div>
+
+      <div style="display: inline-block; padding: 4px 16px; border-radius: 20px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-weight: 700; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 12px;">
+        ${escapeHtml(cert.award_category)}
+      </div>
+
+      <p style="font-size: 0.9rem; color: #cbd5e1; max-width: 600px; margin: 0 auto 12px; line-height: 1.5;">
+        "${escapeHtml(cert.achievement_description)}"
+      </p>
+
+      <div style="font-size: 0.8rem; color: var(--cyan-primary); font-weight: 600; text-transform: uppercase; margin-bottom: 24px;">
+        Performance Period: ${escapeHtml(cert.performance_month)}
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px; text-align: left;">
+        <div>
+          <div style="font-family: var(--font-mono, monospace); font-size: 0.8rem; color: var(--cyan-primary); font-weight: 700;">
+            ID: ${escapeHtml(cert.certificate_id)}
+          </div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">
+            Issued: ${escapeHtml(cert.issue_date)}
+          </div>
+        </div>
+
+        <div style="text-align: right;">
+          <div style="font-size: 1.1rem; font-family: 'Playfair Display', serif; font-style: italic; color: #fff;">
+            ${escapeHtml(cert.signatory_name || 'Gowri Narayana Guduru')}
+          </div>
+          <div style="font-size: 0.7rem; color: var(--text-muted);">
+            ${escapeHtml(cert.signatory_role || 'Principal System Architect & Founder')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  modal.style.display = 'flex';
+};
+
+window.closeCertPreviewModal = function() {
+  const modal = document.getElementById('admin-cert-preview-modal');
+  if (modal) modal.style.display = 'none';
+  window.activePreviewCert = null;
+};
+
+window.openCertDirectVerifier = function() {
+  if (window.activePreviewCert) {
+    const url = `../verify-certificate.html?id=${encodeURIComponent(window.activePreviewCert.certificate_id)}`;
+    window.open(url, '_blank');
+  }
+};
+
+window.copyCertDirectLink = function(certId) {
+  const url = `${window.location.origin}/verify-certificate.html?id=${encodeURIComponent(certId)}`;
+  navigator.clipboard.writeText(url).then(() => {
+    alert(`Verification link copied to clipboard:\n${url}`);
+  }).catch(() => {
+    prompt("Copy this verification URL:", url);
+  });
+};
+
 
 
 

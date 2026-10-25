@@ -102,6 +102,60 @@ export default function CollegeAdminPortal({
     }
   });
 
+  // Incident Logs Date Filtering & Search
+  const [logDateFrom, setLogDateFrom] = useState('');
+  const [logDateTo, setLogDateTo] = useState('');
+  const [logSearch, setLogSearch] = useState('');
+
+  const filteredIncidentLogs = useMemo(() => {
+    return incidentLogs.filter(log => {
+      if (logDateFrom) {
+        const fromDate = new Date(logDateFrom + 'T00:00:00');
+        const logDate = new Date(log.timestamp || log.created_at || Date.now());
+        if (logDate < fromDate) return false;
+      }
+      if (logDateTo) {
+        const toDate = new Date(logDateTo + 'T23:59:59.999');
+        const logDate = new Date(log.timestamp || log.created_at || Date.now());
+        if (logDate > toDate) return false;
+      }
+      if (logSearch.trim()) {
+        const q = logSearch.toLowerCase();
+        const hay = [log.systemName, log.studentRoll, log.reason].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [incidentLogs, logDateFrom, logDateTo, logSearch]);
+
+  const handleExportIncidentsCSV = () => {
+    if (!filteredIncidentLogs || filteredIncidentLogs.length === 0) {
+      alert('No incident logs to export for selected dates.');
+      return;
+    }
+    const headers = ['Timestamp', 'Machine Name', 'Student Roll No', 'Incident Type', 'Status'];
+    const rows = filteredIncidentLogs.map(l => [
+      `"${l.timestamp || ''}"`,
+      `"${(l.systemName || '').replace(/"/g, '""')}"`,
+      `"${(l.studentRoll || '').replace(/"/g, '""')}"`,
+      `"${(l.reason || '').replace(/"/g, '""')}"`,
+      '"Flagged Alert"'
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    let dateSuffix = '';
+    if (logDateFrom && logDateTo) dateSuffix = `_${logDateFrom}_to_${logDateTo}`;
+    else if (logDateFrom) dateSuffix = `_from_${logDateFrom}`;
+    else if (logDateTo) dateSuffix = `_upto_${logDateTo}`;
+    else dateSuffix = `_${new Date().toISOString().slice(0, 10)}`;
+    link.setAttribute('download', `college_lab_incident_logs${dateSuffix}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   // Sync PIN input whenever active college changes
   useEffect(() => {
     if (activeCollege) {
@@ -1187,19 +1241,75 @@ export default function CollegeAdminPortal({
             {activeTab === 'logs' && (
               <div className="portal-tab-content">
                 <div className="incident-logs-box">
-                  <div className="logs-header">
-                    <ShieldAlert size={20} className="text-rose-400" />
-                    <div>
-                      <h3>Proctoring & Anti-Cheating Incident Feed</h3>
-                      <p>Real-time log of security events, fullscreen exits, and window blur attempts across all lab computers.</p>
+                  <div className="logs-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <ShieldAlert size={20} className="text-rose-400" />
+                      <div>
+                        <h3>Proctoring & Anti-Cheating Incident Feed</h3>
+                        <p>Real-time log of security events, fullscreen exits, and window blur attempts across all lab computers.</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleExportIncidentsCSV}
+                      className="portal-secondary-btn"
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.8rem' }}
+                      title="Export filtered incident logs to CSV"
+                    >
+                      <FileSpreadsheet size={15} className="text-emerald-400" />
+                      <span>Export Incidents CSV</span>
+                    </button>
+                  </div>
+
+                  {/* Date Filter & Search Toolbar */}
+                  <div style={{ margin: '14px 0 16px 0', display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 23, 42, 0.6)', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '200px' }}>
+                      <Search size={15} style={{ color: '#94a3b8' }} />
+                      <input
+                        type="text"
+                        placeholder="Search student roll, machine, violation..."
+                        value={logSearch}
+                        onChange={(e) => setLogSearch(e.target.value)}
+                        style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.82rem', width: '100%' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>From:</span>
+                      <input
+                        type="date"
+                        value={logDateFrom}
+                        onChange={(e) => setLogDateFrom(e.target.value)}
+                        style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: '6px', padding: '4px 8px', fontSize: '0.78rem', colorScheme: 'dark' }}
+                      />
+                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>To:</span>
+                      <input
+                        type="date"
+                        value={logDateTo}
+                        onChange={(e) => setLogDateTo(e.target.value)}
+                        style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: '6px', padding: '4px 8px', fontSize: '0.78rem', colorScheme: 'dark' }}
+                      />
+                      {(logDateFrom || logDateTo || logSearch) && (
+                        <button
+                          type="button"
+                          onClick={() => { setLogDateFrom(''); setLogDateTo(''); setLogSearch(''); }}
+                          style={{ background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#f43f5e', borderRadius: '6px', padding: '4px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
+                        >
+                          ✕ Clear
+                        </button>
+                      )}
+                      <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#00f2fe', background: 'rgba(0,242,254,0.1)', padding: '3px 8px', borderRadius: '12px', border: '1px solid rgba(0,242,254,0.25)' }}>
+                        {filteredIncidentLogs.length} Records
+                      </span>
                     </div>
                   </div>
 
-                  {incidentLogs.length === 0 ? (
+                  {filteredIncidentLogs.length === 0 ? (
                     <div className="portal-empty-state">
                       <CheckCircle2 size={40} className="text-emerald-500" />
-                      <h4>No Security Violations Detected</h4>
-                      <p>All active lab exam sessions are running securely without anti-cheating violations.</p>
+                      <h4>No Security Violations Found</h4>
+                      <p>No anti-cheating violations match the selected date range or search query.</p>
                     </div>
                   ) : (
                     <div className="logs-table-wrapper">
@@ -1214,7 +1324,7 @@ export default function CollegeAdminPortal({
                           </tr>
                         </thead>
                         <tbody>
-                          {incidentLogs.map((log) => (
+                          {filteredIncidentLogs.map((log) => (
                             <tr key={log.id}>
                               <td className="font-mono text-slate-400">{log.timestamp}</td>
                               <td className="font-semibold text-slate-200">{log.systemName}</td>

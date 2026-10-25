@@ -6,6 +6,8 @@
     }
   },
   "rewrites": [
+    { "source": "/verify", "destination": "/verify-certificate.html" },
+    { "source": "/verify/", "destination": "/verify-certificate.html" },
     { "source": "/compilercollegeadmin", "destination": "/compiler/index.html" },
     { "source": "/compilercollegeadmin/", "destination": "/compiler/index.html" },
     { "source": "/compilercollegeadmin/:path*", "destination": "/compiler/index.html" },

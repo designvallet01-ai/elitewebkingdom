@@ -678,6 +678,25 @@ export default function UserProfileModal({
               )}
             </button>
           </div>
+
+          <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
+            <a 
+              href="/verify-certificate.html" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                fontSize: '0.8rem',
+                color: '#fbbf24',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 600
+              }}
+            >
+              <span>🎓 Awarded an Official Certificate? Verify Credential in Registry ↗</span>
+            </a>
+          </div>
         </form>
       </div>
     </div>

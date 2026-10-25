@@ -123,6 +123,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
           Dev Resources
         </a>
+
+        <a href="#certificates" class="sidebar-link" onclick="switchTab('certificates')" style="color: #fbbf24;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+          Certificates Hub (<span id="team-certificates-count" style="color: #fbbf24; font-weight: 700;">0</span>)
+        </a>
         
         <a href="/compiler/" class="sidebar-link" target="_blank" style="color: #818cf8;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
@@ -414,6 +419,121 @@
                 <p style="font-size: 0.83rem; color: var(--text-muted); margin-top: 4px;">UI/UX components & prototypes</p>
               </div>
             </a>
+          </div>
+        </div>
+
+        <!-- PANEL: CERTIFICATES HUB -->
+        <div id="tab-certificates" class="tab-panel">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">🎖️ Certificates &amp; Top Performer Hub</h1>
+              <p class="page-subtitle">Register, issue and verify official credentials for top performing team developers.</p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn btn-primary" onclick="toggleTeamCertForm()" id="btn-toggle-team-cert-form" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #030712; border: none; font-weight: 700;">
+                + Register New Certificate
+              </button>
+              <a href="../verify-certificate.html" target="_blank" class="btn btn-secondary" style="border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary); display: inline-flex; align-items: center; gap: 6px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>↗ Open Public Verifier</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- REGISTRATION FORM CARD (Hidden by default, toggled via button) -->
+          <div class="glass-card" id="team-cert-form-card" style="display: none; padding: 24px; margin-bottom: 24px; border: 1px solid rgba(245, 158, 11, 0.35);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #fbbf24;">Register Official Certificate</h3>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="toggleTeamCertForm()">✕ Close</button>
+            </div>
+
+            <form id="team-cert-form" onsubmit="handleTeamCertRegister(event)" style="display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group">
+                  <label for="team-cert-heading">Certificate Heading *</label>
+                  <select id="team-cert-heading" class="form-control" required>
+                    <option value="Certificate of Achievement" selected>Certificate of Achievement</option>
+                    <option value="Certificate of Excellence">Certificate of Excellence</option>
+                    <option value="Certificate of Coding Mastery">Certificate of Coding Mastery</option>
+                    <option value="Certificate of Appreciation">Certificate of Appreciation</option>
+                    <option value="Certificate of Internship & Training">Certificate of Internship & Training</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="team-cert-name">Recipient's Full Name *</label>
+                  <input type="text" id="team-cert-name" class="form-control" placeholder="Developer Full Name" required>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;">
+                <div class="form-group">
+                  <label for="team-cert-category">Award Category *</label>
+                  <select id="team-cert-category" class="form-control" required>
+                    <option value="Top Performer" selected>Top Performer</option>
+                    <option value="Coding Excellence">Coding Excellence</option>
+                    <option value="Hackathon Champion">Hackathon Champion</option>
+                    <option value="Outstanding Architecture Contributor">Outstanding Architecture Contributor</option>
+                    <option value="Full-Stack Prodigy">Full-Stack Prodigy</option>
+                    <option value="Bug Hunter Supreme">Bug Hunter Supreme</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="team-cert-month">Performance Month *</label>
+                  <input type="text" id="team-cert-month" class="form-control" value="October 2026" required>
+                </div>
+                <div class="form-group">
+                  <label for="team-cert-date">Issue Date *</label>
+                  <input type="date" id="team-cert-date" class="form-control" required style="color-scheme: dark;">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label for="team-cert-id">Certificate ID (Unique) *</label>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="generateTeamCertId()">⚡ Auto-Generate</button>
+                </div>
+                <input type="text" id="team-cert-id" class="form-control" placeholder="e.g. EIDE-2026-10-0001" style="font-family: monospace; font-weight: 700; color: var(--cyan-primary); text-transform: uppercase;" required>
+              </div>
+
+              <div class="form-group">
+                <label for="team-cert-desc">Achievement Description (Reason for Selection) *</label>
+                <textarea id="team-cert-desc" class="form-control" rows="3" placeholder="Explain why this certificate is being awarded to this developer." required></textarea>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="toggleTeamCertForm()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #030712; font-weight: 700; border: none;">
+                  🛡️ Register &amp; Issue Credential
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- CERTIFICATES DIRECTORY -->
+          <div class="glass-card" style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+              <h3 style="font-size: 1.1rem; font-weight: 700;">Verified Credentials Directory</h3>
+              <input type="text" id="team-cert-search" class="form-control" placeholder="Search by name or ID..." oninput="renderTeamCertificates()" style="max-width: 260px; font-size: 0.85rem;">
+            </div>
+
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Certificate ID</th>
+                    <th>Developer Name</th>
+                    <th>Award Category</th>
+                    <th>Month</th>
+                    <th>Issue Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="team-certificates-tbody">
+                  <!-- Dynamic Insertion -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 

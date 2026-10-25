@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Official Certificate Verification Portal | Elite Web Kingdom</title>
+  
+  <!-- SEO & Social Meta Tags -->
+  <meta name="description" content="Official Certificate Verification Portal - Elite Web Kingdom. Enter Certificate ID to verify credentials, recipient name, award category, and issue date in real-time.">
+  <meta name="author" content="Elite Web Kingdom">
+  <meta name="robots" content="index, follow">
+  
+  <meta property="og:title" content="Official Certificate Verification Portal | Elite Web Kingdom">
+  <meta property="og:description" content="Verify authentic developer credentials, top performer awards, and coding excellence certificates issued by Elite Web Kingdom.">
+  <meta property="og:image" content="/logo.jpeg">
+  <meta property="og:type" content="website">
+  
+  <link rel="icon" type="image/jpeg" href="/logo.jpeg">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS Client & QRCode Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #030712;
+      --bg-card: rgba(15, 23, 42, 0.78);
+      --bg-surface: #0b1120;
+      --cyan-primary: #00f2fe;
+      --cyan-glow: rgba(0, 242, 254, 0.25);
+      --gold-primary: #f59e0b;
+      --gold-light: #fbbf24;
+      --gold-border: rgba(245, 158, 11, 0.45);
+      --emerald-green: #10b981;
+      --rose-red: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-serif: 'Playfair Display', Georgia, serif;
+      --font-ornate: 'Cinzel', serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Ambient Tech Background */
+    .ambient-grid {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .ambient-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(140px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.25;
+    }
+
+    .orb-cyan {
+      top: -100px;
+      left: 15%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #00f2fe, #3b82f6);
+    }
+
+    .orb-gold {
+      bottom: 10%;
+      right: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #f59e0b, #d97706);
+    }
+
+    .page-wrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* CLEAN FOCUSED HEADER */
+    header.portal-nav {
+      border-bottom: 1px solid var(--glass-border);
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: var(--gold-light);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .official-seal-tag {
+      font-size: 0.78rem;
+      color: #34d399;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    /* MAIN CONTENT */
+    main.portal-content {
+      flex: 1;
+      max-width: 1180px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 44px 24px 80px;
+    }
+
+    /* HERO SECTION */
+    .hero-section {
+      text-align: center;
+      max-width: 720px;
+      margin: 0 auto 32px;
+    }
+
+    .hero-title {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* SEARCH / LOOKUP BOX */
+    .search-card {
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      padding: 22px;
+      max-width: 680px;
+      margin: 0 auto 36px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 242, 254, 0.05);
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .search-card:focus-within {
+      border-color: rgba(0, 242, 254, 0.4);
+      box-shadow: 0 12px 45px rgba(0, 0, 0, 0.6), 0 0 35px rgba(0, 242, 254, 0.15);
+    }
+
+    .search-form {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrap {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+
+    .search-input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--cyan-primary);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(3, 7, 18, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 14px 16px 14px 48px;
+      font-size: 1.05rem;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: #ffffff;
+      outline: none;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--cyan-primary);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+      background: rgba(3, 7, 18, 0.95);
+    }
+
+    .search-input::placeholder {
+      text-transform: none;
+      font-family: var(--font-sans);
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    .btn-verify {
+      padding: 14px 28px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #00f2fe 0%, #3b82f6 100%);
+      border: none;
+      color: #030712;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(0, 242, 254, 0.3);
+      white-space: nowrap;
+    }
+
+    .btn-verify:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(0, 242, 254, 0.5);
+    }
+
+    /* VERIFICATION STATES */
+    #status-section {
+      margin-top: 10px;
+    }
+
+    /* NOT VERIFIED CARD */
+    .not-verified-card {
+      background: rgba(244, 63, 94, 0.08);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 680px;
+      margin: 0 auto;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(244, 63, 94, 0.15);
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    .not-verified-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(244, 63, 94, 0.15);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      color: var(--rose-red);
+    }
+
+    .not-verified-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fda4af;
+      margin-bottom: 8px;
+    }
+
+    .not-verified-id-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      padding: 4px 12px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .not-verified-text {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      max-width: 520px;
+      margin: 0 auto 16px;
+      line-height: 1.5;
+    }
+
+    /* VERIFIED WRAPPER */
+    .verified-container {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    /* TOP VERIFIED BANNER */
+    .verified-status-banner {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(6, 78, 59, 0.25) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 16px;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 0 35px rgba(16, 185, 129, 0.15);
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .status-badge-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #10b981;
+      color: #030712;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+      flex-shrink: 0;
+    }
+
+    .status-text h3 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #34d399;
+      letter-spacing: 0.5px;
+    }
+
+    .status-text p {
+      font-size: 0.83rem;
+      color: #a7f3d0;
+    }
+
+    .status-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-action.gold-btn {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #030712;
+      border: none;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+    }
+
+    .btn-action.gold-btn:hover {
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+    }
+
+    /* GRID: RECORD DETAILS + CERTIFICATE CANVAS */
+    .verified-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 992px) {
+      .verified-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* DETAILS RECORD CARD */
+    .record-card {
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 22px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .record-header {
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .record-header h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--cyan-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .record-field-list {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+
+    .record-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .record-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+    }
+
+    .record-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #ffffff;
+      word-break: break-word;
+    }
+
+    .record-value.recipient {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--gold-light);
+    }
+
+    .record-value.highlight {
+      color: var(--cyan-primary);
+      font-weight: 700;
+    }
+
+    .record-value.mono {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: inline-block;
+      width: fit-content;
+    }
+
+    .record-value.desc {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: #cbd5e1;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border-left: 3px solid var(--gold-primary);
+    }
+
+    /* DIGITAL CERTIFICATE CANVAS */
+    .certificate-viewport {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    .cert-award-canvas {
+      width: 100%;
+      min-width: 640px;
+      background: radial-gradient(circle at 50% 30%, #0f172a 0%, #030712 100%);
+      border: 3px solid #d4af37;
+      border-radius: 12px;
+      position: relative;
+      padding: 38px 44px;
+      box-shadow: 
+        0 0 0 6px #030712, 
+        0 0 0 8px rgba(212, 175, 55, 0.4),
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 50px rgba(245, 158, 11, 0.15);
+      color: #ffffff;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+
+    .cert-inner-border {
+      position: absolute;
+      inset: 14px;
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      pointer-events: none;
+      border-radius: 6px;
+    }
+
+    .cert-corner {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-color: #d4af37;
+      border-style: solid;
+      pointer-events: none;
+    }
+
+    .cert-corner.top-left { top: 18px; left: 18px; border-width: 3px 0 0 3px; }
+    .cert-corner.top-right { top: 18px; right: 18px; border-width: 3px 3px 0 0; }
+    .cert-corner.bottom-left { bottom: 18px; left: 18px; border-width: 0 0 3px 3px; }
+    .cert-corner.bottom-right { bottom: 18px; right: 18px; border-width: 0 3px 3px 0; }
+
+    .cert-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.04;
+      width: 400px;
+      height: 400px;
+      pointer-events: none;
+      filter: grayscale(100%);
+      z-index: 0;
+    }
+
+    .cert-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .cert-brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .cert-logo-img {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      border: 1px solid rgba(212, 175, 55, 0.6);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+    }
+
+    .cert-authority-title {
+      font-family: var(--font-ornate);
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: #f8fafc;
+      text-transform: uppercase;
+    }
+
+    .cert-authority-sub {
+      font-size: 0.7rem;
+      color: var(--cyan-primary);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .cert-main-heading {
+      font-family: var(--font-ornate);
+      font-size: 2.1rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #d4af37;
+      text-transform: uppercase;
+      margin: 10px 0 4px;
+      background: linear-gradient(135deg, #fef08a 0%, #f59e0b 50%, #b45309 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+    }
+
+    .cert-tagline {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .cert-presented-text {
+      font-style: italic;
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .cert-recipient-name {
+      font-family: var(--font-serif);
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+      position: relative;
+      display: inline-block;
+      padding-bottom: 6px;
+    }
+
+    .cert-recipient-name::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #d4af37, #00f2fe, #d4af37, transparent);
+    }
+
+    .cert-award-category-pill {
+      display: inline-block;
+      margin: 8px 0 14px;
+      padding: 5px 18px;
+      border-radius: 20px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--gold-light);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .cert-reason-desc {
+      max-width: 580px;
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .cert-month-line {
+      font-size: 0.85rem;
+      color: var(--cyan-primary);
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .cert-footer-row {
+      width: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      gap: 20px;
+    }
+
+    .cert-footer-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .cert-qr-box {
+      width: 78px;
+      height: 78px;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      margin-bottom: 6px;
+    }
+
+    .cert-qr-box canvas, .cert-qr-box img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .cert-seal-graphic {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #f59e0b 0%, #b45309 80%, #78350f 100%);
+      border: 3px double #fef08a;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      text-align: center;
+      margin-bottom: 4px;
+      font-size: 0.58rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      line-height: 1.1;
+      padding: 4px;
+    }
+
+    .cert-seal-graphic svg {
+      margin-bottom: 2px;
+      color: #fef08a;
+    }
+
+    .cert-signature-img {
+      font-family: 'Playfair Display', cursive, serif;
+      font-size: 1.4rem;
+      font-style: italic;
+      color: #f8fafc;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.6);
+      padding: 0 20px 4px;
+      margin-bottom: 4px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+    }
+
+    .cert-sign-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .cert-sign-role {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .cert-id-tag {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--cyan-primary);
+      font-weight: 700;
+    }
+
+    /* FOOTER */
+    footer.portal-footer {
+      border-top: 1px solid var(--glass-border);
+      background: rgba(3, 7, 18, 0.85);
+      padding: 20px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* Toast */
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--cyan-primary);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 242, 254, 0.3);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 100;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast-msg.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .ambient-grid,
+      .ambient-orb,
+      header.portal-nav,
+      .hero-section,
+      .search-card,
+      .verified-status-banner,
+      .record-card,
+      footer.portal-footer,
+      .toast-msg {
+        display: none !important;
+      }
+
+      main.portal-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+
+      .verified-grid {
+        display: block !important;
+      }
+
+      .certificate-viewport {
+        overflow: visible !important;
+        padding: 0 !important;
+      }
+
+      .cert-award-canvas {
+        min-width: 100% !important;
+        width: 100% !important;
+        background: #0b1120 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-shadow: none !important;
+        border: 2px solid #d4af37 !important;
+        page-break-inside: avoid !important;
+        margin: 0 auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Background -->
+  <div class="ambient-grid"></div>
+  <div class="ambient-orb orb-cyan"></div>
+  <div class="ambient-orb orb-gold"></div>
+
+  <div class="page-wrap">
+    <!-- FOCUSED HEADER -->
+    <header class="portal-nav">
+      <div class="nav-container">
+        <a href="/" class="brand-group" title="Elite Web Kingdom">
+          <img src="/logo.jpeg" alt="Elite Web Kingdom Logo" class="brand-logo">
+          <span class="brand-title">
+            ELITE WEB KINGDOM
+            <span class="brand-badge">Official Verifier</span>
+          </span>
+        </a>
+
+        <div class="official-seal-tag">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Central Certificate Registry</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN BODY -->
+    <main class="portal-content">
+      <!-- HERO -->
+      <section class="hero-section">
+        <h1 class="hero-title">Verify Official Certificate</h1>
+        <p class="hero-subtitle">
+          Enter the unique Certificate ID printed on the credential to verify its authenticity, recipient details, and issuing authority.
+        </p>
+      </section>
+
+      <!-- VERIFY LOOKUP INPUT -->
+      <div class="search-card">
+        <form id="verify-form" class="search-form" onsubmit="handleVerifySubmit(event)">
+          <div class="search-input-wrap">
+            <div class="search-input-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            <input 
+              type="text" 
+              id="cert-input-id" 
+              class="search-input" 
+              placeholder="Enter Certificate ID (e.g. EIDE-2026-10-0001)" 
+              autocomplete="off" 
+              spellcheck="false" 
+              required
+            >
+          </div>
+          <button type="submit" class="btn-verify" id="btn-verify-submit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Verify</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- RESULTS SECTION -->
+      <section id="status-section">
+        <!-- Rendered via JS -->
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="portal-footer">
+      <p>&copy; 2026 Elite Web Kingdom. All Issued Certificates Cryptographically Verified.</p>
+    </footer>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast-msg" id="toast-msg">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00f2fe" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+    <span id="toast-text">Link copied to clipboard</span>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // --- SUPABASE CLIENT ---
+    const SUPABASE_URL = "https://jgvgqgbhzadxvcolgvly.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_5ToLoZzsP_B3FQoYBzTnEA_re1QwPPv";
+    let supabaseClient = null;
+
+    try {
+      if (window.supabase) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+    } catch (e) {
+      console.warn("Supabase init error:", e);
+    }
+
+    // Helper: Local Storage Registry
+    function getStoredCertificates() {
+      try {
+        const stored = localStorage.getItem('ewk_certificates');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {
+        console.warn("Error reading local certs:", e);
+      }
+      return [];
+    }
+
+    // Check URL query on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryId = urlParams.get('id') || urlParams.get('cert');
+      if (queryId) {
+        const input = document.getElementById('cert-input-id');
+        if (input) {
+          input.value = queryId.trim();
+          executeVerification(queryId.trim());
+        }
+      }
+    });
+
+    function handleVerifySubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('cert-input-id');
+      if (!input || !input.value.trim()) return;
+      executeVerification(input.value.trim());
+    }
+
+    // MAIN VERIFICATION
+    async function executeVerification(rawId) {
+      const targetId = rawId.trim();
+      const statusSection = document.getElementById('status-section');
+      const submitBtn = document.getElementById('btn-verify-submit');
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="spin"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 1 10 10"></path></svg>
+          <span>Verifying...</span>
+        `;
+      }
+
+      let matchedCert = null;
+
+      // 1. Check Supabase
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('certificates')
+            .select('*')
+            .ilike('certificate_id', targetId)
+            .limit(1);
+
+          if (!error && data && data.length > 0) {
+            matchedCert = data[0];
+          }
+        } catch (err) {
+          console.warn("Supabase lookup error:", err);
+        }
+      }
+
+      // 2. Check Local Registry
+      if (!matchedCert) {
+        const localList = getStoredCertificates();
+        matchedCert = localList.find(c => 
+          c.certificate_id && c.certificate_id.trim().toLowerCase() === targetId.toLowerCase()
+        );
+      }
+
+      // Update URL query string
+      const newUrl = `${window.location.pathname}?id=${encodeURIComponent(targetId)}`;
+      window.history.replaceState({ id: targetId }, '', newUrl);
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Verify</span>
+        `;
+      }
+
+      if (matchedCert) {
+        renderVerifiedSuccess(matchedCert);
+      } else {
+        renderNotVerified(targetId);
+      }
+    }
+
+    // NOT VERIFIED
+    function renderNotVerified(enteredId) {
+      const statusSection = document.getElementById('status-section');
+      statusSection.innerHTML = `
+        <div class="not-verified-card">
+          <div class="not-verified-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          </div>
+          <h2 class="not-verified-title">Not Verified / Certificate Not Found</h2>
+          <div class="not-verified-id-badge">${escapeHtml(enteredId)}</div>
+          <p class="not-verified-text">
+            No official record found for Certificate ID "<strong>${escapeHtml(enteredId)}</strong>" in the Elite Web Kingdom Registry.
+            Please ensure the Certificate ID is typed correctly or contact the administrator.
+          </p>
+        </div>
+      `;
+
+      statusSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // VERIFIED
+    function renderVerifiedSuccess(cert) {
+      const statusSection = document.getElementById('status-section');
+      const shareUrl = `${window.location.origin}/verify-certificate.html?id=${encodeURIComponent(cert.certificate_id)}`;
+
+      statusSection.innerHTML = `
+        <div class="verified-container">
+          <!-- TOP STATUS BAR -->
+          <div class="verified-status-banner">
+            <div class="status-left">
+              <div class="status-badge-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="status-text">
+                <h3>✓ OFFICIAL CREDENTIAL VERIFIED</h3>
+                <p>Authentic Certificate registered in the Elite Web Kingdom Central Registry.</p>
+              </div>
+            </div>
+
+            <div class="status-actions">
+              <button class="btn-action gold-btn" onclick="window.print()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <span>Print / Save as PDF</span>
+              </button>
+              <button class="btn-action" onclick="copyVerificationLink('${escapeHtml(shareUrl)}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span>Copy Direct Link</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- DUAL VIEW: DETAILS + CERTIFICATE -->
+          <div class="verified-grid">
+            <!-- DETAILS CARD -->
+            <div class="record-card">
+              <div class="record-header">
+                <h4>Certificate Details</h4>
+                <span style="font-size: 0.72rem; font-weight: 700; color: #34d399; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); padding: 2px 8px; border-radius: 12px;">
+                  ● Active Status
+                </span>
+              </div>
+
+              <div class="record-field-list">
+                <div class="record-item">
+                  <span class="record-label">Certificate Title</span>
+                  <span class="record-value highlight">${escapeHtml(cert.main_heading || 'Certificate of Achievement')}</span>
+                </div>
+
+                <div class="record-item">
+                  <span class="record-label">Recipient's Full Name</span>
+                  <span class="record-value recipient">${escapeHtml(cert.recipient_name)}</span>
+                </div>
+
+                <div class="record-item">
+                  <span class="record-label">Award Category</span>
+                  <span class="record-value" style="color: var(--gold-light); font-weight: 700;">${escapeHtml(cert.award_category)}</span>
+                </div>
+
+                <div class="record-item">
+                  <span class="record-label">Performance Month</span>
+                  <span class="record-value">${escapeHtml(cert.performance_month)}</span>
+                </div>
+
+                <div class="record-item">
+                  <span class="record-label">Issue Date</span>
+                  <span class="record-value">${escapeHtml(cert.issue_date)}</span>
+                </div>
+
+                <div class="record-item">
+                  <span class="record-label">Certificate ID</span>
+                  <span class="record-value mono">${escapeHtml(cert.certificate_id)}</span>
+                </div>
+
+                <div class="record-item">
+                  <span class="record-label">Achievement Description</span>
+                  <div class="record-value desc">
+                    "${escapeHtml(cert.achievement_description)}"
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- LUXURY DIGITAL CERTIFICATE CARD -->
+            <div class="certificate-viewport">
+              <div class="cert-award-canvas" id="printable-certificate">
+                <div class="cert-inner-border"></div>
+                <div class="cert-corner top-left"></div>
+                <div class="cert-corner top-right"></div>
+                <div class="cert-corner bottom-left"></div>
+                <div class="cert-corner bottom-right"></div>
+                
+                <img src="/logo.jpeg" alt="Watermark" class="cert-watermark">
+
+                <div class="cert-content">
+                  <div class="cert-brand-row">
+                    <img src="/logo.jpeg" alt="Logo" class="cert-logo-img">
+                    <div>
+                      <div class="cert-authority-title">Elite Web Kingdom</div>
+                      <div class="cert-authority-sub">Engineering Distinction</div>
+                    </div>
+                  </div>
+
+                  <h1 class="cert-main-heading">${escapeHtml(cert.main_heading || 'Certificate of Achievement')}</h1>
+                  <p class="cert-tagline">Official Credential of Engineering Distinction</p>
+
+                  <p class="cert-presented-text">This is proudly presented to</p>
+                  <div class="cert-recipient-name">${escapeHtml(cert.recipient_name)}</div>
+
+                  <div class="cert-award-category-pill">${escapeHtml(cert.award_category)}</div>
+
+                  <p class="cert-reason-desc">${escapeHtml(cert.achievement_description)}</p>
+                  <div class="cert-month-line">Performance Month: ${escapeHtml(cert.performance_month)}</div>
+
+                  <!-- Footer -->
+                  <div class="cert-footer-row">
+                    <div class="cert-footer-col" style="align-items: flex-start;">
+                      <div class="cert-qr-box" id="cert-qr-container"></div>
+                      <div class="cert-id-tag">ID: ${escapeHtml(cert.certificate_id)}</div>
+                      <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">
+                        Issue Date: ${escapeHtml(cert.issue_date)}
+                      </div>
+                    </div>
+
+                    <div class="cert-footer-col">
+                      <div class="cert-seal-graphic">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <span>ELITE<br>VERIFIED</span>
+                      </div>
+                      <span style="font-size: 0.62rem; color: #d4af37; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;">Verified Seal</span>
+                    </div>
+
+                    <div class="cert-footer-col" style="align-items: flex-end;">
+                      <div class="cert-signature-img">${escapeHtml(cert.signatory_name || 'Gowri Narayana Guduru')}</div>
+                      <div class="cert-sign-title">${escapeHtml(cert.signatory_name || 'Gowri Narayana Guduru')}</div>
+                      <div class="cert-sign-role">${escapeHtml(cert.signatory_role || 'Principal System Architect & Founder')}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      renderQRCode(shareUrl);
+      statusSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function renderQRCode(text) {
+      const container = document.getElementById('cert-qr-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (window.QRCode && typeof window.QRCode.toCanvas === 'function') {
+        const canvas = document.createElement('canvas');
+        window.QRCode.toCanvas(canvas, text, {
+          width: 70,
+          margin: 1,
+          color: {
+            dark: '#030712',
+            light: '#ffffff'
+          }
+        }, function(error) {
+          if (!error) {
+            container.appendChild(canvas);
+          } else {
+            renderQRPlaceholder(container, text);
+          }
+        });
+      } else {
+        renderQRPlaceholder(container, text);
+      }
+    }
+
+    function renderQRPlaceholder(container, text) {
+      const img = document.createElement('img');
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(text)}`;
+      img.alt = "QR";
+      container.appendChild(img);
+    }
+
+    function copyVerificationLink(url) {
+      navigator.clipboard.writeText(url).then(() => {
+        showToast("Verification link copied to clipboard!");
+      }).catch(() => {
+        prompt("Copy this verification URL:", url);
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-msg');
+      const text = document.getElementById('toast-text');
+      if (toast && text) {
+        text.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+  </script>
+</body>
+</html>
