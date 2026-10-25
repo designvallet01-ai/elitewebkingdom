@@ -3946,24 +3946,91 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
   const countBadge = document.getElementById('comp-profiles-tab-count');
   const profileMap = new Map();
 
-  const addProfile = (p) => {
+  const addProfile = (p, isFresh = true) => {
     if (!p) return;
-    const key = (p.mobile && p.mobile !== 'N/A' ? p.mobile : '') || (p.email && p.email !== 'N/A' ? p.email : '') || p.user_id;
+    const cleanMobile = (p.mobile && p.mobile !== 'N/A') ? p.mobile.replace(/[^0-9]/g, '') : '';
+    const cleanEmail = (p.email && p.email !== 'N/A') ? p.email.toLowerCase().trim() : '';
+    const key = cleanMobile || cleanEmail || p.user_id;
     if (!key) return;
+
     if (!profileMap.has(key)) {
       profileMap.set(key, { ...p });
     } else {
       const cur = profileMap.get(key);
-      profileMap.set(key, {
-        ...cur,
-        ...p,
-        runs_count: Math.max(cur.runs_count || 1, p.runs_count || 1)
-      });
+      if (isFresh) {
+        // Newer profile data updates latest status, but preserve registered_on date & max runs count
+        profileMap.set(key, {
+          ...cur,
+          ...p,
+          created_at: cur.created_at || p.created_at,
+          runs_count: Math.max(cur.runs_count || 1, p.runs_count || 1)
+        });
+      } else {
+        // Older/fallback data: only take earlier registration date or higher runs count
+        if (p.created_at && (!cur.created_at || new Date(p.created_at) < new Date(cur.created_at))) {
+          cur.created_at = p.created_at;
+        }
+        cur.runs_count = Math.max(cur.runs_count || 1, p.runs_count || 1);
+        if ((!cur.name || cur.name === 'Developer') && p.name && p.name !== 'Developer') {
+          cur.name = p.name;
+        }
+      }
     }
   };
 
-  // 1. Fetch from Supabase compiler_user_profiles table
+  // 1. Primary Source: Fetch registered profiles from Supabase leads table (order by created_at DESC)
   if (supabaseClient) {
+    try {
+      const { data: leadProfiles, error: leadsErr } = await supabaseClient
+        .from('leads')
+        .select('*')
+        .eq('category', 'Compiler Developer Profile')
+        .order('created_at', { ascending: false });
+
+      if (!leadsErr && Array.isArray(leadProfiles)) {
+        leadProfiles.forEach(lp => {
+          let dev = 'Desktop';
+          let os = 'Windows';
+          let browser = 'Chrome';
+          let ip = 'Direct Web Client';
+          let uid = lp.id;
+
+          if (lp.message) {
+            const uidMatch = lp.message.match(/User ID:\s*([^\s\n\r]+)/);
+            if (uidMatch && uidMatch[1]) uid = uidMatch[1];
+            
+            const devMatch = lp.message.match(/Device:\s*([^|\n]+)\|\s*([^(]+)\(([^)]+)\)/);
+            if (devMatch) {
+              dev = devMatch[1].trim();
+              os = devMatch[2].trim();
+              browser = devMatch[3].trim();
+            }
+            const ipMatch = lp.message.match(/IP:\s*([^\s\n\r]+)/);
+            if (ipMatch && ipMatch[1]) ip = ipMatch[1];
+          }
+
+          // First entry seen for a key is the latest (because array is DESC)
+          addProfile({
+            user_id: uid,
+            lead_id: lp.id,
+            name: lp.name || 'Developer',
+            mobile: lp.phone || 'N/A',
+            email: lp.email || 'N/A',
+            device: dev,
+            os: os,
+            browser: browser,
+            ip: ip,
+            runs_count: 1,
+            last_active: lp.created_at || new Date().toISOString(),
+            created_at: lp.created_at || new Date().toISOString()
+          }, false);
+        });
+      }
+    } catch (e) {
+      console.warn('Leads table profiles fetch notice:', e);
+    }
+
+    // 2. Fetch from dedicated compiler_user_profiles table (if created in Supabase)
     try {
       const { data, error } = await supabaseClient
         .from('compiler_user_profiles')
@@ -3971,13 +4038,13 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
         .order('last_active', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        data.forEach(p => addProfile(p));
+        data.forEach(p => addProfile(p, true));
       }
     } catch (e) {
-      console.warn('Profiles table fetch notice:', e);
+      // Table may not exist yet, handled gracefully
     }
 
-    // 2. Also harvest from compiler_telemetry for any mobile / email contacts
+    // 3. Also harvest contacts from compiler_telemetry for any mobile / email contacts
     try {
       const { data: telemetryUsers } = await supabaseClient
         .from('compiler_telemetry')
@@ -4007,52 +4074,14 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
               runs_count: 1,
               last_active: tu.created_at,
               created_at: tu.created_at
-            });
+            }, false);
           }
-        });
-      }
-    } catch (e) {}
-
-    // 3. Harvest from leads with category 'Compiler Developer Profile'
-    try {
-      const { data: leadProfiles } = await supabaseClient
-        .from('leads')
-        .select('*')
-        .eq('category', 'Compiler Developer Profile')
-        .order('created_at', { ascending: false });
-
-      if (Array.isArray(leadProfiles)) {
-        leadProfiles.forEach(lp => {
-          addProfile({
-            user_id: lp.id,
-            name: lp.name,
-            mobile: lp.phone || 'N/A',
-            email: lp.email || 'N/A',
-            device: 'Desktop',
-            os: 'Windows',
-            browser: 'Chrome',
-            ip: 'Direct Client',
-            runs_count: 1,
-            last_active: lp.created_at,
-            created_at: lp.created_at
-          });
         });
       }
     } catch (e) {}
   }
 
-  // 4. Merge from LocalStorage cache
-  try {
-    const cached = JSON.parse(localStorage.getItem('ewk_compiler_profiles') || '[]');
-    if (Array.isArray(cached)) {
-      cached.forEach(cp => addProfile(cp));
-    }
-  } catch (e) {}
-
-  // 5. Seed with DEFAULT_COMPILER_PROFILES so verified developers are always present
-  DEFAULT_COMPILER_PROFILES.forEach(dp => addProfile(dp));
-
-  // 6. Merge from local active sessions
+  // 4. Merge from active sessions
   if (Array.isArray(window.allCompilerActiveSessions)) {
     window.allCompilerActiveSessions.forEach(s => {
       if (s.user_mobile || s.user_email) {
@@ -4068,9 +4097,22 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
           runs_count: s.runs_count || 1,
           last_active: s.last_heartbeat,
           created_at: s.created_at || s.last_heartbeat
-        });
+        }, false);
       }
     });
+  }
+
+  // 5. Merge from LocalStorage cache (if not present)
+  try {
+    const cached = JSON.parse(localStorage.getItem('ewk_compiler_profiles') || '[]');
+    if (Array.isArray(cached)) {
+      cached.forEach(cp => addProfile(cp, false));
+    }
+  } catch (e) {}
+
+  // 6. Seed with DEFAULT_COMPILER_PROFILES ONLY if profileMap is completely empty
+  if (profileMap.size === 0) {
+    DEFAULT_COMPILER_PROFILES.forEach(dp => addProfile(dp, false));
   }
 
   // Calculate live compilation counts for each registered profile
@@ -4083,50 +4125,13 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
     prof.runs_count = Math.max(prof.runs_count || 1, runsForUser.length);
   });
 
+  // Sort: most recently active developers first
+  window.allCompilerProfiles.sort((a, b) => new Date(b.last_active || b.created_at || 0) - new Date(a.last_active || a.created_at || 0));
+
   // Persist locally
   try {
     localStorage.setItem('ewk_compiler_profiles', JSON.stringify(window.allCompilerProfiles));
   } catch (e) {}
-
-  // Background restore to Supabase so database is also synchronized
-  if (supabaseClient) {
-    window.allCompilerProfiles.forEach(prof => {
-      // 1. Try upserting to compiler_user_profiles
-      supabaseClient
-        .from('compiler_user_profiles')
-        .upsert([{
-          user_id: prof.user_id,
-          name: prof.name,
-          mobile: prof.mobile,
-          email: prof.email,
-          device: prof.device || 'Desktop',
-          browser: prof.browser || 'Chrome',
-          os: prof.os || 'Windows',
-          ip: prof.ip || 'Direct Web Client',
-          last_active: prof.last_active || new Date().toISOString()
-        }], { onConflict: 'user_id' })
-        .then(() => {})
-        .catch(() => {});
-
-      // 2. Also backup save to leads table (so it's available even if SQL table wasn't created)
-      supabaseClient
-        .from('leads')
-        .insert([{
-          id: prof.user_id,
-          name: prof.name,
-          email: prof.email,
-          phone: prof.mobile,
-          company: 'Elite IDE Developer',
-          category: 'Compiler Developer Profile',
-          budget: '₹0',
-          timeline: 'Active User',
-          message: `Developer Profile from Elite IDE.\nUser ID: ${prof.user_id}`,
-          status: 'Proposal Received'
-        }])
-        .then(() => {})
-        .catch(() => {});
-    });
-  }
 
   if (countBadge) countBadge.textContent = window.allCompilerProfiles.length;
   renderCompilerProfilesTable(window.allCompilerProfiles);

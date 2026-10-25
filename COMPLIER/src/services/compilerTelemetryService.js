@@ -69,7 +69,12 @@ export async function saveUserProfile({ name, mobile, email }) {
 
   // 1. Broadcast profile update to Supabase Realtime Channel (<30ms)
   try {
-    const channel = realtimeChannel || (supabase ? supabase.channel('compiler_realtime_stream') : null);
+    let channel = realtimeChannel;
+    if (!channel && supabase) {
+      channel = supabase.channel('compiler_realtime_stream');
+      channel.subscribe();
+      realtimeChannel = channel;
+    }
     if (channel) {
       channel.send({
         type: 'broadcast',
@@ -88,7 +93,9 @@ export async function saveUserProfile({ name, mobile, email }) {
         }
       });
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[Telemetry] Realtime broadcast notice:', e);
+  }
 
   // 2. Persist to Supabase Database PERMANENTLY (Guaranteed Await)
   if (supabase) {
@@ -110,11 +117,14 @@ export async function saveUserProfile({ name, mobile, email }) {
         .then(() => {})
         .catch(() => {});
 
-      // 2b. Guaranteed permanent storage into Supabase leads table with category 'Compiler Developer Profile'
+      // 2b. Guaranteed permanent storage into Supabase leads table with unique record ID
+      // Generates a unique lead ID so it never conflicts or triggers RLS update errors
+      const recordId = `prof_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
       const { error: insertErr } = await supabase
         .from('leads')
         .insert([{
-          id: userId,
+          id: recordId,
           name: cleanName,
           email: cleanEmail || `${cleanMobile || userId}@compiler.user`,
           phone: cleanMobile || 'N/A',
@@ -127,10 +137,13 @@ export async function saveUserProfile({ name, mobile, email }) {
         }]);
 
       if (insertErr) {
-        // In case of ID conflict, insert without explicit ID to guarantee save
+        console.warn('[Telemetry] Primary leads insert error:', insertErr);
+        // Fallback retry with another unique timestamp ID
+        const fallbackId = `prof_${Date.now()}_${Math.floor(Math.random() * 900000 + 100000)}`;
         await supabase
           .from('leads')
           .insert([{
+            id: fallbackId,
             name: cleanName,
             email: cleanEmail || `${cleanMobile || userId}@compiler.user`,
             phone: cleanMobile || 'N/A',
