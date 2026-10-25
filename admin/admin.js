@@ -1613,7 +1613,11 @@ window.clearAllLeads = async function() {
   if (confirm('This will delete custom leads and restore the default list of mock proposals. Continue?')) {
     if (supabaseClient) {
       try {
-        const { data } = await supabaseClient.from('leads').select('id');
+        const { data } = await supabaseClient
+          .from('leads')
+          .select('id')
+          .neq('category', 'Compiler Developer Profile')
+          .neq('company', 'Elite IDE Developer');
         if (data && data.length > 0) {
           const ids = data.map(item => item.id);
           await supabaseClient.from('leads').delete().in('id', ids);
