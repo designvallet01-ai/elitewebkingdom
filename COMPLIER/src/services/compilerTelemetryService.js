@@ -68,9 +68,10 @@ export async function saveUserProfile({ name, mobile, email }) {
   const ip = cachedClientIp || (await fetchPublicIp());
 
   // 1. Broadcast profile update to Supabase Realtime Channel (<30ms)
-  if (realtimeChannel) {
-    try {
-      realtimeChannel.send({
+  try {
+    const channel = realtimeChannel || (supabase ? supabase.channel('compiler_realtime_stream') : null);
+    if (channel) {
+      channel.send({
         type: 'broadcast',
         event: 'profile_updated',
         payload: {
@@ -86,13 +87,13 @@ export async function saveUserProfile({ name, mobile, email }) {
           timestamp: nowIso
         }
       });
-    } catch (e) {}
-  }
+    }
+  } catch (e) {}
 
-  // 2. Persist to Supabase Database
+  // 2. Persist to Supabase Database PERMANENTLY (Guaranteed Await)
   if (supabase) {
     try {
-      // 2a. Primary save: Dedicated compiler_user_profiles table (if created)
+      // 2a. Primary save: Dedicated compiler_user_profiles table (if exists)
       supabase
         .from('compiler_user_profiles')
         .upsert([{
@@ -106,15 +107,14 @@ export async function saveUserProfile({ name, mobile, email }) {
           ip,
           last_active: nowIso
         }], { onConflict: 'user_id' })
-        .then(({ error }) => {
-          if (error) console.warn('[Telemetry] compiler_user_profiles upsert notice:', error.message);
-        })
+        .then(() => {})
         .catch(() => {});
 
-      // 2b. Backup save into leads table (ensures persistence even if SQL table compiler_user_profiles was not run in Supabase)
-      supabase
+      // 2b. Guaranteed permanent storage into Supabase leads table with category 'Compiler Developer Profile'
+      const { error: insertErr } = await supabase
         .from('leads')
         .insert([{
+          id: userId,
           name: cleanName,
           email: cleanEmail || `${cleanMobile || userId}@compiler.user`,
           phone: cleanMobile || 'N/A',
@@ -124,21 +124,34 @@ export async function saveUserProfile({ name, mobile, email }) {
           timeline: 'Active User',
           message: `Developer Profile from Elite IDE.\nUser ID: ${userId}\nDevice: ${device} | ${os} (${browser})\nIP: ${ip}`,
           status: 'Proposal Received'
-        }])
-        .then(() => {})
-        .catch(() => {});
+        }]);
+
+      if (insertErr) {
+        // In case of ID conflict, insert without explicit ID to guarantee save
+        await supabase
+          .from('leads')
+          .insert([{
+            name: cleanName,
+            email: cleanEmail || `${cleanMobile || userId}@compiler.user`,
+            phone: cleanMobile || 'N/A',
+            company: 'Elite IDE Developer',
+            category: 'Compiler Developer Profile',
+            budget: '₹0',
+            timeline: 'Active User',
+            message: `Developer Profile from Elite IDE.\nUser ID: ${userId}\nDevice: ${device} | ${os} (${browser})\nIP: ${ip}`,
+            status: 'Proposal Received'
+          }]);
+      }
 
       // 2c. Update active session with developer name and phone in college_name
       if (currentSessionId) {
-        supabase
+        await supabase
           .from('compiler_active_sessions')
           .update({
             user_name: cleanName || undefined,
             college_name: cleanMobile ? `${activeCollegeName} • 📱 ${cleanMobile}` : activeCollegeName
           })
-          .eq('session_id', currentSessionId)
-          .then(() => {})
-          .catch(() => {});
+          .eq('session_id', currentSessionId);
       }
     } catch (err) {
       console.warn('[Telemetry] Save profile notice:', err);

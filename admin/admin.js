@@ -2918,6 +2918,15 @@ function setupRealtimeCompilerTracker() {
           filterCompilerRunsTable();
         }
       })
+      // Postgres Changes on Leads Table (Immediate auto-detect when user creates profile in Elite IDE)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
+        if (!payload) return;
+        const rec = payload.new || payload.old;
+        if (rec && (rec.category === 'Compiler Developer Profile' || rec.company === 'Elite IDE Developer')) {
+          console.log('[EWK Realtime] New/Updated Developer Profile detected in Supabase:', rec);
+          loadCompilerProfiles();
+        }
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           console.log('[EWK Compiler Realtime] Subscribed to live compiler stream channel.');
@@ -2927,8 +2936,13 @@ function setupRealtimeCompilerTracker() {
     console.warn('[EWK Compiler Realtime] Setup error:', err);
   }
 
-  // Periodic polling every 12 seconds to ensure stale sessions (>60s) drop off
-  setInterval(syncActiveCompilerSessions, 12000);
+  // Periodic polling every 6 seconds to ensure active coders and registered developer profiles are always fresh
+  setInterval(() => {
+    syncActiveCompilerSessions();
+    if (window.compilerCurrentSubView === 'profiles') {
+      loadCompilerProfiles();
+    }
+  }, 6000);
 }
 
 // 2. Fetch and Sync Active Sessions from Supabase
