@@ -24,6 +24,16 @@ const DEFAULT_TEAM_USERS = [
     password: 'G1o2w3r4i5@',
     avatar: 'GN',
     status: 'Online'
+  },
+  {
+    teamId: 'EWK-ED-002',
+    name: 'BATHALA HARIKA',
+    role: 'EXECUTIVE DIRECTOR',
+    phone: '6281181593',
+    email: 'harikabathala05@gmail.com',
+    password: 'HarikaDirector2026@',
+    avatar: 'BH',
+    status: 'Online'
   }
 ];
 
@@ -35,9 +45,37 @@ const DEFAULT_PROJECTS = [];
 function initTeamStorage() {
   try {
     if (typeof localStorage !== 'undefined') {
-      if (!localStorage.getItem('ewk_team_users')) {
-        localStorage.setItem('ewk_team_users', JSON.stringify(DEFAULT_TEAM_USERS));
+      let existingUsers = [];
+      try {
+        existingUsers = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+      } catch (e) {
+        existingUsers = [];
       }
+
+      if (existingUsers.length === 0) {
+        localStorage.setItem('ewk_team_users', JSON.stringify(DEFAULT_TEAM_USERS));
+      } else {
+        // Automatically ensure Executive Director Bathala Harika exists in local roster with updated details
+        const harikaIdx = existingUsers.findIndex(u => u.name && u.name.toUpperCase().includes('HARIKA'));
+        if (harikaIdx === -1) {
+          existingUsers.push({
+            teamId: 'EWK-ED-002',
+            name: 'BATHALA HARIKA',
+            role: 'EXECUTIVE DIRECTOR',
+            phone: '6281181593',
+            email: 'harikabathala05@gmail.com',
+            password: 'HarikaDirector2026@',
+            avatar: 'BH',
+            status: 'Online'
+          });
+        } else {
+          existingUsers[harikaIdx].phone = '6281181593';
+          existingUsers[harikaIdx].email = 'harikabathala05@gmail.com';
+          existingUsers[harikaIdx].role = 'EXECUTIVE DIRECTOR';
+        }
+        localStorage.setItem('ewk_team_users', JSON.stringify(existingUsers));
+      }
+
       if (!localStorage.getItem('ewk_team_tasks')) {
         localStorage.setItem('ewk_team_tasks', JSON.stringify(DEFAULT_ASSIGNED_TASKS));
       }

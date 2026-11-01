@@ -188,6 +188,49 @@ window.switchTab = function(tabId) {
 const mockLeads = [];
 
 function initDashboard() {
+  // Ensure default leadership members exist in local team registry
+  try {
+    let localUsers = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+    let updatedUsers = false;
+    if (!localUsers.some(u => u.name && u.name.toUpperCase().includes('GOWRI'))) {
+      localUsers.unshift({
+        teamId: 'EWK-FD-001',
+        name: 'GOWRI NARAYANA GUDURU',
+        role: 'FOUNDER & LEAD DEVELOPER',
+        phone: '9985369590',
+        email: 'gowrinarayanaguduru@gmail.com',
+        password: 'G1o2w3r4i5@',
+        avatar: 'GN',
+        status: 'Online'
+      });
+      updatedUsers = true;
+    }
+    const harikaIdx = localUsers.findIndex(u => u.name && u.name.toUpperCase().includes('HARIKA'));
+    if (harikaIdx === -1) {
+      localUsers.push({
+        teamId: 'EWK-ED-002',
+        name: 'BATHALA HARIKA',
+        role: 'EXECUTIVE DIRECTOR',
+        phone: '6281181593',
+        email: 'harikabathala05@gmail.com',
+        password: 'HarikaDirector2026@',
+        avatar: 'BH',
+        status: 'Online'
+      });
+      updatedUsers = true;
+    } else {
+      localUsers[harikaIdx].phone = '6281181593';
+      localUsers[harikaIdx].email = 'harikabathala05@gmail.com';
+      localUsers[harikaIdx].role = 'EXECUTIVE DIRECTOR';
+      updatedUsers = true;
+    }
+    if (updatedUsers) {
+      localStorage.setItem('ewk_team_users', JSON.stringify(localUsers));
+    }
+  } catch (e) {
+    console.warn('Storage sync error:', e);
+  }
+
   loadLeads();
   loadSettingsState();
   loadRealVisitorCount();

@@ -121,4 +121,17 @@ CREATE POLICY "Allow public select pageviews" ON public.pageviews FOR SELECT USI
 -- Enable Supabase Realtime for pageviews
 ALTER PUBLICATION supabase_realtime ADD TABLE public.pageviews;
 
+-- 7. SEED CORE EXECUTIVE LEADERSHIP
+INSERT INTO public.team_members (id, team_id, name, role, phone, email, password, avatar, status)
+VALUES 
+  ('mem-ewk-001', 'EWK-FD-001', 'GOWRI NARAYANA GUDURU', 'FOUNDER & LEAD DEVELOPER', '9985369590', 'gowrinarayanaguduru@gmail.com', 'G1o2w3r4i5@', 'GN', 'Online'),
+  ('mem-ewk-002', 'EWK-ED-002', 'BATHALA HARIKA', 'EXECUTIVE DIRECTOR', '6281181593', 'harikabathala05@gmail.com', 'HarikaDirector2026@', 'BH', 'Online')
+ON CONFLICT (team_id) DO UPDATE SET 
+  name = EXCLUDED.name,
+  role = EXCLUDED.role,
+  phone = EXCLUDED.phone,
+  email = EXCLUDED.email,
+  avatar = EXCLUDED.avatar;
+
+
 
