@@ -3461,21 +3461,39 @@ window.filterCompilerRunsTable = function() {
       if (timeFilter === '7days' && runDate < sevenDaysAgo) return false;
     }
 
-    // Search query
+    // Search query (Supports User Name, Mobile Number, Language, Code, IP, Device, etc.)
     if (searchInput) {
+      const cleanSearch = searchInput.trim().toLowerCase();
+      const digitsSearch = cleanSearch.replace(/[^0-9]/g, '');
+
+      const mobileVal = (r.user_mobile || r.mobile || r.phone || r.user_phone || '').toLowerCase();
+      const mobileDigits = mobileVal.replace(/[^0-9]/g, '');
+      const collegeVal = (r.college_name || '').toLowerCase();
+      const systemVal = (r.system_name || '').toLowerCase();
+
       const hay = [
         r.user_name || '',
+        r.user_id || '',
         r.language || '',
         r.code_snippet || '',
         r.device || '',
         r.os || '',
         r.browser || '',
         r.ip || '',
-        r.college_name || '',
-        r.user_mobile || '',
-        r.user_email || ''
+        collegeVal,
+        systemVal,
+        mobileVal,
+        r.user_email || r.email || ''
       ].join(' ').toLowerCase();
-      if (!hay.includes(searchInput)) return false;
+
+      const textMatches = hay.includes(cleanSearch);
+      const mobileMatches = digitsSearch.length >= 3 && (
+        mobileDigits.includes(digitsSearch) || 
+        collegeVal.includes(digitsSearch) || 
+        systemVal.includes(digitsSearch)
+      );
+
+      if (!textMatches && !mobileMatches) return false;
     }
 
     return true;
