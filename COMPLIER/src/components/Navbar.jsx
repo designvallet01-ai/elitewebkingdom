@@ -570,13 +570,6 @@ export default function Navbar({
                       <span className="flyout-left"><Keyboard size={14} className="text-sky" /><span>Keyboard Shortcuts Guide</span></span>
                       <kbd className="flyout-kbd">Ctrl+/</kbd>
                     </button>
-                    <button className="flyout-item" onClick={() => { onToggleTheme(); setActiveMenu(null); }}>
-                      <span className="flyout-left">
-                        {theme === 'vs-dark' ? <Sun size={14} className="text-amber" /> : <Moon size={14} className="text-sky" />}
-                        <span>Switch to {theme === 'vs-dark' ? 'Light' : 'Dark'} Mode</span>
-                      </span>
-                      <kbd className="flyout-kbd">THEME</kbd>
-                    </button>
                   </div>
                 )}
               </div>
@@ -810,19 +803,6 @@ export default function Navbar({
                   </button>
                 )}
 
-                {/* Theme Toggle */}
-                <button 
-                  className="nav-action-btn" 
-                  onClick={onToggleTheme} 
-                  title={`Theme: ${theme === 'vs-dark' ? 'Obsidian Dark' : 'Light Mode'} (Click to switch)`}
-                  id="toggle-theme-button"
-                >
-                  {theme === 'vs-dark' ? (
-                    <Moon size={15} />
-                  ) : (
-                    <Sun size={15} />
-                  )}
-                </button>
               </div>
 
               {/* Dedicated Developer Profile Chip */}
@@ -915,17 +895,6 @@ export default function Navbar({
               <div className="sheet-section">
                 <span className="sheet-section-title">Editor Appearance</span>
                 <div className="sheet-action-row">
-                  <button 
-                    className="sheet-action-card" 
-                    onClick={() => { onToggleTheme(); }}
-                  >
-                    {theme === 'vs-dark' ? <Sun size={18} /> : <Moon size={18} />}
-                    <div className="card-text">
-                      <span className="card-label">Theme</span>
-                      <span className="card-val">{theme === 'vs-dark' ? 'Dark Mode' : 'Light Mode'}</span>
-                    </div>
-                  </button>
-
                   <div className="sheet-action-card font-adjust-card">
                     <Type size={18} />
                     <div className="card-text">

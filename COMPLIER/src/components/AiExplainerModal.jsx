@@ -95,7 +95,7 @@ export default function AiExplainerModal({
             <div>
               <div className="ai-modal-title">
                 <span>AI Code & Flow Intelligence</span>
-                <span className="ai-version-pill">GPT Logic Engine</span>
+                <span className="ai-version-pill">Elite Neural Logic Engine</span>
               </div>
               <span className="ai-modal-subtitle">
                 {analysis.title} • {analysis.algorithmType}

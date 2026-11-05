@@ -45,7 +45,8 @@ import {
   logCompilerRun, 
   getOrCreateUserName, 
   updateCompilerUserName,
-  getUserProfile
+  getUserProfile,
+  isProfileRegistered
 } from './services/compilerTelemetryService';
 import { 
   subscribeToCollegeEvents, 
@@ -222,19 +223,29 @@ export default function App() {
   });
 
   const [isAlgorithmModalOpen, setIsAlgorithmModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(() => getUserProfile());
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(() => {
+    const existing = getUserProfile();
+    return !isProfileRegistered(existing);
+  });
   const [isRunning, setIsRunning] = useState(false);
   const [terminalEntries, setTerminalEntries] = useState([]);
   const [lastStats, setLastStats] = useState(null);
-  const [theme, setTheme] = useState(() => {
+  const [theme] = useState('vs-dark');
+
+  // Enforce permanent VS-Dark theme (Light mode completely removed)
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem('elite_ide_theme');
-      if (saved === 'vs-dark' || saved === 'vs-light') return saved;
       localStorage.setItem('elite_ide_theme', 'vs-dark');
     } catch (e) {}
-    return 'vs-dark';
-  });
+  }, []);
+
+  // Enforce profile registration gate on launch: keep open until validly registered
+  useEffect(() => {
+    if (!isProfileRegistered(userProfile)) {
+      setIsProfileModalOpen(true);
+    }
+  }, [userProfile]);
   const [fontSize, setFontSize] = useState(14);
   const [rightPaneView, setRightPaneView] = useState('console'); // 'console' | 'graphical' | 'preview'
   const [selectedLine, setSelectedLine] = useState(null);
@@ -1845,13 +1856,10 @@ export default function App() {
   }, [detectedLangInfo, activeFile]);
 
   const handleToggleTheme = useCallback(() => {
-    setTheme(prev => {
-      const nextTheme = prev === 'vs-dark' ? 'vs-light' : 'vs-dark';
-      try {
-        localStorage.setItem('elite_ide_theme', nextTheme);
-      } catch (e) {}
-      return nextTheme;
-    });
+    // Light mode completely removed - permanently locked to vs-dark
+    try {
+      localStorage.setItem('elite_ide_theme', 'vs-dark');
+    } catch (e) {}
   }, []);
 
   return (
@@ -2428,7 +2436,7 @@ export default function App() {
         onClearConsole={handleClearConsole}
         onFormatCode={handleFormatCode}
         theme={theme}
-        onToggleTheme={() => setTheme(t => t === 'vs-dark' ? 'vs-light' : 'vs-dark')}
+        onToggleTheme={handleToggleTheme}
         onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
         onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
         onOpenAiExplainer={() => setIsAiModalOpen(true)}
@@ -2629,12 +2637,20 @@ export default function App() {
         onClose={() => setIsBatchGradingOpen(false)}
       />
 
-      {/* Developer Profile Modal (Name, Mobile, Email) */}
+      {/* Developer Profile Modal (Name, Mobile, Email) - Access Gatekeeper */}
       <UserProfileModal
         isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
+        isMandatory={!isProfileRegistered(userProfile)}
+        onClose={() => {
+          if (isProfileRegistered(userProfile)) {
+            setIsProfileModalOpen(false);
+          }
+        }}
         onProfileUpdated={(updatedProfile) => {
           setUserProfile(updatedProfile);
+          if (isProfileRegistered(updatedProfile)) {
+            setIsProfileModalOpen(false);
+          }
         }}
       />
 

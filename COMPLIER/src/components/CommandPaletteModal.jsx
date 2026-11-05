@@ -164,13 +164,6 @@ export default function CommandPaletteModal({
       action: () => { onToggleSidebar?.(); }
     },
     {
-      id: 'toggle-theme',
-      title: `Switch Theme to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`,
-      category: 'Appearance',
-      icon: theme === 'dark' ? <Sun size={16} className="text-amber" /> : <Moon size={16} className="text-indigo" />,
-      action: () => { onToggleTheme?.(); }
-    },
-    {
       id: 'download-code',
       title: 'Download Source Code File',
       category: 'File',

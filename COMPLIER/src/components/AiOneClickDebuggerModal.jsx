@@ -152,15 +152,15 @@ export default function AiOneClickDebuggerModal({
             </div>
             <div>
               <div className="modal-title-row">
-                <h2>{isHealthy ? 'AI Code Health & Integrity Monitor' : 'Real Autonomous AI Code Doctor'}</h2>
+                <h2>{isHealthy ? 'AI Code Health & Integrity Monitor' : 'Elite Autonomous AI Code Doctor'}</h2>
                 <span className={`s-tier-pill ${isHealthy ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/30' : 'ai-pill'}`}>
-                  {currentData?.isRealAi ? (currentData?.modelUsed || 'Real LLM Engine') : (isHealthy ? 'All Clear' : 'Real AI Diagnostic')}
+                  {currentData?.modelUsed || (isHealthy ? 'All Clear' : 'Elite AI Neural Engine')}
                 </span>
               </div>
               <p className="modal-subtitle">
                 {isHealthy 
                   ? 'Real-time AST parsing, compiler verification, and code sanity inspection'
-                  : 'Deep LLM root-cause reasoning (English + తెలుగు) and 1-click clean refactoring'}
+                  : 'Trained Knowledge Matrix, root-cause reasoning (English + తెలుగు) & 1-click refactoring'}
               </p>
             </div>
           </div>
@@ -208,22 +208,22 @@ export default function AiOneClickDebuggerModal({
             <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
               <button
                 onClick={() => {
-                  handleSaveConfig({ provider: 'cloud' });
-                  triggerRealAiAnalysis('cloud');
+                  handleSaveConfig({ provider: 'elite-ai' });
+                  triggerRealAiAnalysis('elite-ai');
                 }}
                 style={{
                   flex: 1,
                   padding: '6px 10px',
                   borderRadius: '6px',
-                  background: aiConfig.provider === 'cloud' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                  border: aiConfig.provider === 'cloud' ? '1px solid #a855f7' : '1px solid rgba(255, 255, 255, 0.08)',
-                  color: aiConfig.provider === 'cloud' ? '#e9d5ff' : '#94a3b8',
+                  background: (aiConfig.provider === 'elite-ai' || aiConfig.provider === 'cloud') ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                  border: (aiConfig.provider === 'elite-ai' || aiConfig.provider === 'cloud') ? '1px solid #a855f7' : '1px solid rgba(255, 255, 255, 0.08)',
+                  color: (aiConfig.provider === 'elite-ai' || aiConfig.provider === 'cloud') ? '#e9d5ff' : '#94a3b8',
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: '0.78rem'
                 }}
               >
-                ⚡ Cloud AI (Free, Zero Setup)
+                ⚡ Elite Trained AI (0ms Instant)
               </button>
               <button
                 onClick={() => handleSaveConfig({ provider: 'gemini' })}
@@ -239,7 +239,7 @@ export default function AiOneClickDebuggerModal({
                   fontSize: '0.78rem'
                 }}
               >
-                ✨ Gemini 1.5 Flash (Custom Key)
+                ✨ Gemini 1.5 Flash (API Key)
               </button>
               <button
                 onClick={() => handleSaveConfig({ provider: 'groq' })}
@@ -255,11 +255,11 @@ export default function AiOneClickDebuggerModal({
                   fontSize: '0.78rem'
                 }}
               >
-                🚀 Groq (Llama-3.3 70B)
+                🚀 Groq Llama-3.3 (API Key)
               </button>
             </div>
 
-            {aiConfig.provider !== 'cloud' && (
+            {aiConfig.provider !== 'elite-ai' && aiConfig.provider !== 'cloud' && (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <Key size={14} style={{ color: '#94a3b8' }} />
                 <input
@@ -372,7 +372,7 @@ export default function AiOneClickDebuggerModal({
                 <RefreshCw size={18} className="animate-spin text-purple-400" />
                 <div>
                   <div style={{ color: '#f8fafc', fontWeight: 600, fontSize: '0.85rem' }}>
-                    Streaming to Real AI Model ({aiConfig.provider === 'cloud' ? 'Cloud AI GPT-4o-mini' : aiConfig.provider})...
+                    Streaming to {aiConfig.provider === 'elite-ai' ? 'Elite Autonomous AI Engine' : (aiConfig.provider === 'gemini' ? 'Google Gemini 1.5' : 'Groq Llama-3.3')}...
                   </div>
                   <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
                     Analyzing AST, compiler stack trace, and generating clean code patch...

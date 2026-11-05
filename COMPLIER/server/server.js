@@ -8,6 +8,8 @@ import path from 'path';
 import os from 'os';
 import { evaluateMatlabLocally } from '../src/services/clientMatlabRunner.js';
 import { evaluateJdbcLocally } from '../src/services/clientJdbcRunner.js';
+import { diagnoseAndHealError } from '../src/services/aiErrorHealer.js';
+import { analyzeCodeWithAi } from '../src/services/aiCodeAnalyzer.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,6 +32,27 @@ const LANGUAGES = [
 
 app.get('/api/languages', (req, res) => {
   res.json({ languages: LANGUAGES });
+});
+
+// Autonomous AI Code Intelligence Endpoints (Powered by Elite AI Engine)
+app.post('/api/ai/diagnose', (req, res) => {
+  try {
+    const { code = '', language = 'python', stderr = '', stdout = '', lastStats = null } = req.body;
+    const result = diagnoseAndHealError(code, language, stderr, stdout, lastStats);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/ai/explain', (req, res) => {
+  try {
+    const { code = '', language = 'python' } = req.body;
+    const result = analyzeCodeWithAi(code, language);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Helper: convert Windows path (e.g. C:\Users\...) to WSL path (/mnt/c/Users/...)

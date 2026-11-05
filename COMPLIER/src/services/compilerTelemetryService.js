@@ -4,8 +4,8 @@
 // Syncs to Supabase Cloud & broadcasts instant events via Supabase Realtime
 // ============================================================================
 
-import { supabase } from '../supabase';
-import { recordExecutionTelemetry } from './liveLeaderboardService';
+import { supabase } from '../supabase.js';
+import { recordExecutionTelemetry } from './liveLeaderboardService.js';
 
 const USER_ID_KEY = 'ewk_compiler_user_id';
 const USER_NAME_KEY = 'ewk_compiler_user_name';
@@ -37,6 +37,15 @@ export function getUserProfile() {
     }
   } catch (e) {}
   return null;
+}
+
+// Check if user has registered a valid profile (Name, 10-digit Mobile, Email)
+export function isProfileRegistered(profile) {
+  if (!profile || typeof profile !== 'object') return false;
+  const name = (profile.name || '').trim();
+  const mobile = (profile.mobile || '').replace(/[^0-9]/g, '');
+  const email = (profile.email || '').trim();
+  return name.length > 0 && mobile.length >= 10 && email.includes('@');
 }
 
 // Save & Sync User Profile across LocalStorage, Supabase Realtime & Database
@@ -294,6 +303,8 @@ async function fetchPublicIp() {
 
 // Initialize compiler presence and realtime connection
 export async function initCompilerTelemetry(initialLang = 'python', collegeDetails = null) {
+  const userId = getOrCreateUserId();
+  let userName = getOrCreateUserName();
   // Session ID for current tab
   try {
     let sid = sessionStorage.getItem('ewk_compiler_session_id');

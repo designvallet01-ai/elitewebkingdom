@@ -40,28 +40,21 @@
   --footer-height: 28px;
 }
 
-/* VS-Light Theme Tokens - Refined Modern Crisp Slate */
+/* Light Mode Completely Removed - Permanent Obsidian Dark */
 .ide-root.vs-light {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --bg-tertiary: #e2e8f0;
-  --bg-navbar: #ffffff;
-  --bg-tab-active: #ffffff;
-  --bg-tab-inactive: #f1f5f9;
-  --border-color: #cbd5e1;
-  --border-light: #94a3b8;
-
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
+  /* Enforce dark mode tokens if vs-light is ever referenced */
+  --bg-primary: #050811;
+  --bg-secondary: #080c16;
+  --bg-tertiary: #0e1424;
+  --bg-navbar: #060913;
+  --bg-tab-active: #090d16;
+  --bg-tab-inactive: #0b0f19;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.14);
+  --text-primary: #cbd5e1;
+  --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --text-bright: #0f172a;
-
-  --accent-primary: #0284c7;
-  --accent-primary-hover: #0369a1;
-  --status-success: #059669;
-  --status-error: #e11d48;
-  --status-warning: #d97706;
-  --status-info: #0284c7;
+  --text-bright: #f8fafc;
 }
 
 /* ==========================================================================

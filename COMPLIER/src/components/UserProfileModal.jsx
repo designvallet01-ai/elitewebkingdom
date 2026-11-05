@@ -19,7 +19,8 @@ import { getUserProfile, saveUserProfile, getOrCreateUserId } from '../services/
 export default function UserProfileModal({
   isOpen,
   onClose,
-  onProfileUpdated
+  onProfileUpdated,
+  isMandatory = false
 }) {
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
@@ -135,13 +136,13 @@ export default function UserProfileModal({
   return (
     <div 
       className="modal-overlay" 
-      onClick={onClose}
+      onClick={isMandatory ? undefined : onClose}
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(5, 9, 20, 0.85)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        backgroundColor: 'rgba(5, 9, 20, 0.92)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         zIndex: 99999,
         display: 'flex',
         alignItems: 'center',
@@ -157,8 +158,10 @@ export default function UserProfileModal({
           maxWidth: '480px',
           background: 'linear-gradient(165deg, #0e172a 0%, #090e1a 100%)',
           borderRadius: '20px',
-          border: '1px solid rgba(0, 242, 254, 0.28)',
-          boxShadow: '0 30px 80px -15px rgba(0, 0, 0, 0.9), 0 0 45px rgba(0, 242, 254, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+          border: isMandatory ? '1px solid rgba(0, 242, 254, 0.45)' : '1px solid rgba(0, 242, 254, 0.28)',
+          boxShadow: isMandatory 
+            ? '0 30px 90px -10px rgba(0, 0, 0, 0.95), 0 0 55px rgba(0, 242, 254, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.15)' 
+            : '0 30px 80px -15px rgba(0, 0, 0, 0.9), 0 0 45px rgba(0, 242, 254, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
           overflow: 'hidden',
           animation: 'fadeInScale 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
@@ -209,7 +212,7 @@ export default function UserProfileModal({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#f8fafc', fontWeight: 700, letterSpacing: '-0.3px' }}>
-                  Developer Profile
+                  {isMandatory ? 'Developer Registration' : 'Developer Profile'}
                 </h3>
                 <span 
                   style={{ 
@@ -217,56 +220,83 @@ export default function UserProfileModal({
                     fontWeight: 700, 
                     padding: '2px 8px', 
                     borderRadius: '20px', 
-                    background: 'rgba(16, 185, 129, 0.15)', 
-                    color: '#34d399', 
-                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    background: isMandatory ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', 
+                    color: isMandatory ? '#fbbf24' : '#34d399', 
+                    border: isMandatory ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(16, 185, 129, 0.35)',
                     letterSpacing: '0.5px',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px'
                   }}
                 >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }} />
-                  VERIFIED
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isMandatory ? '#fbbf24' : '#34d399', display: 'inline-block' }} />
+                  {isMandatory ? 'REGISTRATION REQUIRED' : 'VERIFIED'}
                 </span>
               </div>
-              <p style={{ margin: '3px 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
-                Connect your identity to real-time compilation telemetry
+              <p style={{ margin: '3px 0 0 0', fontSize: '0.8rem', color: isMandatory ? '#38bdf8' : '#94a3b8' }}>
+                {isMandatory 
+                  ? 'Complete registration to unlock and access the Elite Compiler' 
+                  : 'Connect your identity to real-time compilation telemetry'}
               </p>
             </div>
           </div>
 
-          <button 
-            type="button" 
-            onClick={onClose}
-            aria-label="Close Modal"
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              color: '#94a3b8',
-              cursor: 'pointer',
-              padding: '7px',
-              borderRadius: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#fff';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#94a3b8';
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-            }}
-          >
-            <X size={18} />
-          </button>
+          {!isMandatory && (
+            <button 
+              type="button" 
+              onClick={onClose}
+              aria-label="Close Modal"
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: '7px',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#fff';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#94a3b8';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              }}
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
         {/* Modal Form */}
         <form onSubmit={handleSave} style={{ padding: '20px 24px 24px 24px' }}>
+          {/* Mandatory Welcome Callout Banner */}
+          {isMandatory && (
+            <div style={{
+              padding: '12px 14px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, rgba(0, 242, 254, 0.1), rgba(79, 70, 229, 0.15))',
+              border: '1px solid rgba(0, 242, 254, 0.28)',
+              marginBottom: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              <Sparkles size={20} style={{ flexShrink: 0, color: '#00f2fe' }} />
+              <div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f8fafc' }}>
+                  Welcome to Elite Web Kingdom Compiler!
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '2px' }}>
+                  కంపైలర్‌లోకి ప్రవేశించడానికి దయచేసి మీ పేరు, 10 అంకెల మొబైల్ నంబర్ మరియు ఈమెయిల్‌ను నమోదు చేసుకోండి.
+                </div>
+              </div>
+            </div>
+          )}
           {/* Developer System Identifier Badge */}
           <div 
             style={{
@@ -558,7 +588,7 @@ export default function UserProfileModal({
 
           {/* Modal Actions */}
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {(name || mobile || email) && (
+            {!isMandatory && (name || mobile || email) && (
               <button
                 type="button"
                 onClick={handleClear}
@@ -586,36 +616,38 @@ export default function UserProfileModal({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '12px 16px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '12px',
-                color: '#cbd5e1',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-              }}
-            >
-              Cancel
-            </button>
+            {!isMandatory && (
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '12px',
+                  color: '#cbd5e1',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                }}
+              >
+                Cancel
+              </button>
+            )}
 
             <button
               type="submit"
               disabled={isSaving}
               style={{
-                flex: 2,
+                flex: isMandatory ? 1 : 2,
                 padding: '12px 18px',
                 background: saveSuccess 
                   ? 'linear-gradient(135deg, #10b981, #059669)' 
@@ -623,7 +655,7 @@ export default function UserProfileModal({
                 border: 'none',
                 borderRadius: '12px',
                 color: '#ffffff',
-                fontSize: '0.9rem',
+                fontSize: '0.92rem',
                 fontWeight: 700,
                 cursor: isSaving ? 'wait' : 'pointer',
                 display: 'flex',
@@ -663,17 +695,17 @@ export default function UserProfileModal({
                       animation: 'spin 0.8s linear infinite' 
                     }} 
                   />
-                  <span>Saving Profile...</span>
+                  <span>{isMandatory ? 'Registering & Entering...' : 'Saving Profile...'}</span>
                 </>
               ) : saveSuccess ? (
                 <>
                   <Check size={17} />
-                  <span>Saved &amp; Synced!</span>
+                  <span>{isMandatory ? 'Profile Verified! Entering Compiler...' : 'Saved &amp; Synced!'}</span>
                 </>
               ) : (
                 <>
                   <Sparkles size={17} />
-                  <span>Save Profile</span>
+                  <span>{isMandatory ? 'Register & Enter Compiler →' : 'Save Profile'}</span>
                 </>
               )}
             </button>

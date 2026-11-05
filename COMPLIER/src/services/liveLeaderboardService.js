@@ -5,7 +5,7 @@
 // authentic streaks & badges from the user's actual execution telemetry.
 // ============================================================================
 
-import { supabase } from '../supabase';
+import { supabase } from '../supabase.js';
 
 const HISTORY_KEY = 'elite_ide_run_history';
 const ARENA_KEY = 'elite_ide_arena_history';
