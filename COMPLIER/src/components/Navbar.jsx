@@ -99,6 +99,7 @@ export default function Navbar({
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installedSuccess, setInstalledSuccess] = useState(false);
   const [isAppInstalled, setIsAppInstalled] = useState(() => {
     if (typeof window === 'undefined') return false;
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||

@@ -260,7 +260,9 @@ export default function ConsolePanel({
       >
         {terminalEntries.length === 0 && !isRunning && (
           <div className="console-empty">
-            <TerminalIcon size={36} className="empty-icon" />
+            <div className="console-empty-emblem">
+              <TerminalIcon size={32} className="empty-icon" />
+            </div>
             <p className="empty-title">Ready for Interactive Execution</p>
             <p className="empty-desc">
               Write your code in the editor and click <kbd>Run Code</kbd> or press <kbd>Ctrl + Enter</kbd>.

@@ -346,11 +346,60 @@ export default function App() {
   const editorInstanceRef = useRef(null);
   const wsRef = useRef(null);
   const lastRunTimeRef = useRef(0);
+  const panesContainerRef = useRef(null);
+
+  const [editorSplitPct, setEditorSplitPct] = useState(() => {
+    try {
+      const saved = parseFloat(localStorage.getItem('elite_ide_split_pct_v1'));
+      if (!Number.isNaN(saved) && saved >= 28 && saved <= 72) return saved;
+    } catch (e) {}
+    return 50;
+  });
+  const [isResizingSplit, setIsResizingSplit] = useState(false);
+
+  const handleSplitPointerDown = useCallback((e) => {
+    if (isMobile || !panesContainerRef.current) return;
+    e.preventDefault();
+    setIsResizingSplit(true);
+
+    const onPointerMove = (moveEvent) => {
+      if (!panesContainerRef.current) return;
+      const rect = panesContainerRef.current.getBoundingClientRect();
+      if (!rect.width) return;
+      const rawPct = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.min(72, Math.max(28, rawPct));
+      setEditorSplitPct(Math.round(clamped * 10) / 10);
+    };
+
+    const onPointerUp = () => {
+      setIsResizingSplit(false);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  }, [isMobile]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('elite_ide_split_pct_v1', String(editorSplitPct));
+    } catch (e) {}
+  }, [editorSplitPct]);
 
   // Mobile viewport resize listener
+  const wasMobileRef = useRef(typeof window !== 'undefined' && window.innerWidth <= 768);
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
+      if (mobile !== wasMobileRef.current) {
+        wasMobileRef.current = mobile;
+        if (mobile) {
+          setIsSidebarOpen(false);
+        }
+      }
       setIsMobile(mobile);
       if (editorInstanceRef.current) {
         editorInstanceRef.current.layout();
@@ -369,6 +418,177 @@ export default function App() {
       return () => clearTimeout(t);
     }
   }, [mobileActiveTab]);
+
+  // Smooth inertial mouse-wheel & mouse-drag horizontal scrolling across IDE tab/toolbar strips
+  useEffect(() => {
+    const HORIZONTAL_BAR_SELECTOR = [
+      '[data-hscroll="true"]',
+      '.view-mode-tabs',
+      '.editor-tabs-container',
+      '.graphical-subtabs-bar',
+      '.graphical-actions-bar',
+      '.mobile-view-tabs',
+      '.accessory-scroll-container',
+      '.oj-tabs-bar',
+      '.algo-category-tabs',
+      '.lang-matrix-categories'
+    ].join(',');
+
+    const animMap = new WeakMap();
+
+    const stopAnim = (el) => {
+      const state = animMap.get(el);
+      if (state?.rafId) {
+        cancelAnimationFrame(state.rafId);
+        state.rafId = 0;
+      }
+      if (state) state.target = el.scrollLeft;
+    };
+
+    const findScrollableBar = (target) => {
+      if (!target || typeof target.closest !== 'function') return null;
+      if (target.closest('.svg-viewport-wrapper, .monaco-editor, textarea, input[type="range"]')) return null;
+
+      let el = target.closest(HORIZONTAL_BAR_SELECTOR);
+      if (!el) {
+        let cur = target;
+        while (cur && cur !== document.body && cur !== document.documentElement) {
+          const style = window.getComputedStyle(cur);
+          const canScrollX = (style.overflowX === 'auto' || style.overflowX === 'scroll') && cur.scrollWidth > cur.clientWidth + 2;
+          const canScrollY = (style.overflowY === 'auto' || style.overflowY === 'scroll') && cur.scrollHeight > cur.clientHeight + 2;
+          if (canScrollX && !canScrollY) {
+            el = cur;
+            break;
+          }
+          cur = cur.parentElement;
+        }
+      }
+      if (!el || el.scrollWidth <= el.clientWidth + 1) return null;
+      return el;
+    };
+
+    const animateTo = (el, nextTarget) => {
+      const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+      const clampedTarget = Math.min(maxScroll, Math.max(0, nextTarget));
+      let state = animMap.get(el);
+      if (!state) {
+        state = { target: el.scrollLeft, rafId: 0 };
+        animMap.set(el, state);
+      }
+      state.target = clampedTarget;
+
+      if (state.rafId) return;
+
+      const step = () => {
+        const diff = state.target - el.scrollLeft;
+        if (Math.abs(diff) < 0.6) {
+          el.scrollLeft = state.target;
+          state.rafId = 0;
+          return;
+        }
+        el.scrollLeft += diff * 0.22;
+        state.rafId = requestAnimationFrame(step);
+      };
+      state.rafId = requestAnimationFrame(step);
+    };
+
+    const handleWheelToHorizontal = (e) => {
+      if (e.defaultPrevented) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || e.deltaY === 0) return;
+      const el = findScrollableBar(e.target);
+      if (!el) return;
+
+      const rawDelta = e.deltaMode === 1
+        ? e.deltaY * 32
+        : e.deltaMode === 2
+        ? e.deltaY * el.clientWidth
+        : e.deltaY;
+
+      e.preventDefault();
+      const existing = animMap.get(el);
+      const base = existing?.rafId ? existing.target : el.scrollLeft;
+      animateTo(el, base + rawDelta * 1.1);
+    };
+
+    let dragState = null;
+
+    const handlePointerDown = (e) => {
+      const el = findScrollableBar(e.target);
+      if (!el) return;
+      stopAnim(el);
+
+      if (e.pointerType === 'touch') return;
+      if (e.button !== 0 || e.target.closest('input, select, textarea')) return;
+
+      dragState = {
+        el,
+        startX: e.clientX,
+        startScrollLeft: el.scrollLeft,
+        lastX: e.clientX,
+        velocity: 0,
+        lastTime: performance.now(),
+        dragging: false
+      };
+    };
+
+    const handlePointerMove = (e) => {
+      if (!dragState) return;
+      const dx = e.clientX - dragState.startX;
+      if (!dragState.dragging && Math.abs(dx) > 6) {
+        dragState.dragging = true;
+        dragState.el.classList.add('is-hdragging');
+      }
+      if (!dragState.dragging) return;
+
+      const now = performance.now();
+      const dt = Math.max(1, now - dragState.lastTime);
+      dragState.velocity = (dragState.lastX - e.clientX) / dt;
+      dragState.lastX = e.clientX;
+      dragState.lastTime = now;
+
+      dragState.el.scrollLeft = dragState.startScrollLeft - dx;
+    };
+
+    const handlePointerUp = () => {
+      if (!dragState) return;
+      const { el, dragging, velocity } = dragState;
+      dragState = null;
+      el.classList.remove('is-hdragging');
+      if (dragging) {
+        const preventClickOnce = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+        };
+        el.addEventListener('click', preventClickOnce, { capture: true, once: true });
+        setTimeout(() => el.removeEventListener('click', preventClickOnce, { capture: true }), 80);
+
+        if (Math.abs(velocity) > 0.08) {
+          animateTo(el, el.scrollLeft + velocity * 140);
+        }
+      }
+    };
+
+    const handleTouchStart = (e) => {
+      const el = findScrollableBar(e.target);
+      if (el) stopAnim(el);
+    };
+
+    document.addEventListener('wheel', handleWheelToHorizontal, { passive: false });
+    document.addEventListener('pointerdown', handlePointerDown, { passive: true });
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('pointerup', handlePointerUp, { passive: true });
+    window.addEventListener('pointercancel', handlePointerUp, { passive: true });
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+
+    return () => {
+      document.removeEventListener('wheel', handleWheelToHorizontal);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+      document.removeEventListener('touchstart', handleTouchStart);
+    };
+  }, []);
 
   // Active file resolution
   const activeFile = useMemo(() => {
@@ -1863,7 +2083,10 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''}`}>
+    <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''} ${isResizingSplit ? 'is-resizing-split' : ''}`}>
+      {/* Ambient Liquid-Glass Aura Layer */}
+      <div className="ide-ambient-aura" aria-hidden="true" />
+
       {/* Top Professional IDE Header */}
       <Navbar
         detectedLangInfo={detectedLangInfo}
@@ -1965,40 +2188,63 @@ export default function App() {
           isMobile={isMobile}
         />
 
-        {/* Editor Section */}
-        <section className={`ide-editor-section ${isMobile && mobileActiveTab !== 'editor' ? 'mobile-hidden' : ''}`}>
-          <EditorPanel
-            files={files}
-            activeFileId={activeFileId}
-            onSelectFile={handleSelectFile}
-            onCloseFile={handleCloseFile}
-            onCreateFile={handleCreateFile}
-            onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
-            isSidebarOpen={isSidebarOpen}
-            onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
-            code={activeFile.code}
-            onChange={handleCodeChange}
-            language={activeLanguage}
-            theme={theme}
-            fontSize={fontSize}
-            filename={activeFile.name}
-            isMobile={isMobile}
-            onMountEditor={(editor) => {
-              editorInstanceRef.current = editor;
-            }}
-            onCursorChange={(line, col) => {
-              setSelectedLine(line);
-              if (col) setCursorPos({ line, col });
-            }}
-          />
-        </section>
+        {/* Editor & Right Output Resizable Panes Container */}
+        <div className="ide-panes-container" ref={panesContainerRef}>
+          {/* Editor Section */}
+          <section
+            className={`ide-editor-section ${isMobile && mobileActiveTab !== 'editor' ? 'mobile-hidden' : ''}`}
+            style={!isMobile ? { flex: `0 0 calc(${editorSplitPct}% - 4px)` } : undefined}
+          >
+            <EditorPanel
+              files={files}
+              activeFileId={activeFileId}
+              onSelectFile={handleSelectFile}
+              onCloseFile={handleCloseFile}
+              onCreateFile={handleCreateFile}
+              onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
+              isSidebarOpen={isSidebarOpen}
+              onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+              code={activeFile.code}
+              onChange={handleCodeChange}
+              language={activeLanguage}
+              theme={theme}
+              fontSize={fontSize}
+              filename={activeFile.name}
+              isMobile={isMobile}
+              onMountEditor={(editor) => {
+                editorInstanceRef.current = editor;
+              }}
+              onCursorChange={(line, col) => {
+                setSelectedLine(line);
+                if (col) setCursorPos({ line, col });
+              }}
+            />
+          </section>
 
-        {/* Right Side: View Switcher (Terminal / Graphical Flow / Web Preview) */}
-        <section className={`ide-terminal-section ${isMobile && mobileActiveTab === 'editor' ? 'mobile-hidden' : ''}`}>
+          {/* Desktop Interactive Split Pane Resizer */}
+          {!isMobile && (
+            <div
+              className={`ide-split-resizer ${isResizingSplit ? 'dragging' : ''}`}
+              onPointerDown={handleSplitPointerDown}
+              onDoubleClick={() => setEditorSplitPct(50)}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize editor and output panes (double-click to reset)"
+              title="Drag to resize panes (Double-click to reset 50/50)"
+            >
+              <div className="ide-split-resizer-pill" />
+            </div>
+          )}
+
+          {/* Right Side: View Switcher (Terminal / Graphical Flow / Web Preview) */}
+          <section
+            className={`ide-terminal-section ${isMobile && mobileActiveTab === 'editor' ? 'mobile-hidden' : ''}`}
+            style={!isMobile ? { flex: '1 1 0%' } : undefined}
+          >
           {/* View Switcher Header Bar (Desktop Only) */}
           {!isMobile && (
             <div className="view-mode-bar">
-              <div className="view-mode-tabs">
+              <div className="view-mode-tabs" data-hscroll="true">
                 <button
                   className={`view-mode-btn ${rightPaneView === 'console' ? 'active' : ''}`}
                   onClick={() => setRightPaneView('console')}
@@ -2192,6 +2438,7 @@ export default function App() {
             )}
           </div>
         </section>
+        </div>
       </main>
 
       {/* Mobile Code Typing Accessory Bar (Symbols, Tab, Undo/Redo) */}

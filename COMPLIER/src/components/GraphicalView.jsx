@@ -145,12 +145,35 @@ export default function GraphicalView({
   const [selectedNodeDetails, setSelectedNodeDetails] = useState(null);
   const [copiedMermaid, setCopiedMermaid] = useState(false);
   const [showExamplesMenu, setShowExamplesMenu] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState({ top: 0, left: 0 });
 
   const containerRef = useRef(null);
   const svgRef = useRef(null);
   const simulationTimerRef = useRef(null);
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
+
+  const getAnchoredMenuPos = (buttonEl, menuWidth = 210) => {
+    const rect = buttonEl.getBoundingClientRect();
+    const maxLeft = Math.max(8, window.innerWidth - menuWidth - 10);
+    return {
+      top: Math.round(rect.bottom + 6),
+      left: Math.round(Math.min(Math.max(8, rect.left), maxLeft))
+    };
+  };
+
+  useEffect(() => {
+    if (!showExamplesMenu && !showThemesMenu) return;
+    const closeMenus = (e) => {
+      if (e.target && typeof e.target.closest === 'function' && e.target.closest('.flow-dropdown-menu, .flow-menu-trigger')) {
+        return;
+      }
+      setShowExamplesMenu(false);
+      setShowThemesMenu(false);
+    };
+    window.addEventListener('mousedown', closeMenus);
+    return () => window.removeEventListener('mousedown', closeMenus);
+  }, [showExamplesMenu, showThemesMenu]);
 
   // Memoized graph parsing with 2D DAG layout
   const graph = useMemo(() => {
@@ -359,7 +382,8 @@ export default function GraphicalView({
       const rect = el.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+      const clampedDelta = Math.max(-120, Math.min(120, e.deltaY));
+      const zoomFactor = Math.exp(-clampedDelta * 0.0014);
 
       setZoom((prevZoom) => {
         const nextZoom = Math.min(Math.max(prevZoom * zoomFactor, 0.08), 12.0);
@@ -376,7 +400,7 @@ export default function GraphicalView({
 
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-  }, []);
+  }, [tab]);
 
   // Zoom step
   const handleZoomChange = (delta) => {
@@ -554,18 +578,7 @@ export default function GraphicalView({
   return (
     <div className={`graphical-container theme-${themeMode}`}>
       {/* 1. Top Visualizer Tabs (Flowchart, AST Tree, Variables Watcher) */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        background: '#090c13',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        padding: '4px 8px',
-        gap: '4px',
-        overflowX: 'auto',
-        scrollbarWidth: 'none',
-        WebkitOverflowScrolling: 'touch',
-        flexShrink: 0
-      }}>
+      <div className="graphical-subtabs-bar" data-hscroll="true">
         <button
           type="button"
           onClick={() => setTab('flowchart')}
@@ -573,12 +586,12 @@ export default function GraphicalView({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '5px 12px',
-            borderRadius: '6px',
-            border: tab === 'flowchart' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
-            background: tab === 'flowchart' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-            color: tab === 'flowchart' ? '#38bdf8' : '#94a3b8',
-            fontSize: '0.76rem',
+            padding: '5px 11px',
+            borderRadius: '7px',
+            border: tab === 'flowchart' ? '1px solid rgba(56, 189, 248, 0.45)' : '1px solid transparent',
+            background: tab === 'flowchart' ? 'linear-gradient(180deg, rgba(56, 189, 248, 0.22), rgba(2, 132, 199, 0.12))' : 'transparent',
+            color: tab === 'flowchart' ? '#7dd3fc' : '#94a3b8',
+            fontSize: '0.74rem',
             fontWeight: 700,
             cursor: 'pointer',
             whiteSpace: 'nowrap',
@@ -596,12 +609,12 @@ export default function GraphicalView({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '5px 12px',
-            borderRadius: '6px',
-            border: tab === 'ast' ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid transparent',
-            background: tab === 'ast' ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
-            color: tab === 'ast' ? '#c084fc' : '#94a3b8',
-            fontSize: '0.76rem',
+            padding: '5px 11px',
+            borderRadius: '7px',
+            border: tab === 'ast' ? '1px solid rgba(168, 85, 247, 0.45)' : '1px solid transparent',
+            background: tab === 'ast' ? 'linear-gradient(180deg, rgba(168, 85, 247, 0.22), rgba(126, 34, 206, 0.12))' : 'transparent',
+            color: tab === 'ast' ? '#d8b4fe' : '#94a3b8',
+            fontSize: '0.74rem',
             fontWeight: 700,
             cursor: 'pointer',
             whiteSpace: 'nowrap',
@@ -619,12 +632,12 @@ export default function GraphicalView({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '5px 12px',
-            borderRadius: '6px',
-            border: tab === 'variables' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid transparent',
-            background: tab === 'variables' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-            color: tab === 'variables' ? '#34d399' : '#94a3b8',
-            fontSize: '0.76rem',
+            padding: '5px 11px',
+            borderRadius: '7px',
+            border: tab === 'variables' ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid transparent',
+            background: tab === 'variables' ? 'linear-gradient(180deg, rgba(16, 185, 129, 0.22), rgba(5, 150, 105, 0.12))' : 'transparent',
+            color: tab === 'variables' ? '#6ee7b7' : '#94a3b8',
+            fontSize: '0.74rem',
             fontWeight: 700,
             cursor: 'pointer',
             whiteSpace: 'nowrap',
@@ -635,39 +648,33 @@ export default function GraphicalView({
           <span>Variables ({variables.length})</span>
         </button>
 
-        {!isMobile && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Complexity:</span>
-            <strong style={{ fontSize: '0.72rem', color: stats.complexityColor || '#38bdf8' }}>M = {stats.cyclomaticComplexity || 1}</strong>
-            <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Nodes:</span>
-            <strong style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>{graph.nodes.length}</strong>
-          </div>
-        )}
+        <div className="graphical-subtabs-metrics">
+          <span className="hud-metric-chip">
+            <span style={{ color: '#64748b' }}>M=</span>
+            <strong style={{ color: stats.complexityColor || '#38bdf8' }}>{stats.cyclomaticComplexity || 1}</strong>
+          </span>
+          <span className="hud-metric-chip">
+            <span style={{ color: '#64748b' }}>Nodes</span>
+            <strong style={{ color: '#e2e8f0' }}>{graph.nodes.length}</strong>
+          </span>
+        </div>
       </div>
 
-      {/* 2. Flowchart Action Controls Toolbar (Horizontally scrollable on mobile so NO option is hidden) */}
+      {/* 2. Flowchart Action Controls Toolbar (Wheel-scrollable on Desktop & Swipeable on Mobile) */}
       {tab === 'flowchart' && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: isMobile ? 'flex-start' : 'space-between',
-          background: '#0d111a',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '4px 8px',
-          gap: '6px',
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-          WebkitOverflowScrolling: 'touch',
-          flexShrink: 0,
-          whiteSpace: 'nowrap'
-        }}>
+        <div className="graphical-actions-bar" data-hscroll="true">
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             {/* Quick Flowchart Template Library */}
             <div className="dropdown-wrapper">
               <button
                 type="button"
-                className="flow-action-btn"
-                onClick={() => setShowExamplesMenu(!showExamplesMenu)}
+                className="flow-action-btn flow-menu-trigger"
+                onClick={(e) => {
+                  const next = !showExamplesMenu;
+                  setShowThemesMenu(false);
+                  if (next) setMenuAnchor(getAnchoredMenuPos(e.currentTarget, 230));
+                  setShowExamplesMenu(next);
+                }}
                 title="Load standard flowchart algorithm examples"
                 style={{ padding: '4px 8px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px' }}
               >
@@ -676,7 +683,10 @@ export default function GraphicalView({
               </button>
 
               {showExamplesMenu && (
-                <div className="flow-dropdown-menu">
+                <div
+                  className="flow-dropdown-menu"
+                  style={{ position: 'fixed', top: `${menuAnchor.top}px`, left: `${menuAnchor.left}px`, zIndex: 99995 }}
+                >
                   <div className="dropdown-menu-title">Select Flow Example</div>
                   {FLOWCHART_EXAMPLES.map((ex) => (
                     <button
@@ -761,8 +771,13 @@ export default function GraphicalView({
             <div className="dropdown-wrapper">
               <button
                 type="button"
-                className="flow-icon-btn"
-                onClick={() => setShowThemesMenu(!showThemesMenu)}
+                className="flow-icon-btn flow-menu-trigger"
+                onClick={(e) => {
+                  const next = !showThemesMenu;
+                  setShowExamplesMenu(false);
+                  if (next) setMenuAnchor(getAnchoredMenuPos(e.currentTarget, 170));
+                  setShowThemesMenu(next);
+                }}
                 title="Change Theme"
                 style={{ width: '28px', height: '28px' }}
               >
@@ -770,7 +785,10 @@ export default function GraphicalView({
               </button>
 
               {showThemesMenu && (
-                <div className="flow-dropdown-menu right-aligned">
+                <div
+                  className="flow-dropdown-menu"
+                  style={{ position: 'fixed', top: `${menuAnchor.top}px`, left: `${menuAnchor.left}px`, minWidth: '170px', zIndex: 99995 }}
+                >
                   <div className="dropdown-menu-title">Aesthetic</div>
                   <button 
                     type="button"

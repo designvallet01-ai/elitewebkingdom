@@ -140,9 +140,9 @@ export default function UserProfileModal({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(5, 9, 20, 0.92)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        backgroundColor: 'rgba(3, 7, 18, 0.72)',
+        backdropFilter: 'blur(22px) saturate(165%)',
+        WebkitBackdropFilter: 'blur(22px) saturate(165%)',
         zIndex: 99999,
         display: 'flex',
         alignItems: 'center',
@@ -216,7 +216,7 @@ export default function UserProfileModal({
                 </h3>
                 <span 
                   style={{ 
-                    fontSize: '0.66rem', 
+                    fontSize: '0.62rem', 
                     fontWeight: 700, 
                     padding: '2px 8px', 
                     borderRadius: '20px', 
@@ -226,7 +226,9 @@ export default function UserProfileModal({
                     letterSpacing: '0.5px',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '4px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
                   }}
                 >
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isMandatory ? '#fbbf24' : '#34d399', display: 'inline-block' }} />
