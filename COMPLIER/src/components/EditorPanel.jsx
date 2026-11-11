@@ -33,11 +33,18 @@ export default function EditorPanel({
   filename,
   onMountEditor,
   isMobile = false,
-  onCursorChange
+  onCursorChange,
+  remoteCursors = [],
+  isLiveMode = false,
+  livePeersCount = 0
 }) {
   const editorRef = useRef(null);
+  const monacoRef = useRef(null);
+  const remoteDecorationsRef = useRef([]);
+  const remoteWidgetsRef = useRef([]);
   const dsaMenuRef = useRef(null);
   const [copied, setCopied] = useState(false);
+  const [editorReadyTick, setEditorReadyTick] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [showDsaSnippets, setShowDsaSnippets] = useState(false);
   const recognitionRef = useRef(null);
@@ -203,6 +210,8 @@ export default function EditorPanel({
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
+    setEditorReadyTick((t) => t + 1);
     if (monaco && monaco.editor && typeof monaco.editor.setUnexpectedErrorHandler === 'function') {
       monaco.editor.setUnexpectedErrorHandler((e) => {
         const msg = e?.message || e?.name || String(e || '');
@@ -269,6 +278,80 @@ export default function EditorPanel({
       }
     });
   };
+
+  // Render live collaborator cursors & name tags inside Monaco
+  useEffect(() => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    const clearWidgets = () => {
+      if (remoteWidgetsRef.current.length > 0) {
+        remoteWidgetsRef.current.forEach((widget) => {
+          try { editor.removeContentWidget(widget); } catch {}
+        });
+        remoteWidgetsRef.current = [];
+      }
+    };
+
+    clearWidgets();
+
+    const maxLine = Math.max(1, model.getLineCount());
+    const newDecorations = (remoteCursors || []).map((peer) => {
+      const line = Math.min(maxLine, Math.max(1, Number(peer.line) || 1));
+      const maxCol = Math.max(1, model.getLineMaxColumn(line));
+      const col = Math.min(maxCol, Math.max(1, Number(peer.col) || 1));
+      const colorIdx = (peer.colorIdx ?? 0) % 6;
+      const shortName = (peer.name || 'Peer').trim().split(/\s+/)[0].slice(0, 12);
+
+      // Register floating collaborator name badge as a Monaco ContentWidget
+      // so the name pill hovers cleanly above/below the caret without shifting code text.
+      const domNode = document.createElement('div');
+      domNode.className = `remote-cursor-widget remote-cursor-widget-${colorIdx}`;
+      const badgeEl = document.createElement('span');
+      badgeEl.className = `remote-collab-tag remote-collab-tag-${colorIdx}`;
+      badgeEl.textContent = shortName;
+      domNode.appendChild(badgeEl);
+
+      const widget = {
+        getId: () => `remote-cursor-widget-${peer.clientId}`,
+        getDomNode: () => domNode,
+        getPosition: () => ({
+          position: { lineNumber: line, column: col },
+          preference: [
+            monaco.editor.ContentWidgetPositionPreference.ABOVE,
+            monaco.editor.ContentWidgetPositionPreference.BELOW
+          ]
+        })
+      };
+
+      try {
+        editor.addContentWidget(widget);
+        remoteWidgetsRef.current.push(widget);
+      } catch {}
+
+      return {
+        range: new monaco.Range(line, col, line, col),
+        options: {
+          className: `remote-collab-caret remote-collab-caret-${colorIdx}`,
+          hoverMessage: { value: `**${peer.name || 'Collaborator'}** (Ln ${line}, Col ${col})` },
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+        }
+      };
+    });
+
+    try {
+      remoteDecorationsRef.current = editor.deltaDecorations(
+        remoteDecorationsRef.current || [],
+        newDecorations
+      );
+    } catch {}
+
+    return clearWidgets;
+  }, [remoteCursors, code, editorReadyTick]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code);
@@ -546,7 +629,13 @@ export default function EditorPanel({
             <span>{filename || 'main'}</span>
           </span>
         </div>
-        <div className="breadcrumbs-info">
+        <div className="breadcrumbs-info" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {isLiveMode && (
+            <span className="breadcrumb-live-tag" title="Interactive Live Workspace Active">
+              <span className="live-sync-dot" />
+              <span>LIVE • {Math.max(1, livePeersCount)}</span>
+            </span>
+          )}
           <span className="breadcrumb-engine-tag">{getLanguageById(language)?.name || language}</span>
         </div>
       </div>

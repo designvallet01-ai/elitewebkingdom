@@ -89,7 +89,9 @@ export default function Navbar({
   onOpenComplexityVisualizer,
   onOpenServerlessDeploy,
   onOpenSmartProctoring,
-  onOpenBatchGrading
+  onOpenBatchGrading,
+  isLiveMode = false,
+  livePeersCount = 0
 }) {
   const fileInputRef = useRef(null);
   const menubarRef = useRef(null);
@@ -579,8 +581,8 @@ export default function Navbar({
 
 
 
-          {/* Mobile Quick Install Button (hidden once installed) */}
-          {isMobile && !isAppInstalled && (
+          {/* Mobile Quick Install Button (hidden once installed or during compact Live Sync header) */}
+          {isMobile && !isAppInstalled && !isLiveMode && (
             <button
               className="mobile-install-quick-btn"
               onClick={handleInstallApp}
@@ -596,6 +598,19 @@ export default function Navbar({
         {/* Action Controls: Mobile Layout vs Desktop Layout */}
         {isMobile ? (
           <div className="mobile-navbar-actions">
+            {isLiveMode && (
+              <button
+                type="button"
+                className="mobile-live-collab-pill"
+                onClick={onOpenShareCode}
+                title={`Live Workspace Active (${Math.max(1, livePeersCount)} online)`}
+                id="mobile-live-pill-btn"
+              >
+                <span className="live-sync-dot" />
+                <span>{Math.max(1, livePeersCount)}</span>
+              </button>
+            )}
+
             {/* 1. Mobile Run Button */}
             <button
               className={`mobile-nav-run-btn ${isRunning ? 'running' : ''}`}
@@ -756,6 +771,19 @@ export default function Navbar({
               <div className="nav-divider" />
 
               <div className="nav-actions-group">
+                {isLiveMode && (
+                  <button
+                    type="button"
+                    className="nav-live-collab-pill"
+                    onClick={onOpenShareCode}
+                    title={`Live Collaborative Workspace Active (${Math.max(1, livePeersCount)} online) - Click to share or manage`}
+                    id="nav-live-collab-btn"
+                  >
+                    <span className="live-sync-dot" />
+                    <span>LIVE • {Math.max(1, livePeersCount)}</span>
+                  </button>
+                )}
+
                 {/* Quick Git Version Control */}
                 {onOpenGitControl && (
                   <button 

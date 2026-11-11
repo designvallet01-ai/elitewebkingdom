@@ -1276,3 +1276,385 @@ select,
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
 }
+
+
+/* ==========================================================================
+   9. LIVE COLLABORATIVE WORKSPACE (SHARE TOGGLE, PILLS & REMOTE CURSORS)
+   ========================================================================== */
+.live-share-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(155deg, rgba(22, 33, 62, 0.56) 0%, rgba(9, 14, 28, 0.85) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+
+.live-share-toggle-card.active {
+  background: linear-gradient(155deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 78, 59, 0.28) 100%);
+  border-color: rgba(52, 211, 153, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 24px rgba(16, 185, 129, 0.16);
+}
+
+.live-toggle-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.live-toggle-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+
+.live-toggle-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.live-mode-badge {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+}
+
+.live-mode-badge.off {
+  background: rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+.live-mode-badge.on {
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  color: #34d399;
+}
+
+.live-toggle-desc {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+
+.live-toggle-switch {
+  position: relative;
+  width: 50px;
+  height: 28px;
+  border-radius: 9999px;
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 2px;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.live-toggle-switch.on {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+  border-color: rgba(110, 231, 183, 0.65);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 16px rgba(16, 185, 129, 0.45);
+}
+
+.live-toggle-thumb {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.live-toggle-switch.on .live-toggle-thumb {
+  transform: translateX(22px);
+}
+
+.live-room-status-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(6, 12, 24, 0.78);
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  margin-bottom: 14px;
+}
+
+.live-room-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.live-room-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.live-room-label code {
+  color: #34d399;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.live-peers-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 1px 7px;
+  border-radius: 9999px;
+}
+
+.live-status-dot,
+.live-sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  display: inline-block;
+  flex-shrink: 0;
+  animation: livePulseGlow 1.6s ease-in-out infinite;
+}
+
+.live-status-dot.connecting {
+  background: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24;
+}
+
+@keyframes livePulseGlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.25); }
+}
+
+.live-stop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.38);
+  color: #fb7185;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.live-peers-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.live-peer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.live-peer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Navbar & Breadcrumb Live Pills */
+.nav-live-collab-pill,
+.mobile-live-collab-pill,
+.breadcrumb-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.24), rgba(5, 150, 105, 0.14));
+  border: 1px solid rgba(52, 211, 153, 0.48);
+  color: #6ee7b7;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 9999px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 12px rgba(16, 185, 129, 0.22);
+}
+
+.mobile-live-collab-pill {
+  height: 30px;
+  padding: 0 7px;
+  font-size: 0.7rem;
+}
+
+.breadcrumb-live-tag {
+  padding: 1px 7px;
+  font-size: 0.64rem;
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  .nav-left {
+    overflow: hidden;
+  }
+
+  .mobile-navbar-actions {
+    gap: 4px;
+  }
+
+  .mobile-nav-run-btn {
+    height: 30px;
+    padding: 0 9px;
+    font-size: 0.78rem;
+  }
+
+  .mobile-nav-lang-pill {
+    height: 30px;
+    padding: 0 6px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .nav-actions-group {
+    gap: 4px;
+  }
+
+  .nav-lang-select {
+    min-width: 112px;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1440px) {
+  .nav-left {
+    flex: 0 1 auto;
+  }
+
+  .nav-right {
+    flex: 1 1 auto;
+  }
+}
+
+/* Share & Live Workspace Modal Header + Close Button */
+.share-code-modal .modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.share-code-modal .modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.share-code-modal .modal-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.share-code-modal .modal-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.25;
+}
+
+.share-code-modal .modal-subtitle {
+  margin: 3px 0 0;
+  font-size: 0.77rem;
+  color: #94a3b8;
+  line-height: 1.35;
+}
+
+.share-code-modal .modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.share-code-modal .modal-close-btn:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #f8fafc;
+}
+
+/* Remote Collaborator Monaco Carets & Floating Name Tags */
+.remote-collab-caret {
+  border-left: 2px solid;
+  margin-left: -1px;
+}
+
+.remote-cursor-widget {
+  pointer-events: none;
+  z-index: 25;
+  transform: translateX(-1px);
+}
+
+.remote-collab-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  line-height: 1.3;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #040710;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.remote-collab-caret-0 { border-left-color: #38bdf8; }
+.remote-collab-tag-0 { background: #38bdf8; }
+.remote-collab-caret-1 { border-left-color: #34d399; }
+.remote-collab-tag-1 { background: #34d399; }
+.remote-collab-caret-2 { border-left-color: #c084fc; }
+.remote-collab-tag-2 { background: #c084fc; }
+.remote-collab-caret-3 { border-left-color: #fbbf24; }
+.remote-collab-tag-3 { background: #fbbf24; }
+.remote-collab-caret-4 { border-left-color: #f472b6; }
+.remote-collab-tag-4 { background: #f472b6; }
+.remote-collab-caret-5 { border-left-color: #22d3ee; }
+.remote-collab-tag-5 { background: #22d3ee; }

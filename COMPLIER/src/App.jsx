@@ -60,6 +60,7 @@ import { transpileCode } from './services/transpilerEngine';
 import { ALL_LANGUAGES, STARTER_TEMPLATES, EXTENSION_MAP, getLanguageById } from './services/languagesRegistry';
 import { evaluateMatlabLocally } from './services/clientMatlabRunner';
 import { evaluateJdbcLocally } from './services/clientJdbcRunner';
+import { createLiveRoomId, joinLiveWorkspace } from './services/liveCollabService';
 import VisualGuiPlotViewer from './components/VisualGuiPlotViewer';
 import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages, Monitor } from 'lucide-react';
 
@@ -348,6 +349,25 @@ export default function App() {
   const wsRef = useRef(null);
   const lastRunTimeRef = useRef(0);
   const panesContainerRef = useRef(null);
+
+  // Live Collaborative Workspace State (Real-time co-editing via Share link)
+  const [liveRoomId, setLiveRoomId] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('live') || null;
+    } catch {
+      return null;
+    }
+  });
+  const [liveStatus, setLiveStatus] = useState('idle');
+  const [livePeers, setLivePeers] = useState([]);
+  const [remoteCursorsMap, setRemoteCursorsMap] = useState({});
+  const liveControllerRef = useRef(null);
+  const isApplyingRemoteRef = useRef(false);
+  const latestLiveBufferRef = useRef({ code: '', language: 'python', fileName: 'main.py' });
+  const activeFileIdRef = useRef(activeFileId);
+  activeFileIdRef.current = activeFileId;
+  const manualLanguageRef = useRef(manualLanguage);
+  manualLanguageRef.current = manualLanguage;
 
   const [editorSplitPct, setEditorSplitPct] = useState(() => {
     try {
@@ -657,6 +677,7 @@ export default function App() {
       const sharedCodeEnc = urlParams.get('code');
       const sharedLang = urlParams.get('lang');
       const sharedName = urlParams.get('name');
+      const liveParam = urlParams.get('live');
 
       if (sharedCodeEnc) {
         let decodedCode = '';
@@ -681,15 +702,39 @@ export default function App() {
               language: lang,
               isModified: false
             };
-            return [newFile, ...prev];
+            const filtered = prev.filter((f) => {
+              if (liveParam) {
+                return Boolean(f.isModified) && f.name !== fileName;
+              }
+              return !(prev.length === 1 && !f.isModified && f.name === fileName);
+            });
+            return [newFile, ...filtered];
           });
           setActiveFileId(newFileId);
           setManualLanguage(lang);
 
           setTerminalEntries([
-            { type: 'system', text: `✨ [Shared Code Loaded]: Loaded "${fileName}" (${lang.toUpperCase()}) from shared permalink.\nClick Run Code to execute!\n` }
+            {
+              type: 'system',
+              text: liveParam
+                ? `🌐 [Live Workspace Joined]: Connected to room "${liveParam}" (${fileName}). Real-time co-editing is active!\n`
+                : `✨ [Shared Code Loaded]: Loaded "${fileName}" (${lang.toUpperCase()}) from shared permalink.\nClick Run Code to execute!\n`
+            }
           ]);
         }
+      } else if (liveParam) {
+        const lang = sharedLang || 'python';
+        const fileName = sharedName || 'main.py';
+        const newFileId = 'file-live-' + Date.now();
+        setFiles(prev => [
+          { id: newFileId, name: fileName, code: STARTER_TEMPLATES[lang] || '', language: lang, isModified: false },
+          ...prev.filter((f) => Boolean(f.isModified) && f.name !== fileName)
+        ]);
+        setActiveFileId(newFileId);
+        setManualLanguage(lang);
+        setTerminalEntries([
+          { type: 'system', text: `🌐 [Live Workspace Joined]: Connecting to room "${liveParam}" and syncing latest buffer...\n` }
+        ]);
       }
     } catch (err) {
       console.warn('Shared link parser error:', err);
@@ -776,6 +821,184 @@ export default function App() {
 
   const activeLanguage = detectedLangInfo.language;
 
+  latestLiveBufferRef.current = {
+    code: activeFile.code,
+    language: activeLanguage,
+    fileName: activeFile.name
+  };
+
+  // Connect & synchronize Live Collaborative Workspace when liveRoomId is active
+  useEffect(() => {
+    if (!liveRoomId) {
+      if (liveControllerRef.current) {
+        liveControllerRef.current.leave();
+        liveControllerRef.current = null;
+      }
+      setLiveStatus('idle');
+      setLivePeers([]);
+      setRemoteCursorsMap({});
+      return;
+    }
+
+    const applyMinimalMonacoPatch = (targetCode) => {
+      const editor = editorInstanceRef.current;
+      const model = editor?.getModel?.();
+      if (!editor || !model) return;
+      const current = model.getValue();
+      if (current === targetCode) return;
+
+      let prefixLen = 0;
+      const minLen = Math.min(current.length, targetCode.length);
+      while (prefixLen < minLen && current.charCodeAt(prefixLen) === targetCode.charCodeAt(prefixLen)) {
+        prefixLen++;
+      }
+
+      let currentEnd = current.length;
+      let targetEnd = targetCode.length;
+      while (
+        currentEnd > prefixLen &&
+        targetEnd > prefixLen &&
+        current.charCodeAt(currentEnd - 1) === targetCode.charCodeAt(targetEnd - 1)
+      ) {
+        currentEnd--;
+        targetEnd--;
+      }
+
+      const startPos = model.getPositionAt(prefixLen);
+      const endPos = model.getPositionAt(currentEnd);
+      const prevSelections = editor.getSelections();
+
+      model.pushEditOperations(
+        prevSelections || [],
+        [{
+          range: {
+            startLineNumber: startPos.lineNumber,
+            startColumn: startPos.column,
+            endLineNumber: endPos.lineNumber,
+            endColumn: endPos.column
+          },
+          text: targetCode.slice(prefixLen, targetEnd),
+          forceMoveMarkers: true
+        }],
+        () => prevSelections
+      );
+    };
+
+    const controller = joinLiveWorkspace({
+      roomId: liveRoomId,
+      userName: userProfile?.name || getOrCreateUserName(),
+      onStatusChange: (status) => setLiveStatus(status),
+      onPeersChange: (peers) => {
+        setLivePeers(peers);
+        setRemoteCursorsMap((prev) => {
+          const activeIds = new Set(peers.filter(p => !p.isSelf).map(p => p.clientId));
+          const next = {};
+          Object.entries(prev).forEach(([id, c]) => {
+            if (activeIds.has(id)) next[id] = c;
+          });
+          return next;
+        });
+      },
+      onRemoteCursor: (cursorData) => {
+        if (!cursorData?.clientId) return;
+        setRemoteCursorsMap((prev) => {
+          if (cursorData.remove) {
+            const copy = { ...prev };
+            delete copy[cursorData.clientId];
+            return copy;
+          }
+          return { ...prev, [cursorData.clientId]: cursorData };
+        });
+      },
+      onSyncRequest: () => {
+        controller.broadcastSyncState(latestLiveBufferRef.current);
+      },
+      onRemoteCodePatch: (payload) => {
+        if (!payload || typeof payload.code !== 'string') return;
+        isApplyingRemoteRef.current = true;
+        try {
+          applyMinimalMonacoPatch(payload.code);
+          const targetId = activeFileIdRef.current;
+          if (payload.language && payload.language !== manualLanguageRef.current) {
+            setManualLanguage(payload.language);
+          }
+          setFiles(prev => prev.map(f => {
+            if (f.id !== targetId) return f;
+            return {
+              ...f,
+              code: payload.code,
+              language: payload.language || f.language,
+              name: payload.fileName || f.name,
+              isModified: true
+            };
+          }));
+        } finally {
+          requestAnimationFrame(() => {
+            isApplyingRemoteRef.current = false;
+          });
+        }
+      },
+      onRemoteRunOutput: (payload) => {
+        if (!payload) return;
+        const who = payload.senderName || 'Collaborator';
+        setTerminalEntries(prev => [
+          ...prev,
+          { type: 'system', text: `\n⚡ [Live Run by ${who}]: ${payload.command || 'Execution'}\n` },
+          ...(payload.stdout ? [{ type: 'stdout', text: payload.stdout }] : []),
+          ...(payload.stderr ? [{ type: 'stderr', text: payload.stderr }] : []),
+          {
+            type: 'process-exit',
+            exitCode: payload.exitCode ?? 0,
+            time: payload.time ?? 1,
+            runner: `${payload.runner || 'Cloud'} • ${who}`
+          }
+        ]);
+      }
+    });
+
+    liveControllerRef.current = controller;
+    return () => {
+      controller?.leave();
+      liveControllerRef.current = null;
+    };
+  }, [liveRoomId]);
+
+  useEffect(() => {
+    if (liveControllerRef.current && userProfile?.name) {
+      liveControllerRef.current.updateUserName(userProfile.name);
+    }
+  }, [userProfile?.name]);
+
+  const handleToggleLiveMode = useCallback((enable) => {
+    if (enable) {
+      const nextRoom = liveRoomId || createLiveRoomId();
+      setLiveRoomId(nextRoom);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('live', nextRoom);
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+      setTerminalEntries(prev => [
+        ...prev,
+        { type: 'system', text: `\n🌐 [Live Workspace Enabled]: Room "${nextRoom}" is active. Anyone with the link can edit live with you!\n` }
+      ]);
+    } else {
+      setLiveRoomId(null);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('live');
+        url.searchParams.delete('code');
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+      setTerminalEntries(prev => [
+        ...prev,
+        { type: 'system', text: `\n🔌 [Live Workspace]: Left live collaborative session.\n` }
+      ]);
+    }
+  }, [liveRoomId]);
+
+  const remoteCursorsList = useMemo(() => Object.values(remoteCursorsMap), [remoteCursorsMap]);
+
   // Initialize Real-time Live Compiler Telemetry & Presence Tracking
   useEffect(() => {
     initCompilerTelemetry(activeLanguage || 'python', collegeStudentInfo);
@@ -856,13 +1079,28 @@ export default function App() {
     } : f));
 
     if (editorInstanceRef.current && updatedCode) {
+      isApplyingRemoteRef.current = true;
       editorInstanceRef.current.setValue(updatedCode);
+      requestAnimationFrame(() => {
+        isApplyingRemoteRef.current = false;
+      });
+    }
+
+    if (liveControllerRef.current) {
+      liveControllerRef.current.broadcastCodePatch({
+        code: updatedCode,
+        language: newLang,
+        fileName: newName
+      });
     }
   };
 
   // Code change in active file with dynamic real-time language detection and auto-renaming
   const handleCodeChange = (newCode) => {
+    if (isApplyingRemoteRef.current) return;
     const detected = detectLanguage(newCode);
+    let broadcastLang = activeLanguage;
+    let broadcastName = activeFile.name;
 
     setFiles(prev => prev.map(f => {
       if (f.id === activeFileId) {
@@ -877,6 +1115,8 @@ export default function App() {
           const properBase = (detected.language === 'java' && base.toLowerCase() === 'main') ? 'Main' : base;
           updatedName = `${properBase}.${detected.extension}`;
         }
+        broadcastLang = updatedLang || activeLanguage;
+        broadcastName = updatedName;
 
         return {
           ...f,
@@ -888,6 +1128,14 @@ export default function App() {
       }
       return f;
     }));
+
+    if (liveControllerRef.current) {
+      liveControllerRef.current.broadcastCodePatch({
+        code: newCode,
+        language: manualLanguage === 'auto' ? broadcastLang : manualLanguage,
+        fileName: broadcastName
+      });
+    }
   };
 
   // Switch active tab and sync language
@@ -1367,6 +1615,17 @@ export default function App() {
 
       setTerminalEntries(entries);
       setLastStats(data);
+
+      if (liveControllerRef.current) {
+        liveControllerRef.current.broadcastRunOutput({
+          command: shellCmd,
+          stdout: (data.stdout || '').slice(0, 4000),
+          stderr: (data.stderr || '').slice(0, 2000),
+          exitCode: data.code || 0,
+          time: realDuration,
+          runner: data.runner || 'Cloud Sandbox'
+        });
+      }
 
       // Auto-switch to GUI & Plot view if MATLAB plotting or scientific visualization is detected
       const codeLower = (codeToRun || '').toLowerCase();
@@ -2156,6 +2415,8 @@ export default function App() {
         onOpenServerlessDeploy={() => setIsServerlessDeployOpen(true)}
         onOpenSmartProctoring={() => setIsSmartProctoringOpen(true)}
         onOpenBatchGrading={() => setIsBatchGradingOpen(true)}
+        isLiveMode={Boolean(liveRoomId)}
+        livePeersCount={livePeers.length}
       />
 
       {/* College Exam Active Banner (Desktop Only) */}
@@ -2244,7 +2505,13 @@ export default function App() {
               onCursorChange={(line, col) => {
                 setSelectedLine(line);
                 if (col) setCursorPos({ line, col });
+                if (liveControllerRef.current && line) {
+                  liveControllerRef.current.broadcastCursor({ line, col: col || 1 });
+                }
               }}
+              remoteCursors={remoteCursorsList}
+              isLiveMode={Boolean(liveRoomId)}
+              livePeersCount={livePeers.length}
             />
           </section>
 
@@ -2700,6 +2967,12 @@ export default function App() {
         code={activeFile.code}
         language={activeLanguage}
         fileName={activeFile.name}
+        isLiveMode={Boolean(liveRoomId)}
+        liveRoomId={liveRoomId}
+        liveStatus={liveStatus}
+        livePeers={livePeers}
+        onToggleLiveMode={handleToggleLiveMode}
+        onEndLiveSession={() => handleToggleLiveMode(false)}
       />
 
       {/* VS Code-Style Command Palette */}
