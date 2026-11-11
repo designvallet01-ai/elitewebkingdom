@@ -33,6 +33,11 @@ export default function MobileAccessoryBar({ onInsertText, onUndo, onRedo, onEnt
     { label: '//', insert: '// ' }
   ];
 
+  const keepEditorFocus = (e) => {
+    // Prevent iOS Safari / mobile browsers from blurring Monaco and dismissing the virtual keyboard
+    e.preventDefault();
+  };
+
   return (
     <div className="mobile-accessory-bar" role="toolbar" aria-label="Quick code symbols toolbar">
       {/* Undo & Redo Quick Actions */}
@@ -40,6 +45,7 @@ export default function MobileAccessoryBar({ onInsertText, onUndo, onRedo, onEnt
         <button
           type="button"
           className="accessory-btn action-btn"
+          onMouseDown={keepEditorFocus}
           onClick={onUndo}
           title="Undo"
           aria-label="Undo code edit"
@@ -49,6 +55,7 @@ export default function MobileAccessoryBar({ onInsertText, onUndo, onRedo, onEnt
         <button
           type="button"
           className="accessory-btn action-btn"
+          onMouseDown={keepEditorFocus}
           onClick={onRedo}
           title="Redo"
           aria-label="Redo code edit"
@@ -66,6 +73,7 @@ export default function MobileAccessoryBar({ onInsertText, onUndo, onRedo, onEnt
             key={idx}
             type="button"
             className="accessory-btn symbol-btn"
+            onMouseDown={keepEditorFocus}
             onClick={() => onInsertText(item.insert)}
             title={`Insert ${item.label}`}
           >
@@ -81,6 +89,7 @@ export default function MobileAccessoryBar({ onInsertText, onUndo, onRedo, onEnt
         <button
           type="button"
           className="accessory-btn action-btn enter-btn"
+          onMouseDown={keepEditorFocus}
           onClick={onEnter}
           title="Insert New Line"
           aria-label="Insert New Line"

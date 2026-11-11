@@ -328,7 +328,6 @@ export default function GraphicalView({
   const handleTouchMove = (e) => {
     const state = touchStateRef.current;
     if (!state.isInteracting) return;
-    if (e.cancelable) e.preventDefault();
 
     if (e.touches.length === 1 && state.startTouches.length >= 1) {
       const curX = e.touches[0].clientX;
@@ -399,7 +398,16 @@ export default function GraphicalView({
     };
 
     el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
+    const preventCanvasScroll = (e) => {
+      if (touchStateRef.current.isInteracting && e.cancelable) {
+        e.preventDefault();
+      }
+    };
+    el.addEventListener('touchmove', preventCanvasScroll, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchmove', preventCanvasScroll);
+    };
   }, [tab]);
 
   // Zoom step

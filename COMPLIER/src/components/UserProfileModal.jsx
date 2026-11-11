@@ -209,9 +209,9 @@ export default function UserProfileModal({
               {getInitials(name)}
             </div>
 
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#f8fafc', fontWeight: 700, letterSpacing: '-0.3px' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px 8px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#f8fafc', fontWeight: 700, letterSpacing: '-0.3px' }}>
                   {isMandatory ? 'Developer Registration' : 'Developer Profile'}
                 </h3>
                 <span 

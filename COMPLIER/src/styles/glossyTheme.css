@@ -19,6 +19,11 @@
 /* ==========================================================================
    1. AMBIENT CRYSTAL CANVAS & ROOT SHELL
    ========================================================================== */
+html, body {
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
 .ide-root {
   position: relative;
   background:
@@ -42,26 +47,25 @@
   content: '';
   position: absolute;
   border-radius: 50%;
-  filter: blur(95px);
-  opacity: 0.42;
+  opacity: 0.48;
   will-change: transform;
 }
 
 .ide-ambient-aura::before {
-  width: 520px;
-  height: 520px;
-  top: -180px;
-  left: -120px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.36) 0%, rgba(37, 99, 235, 0.1) 55%, transparent 75%);
+  width: 640px;
+  height: 640px;
+  top: -220px;
+  left: -160px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.34) 0%, rgba(37, 99, 235, 0.12) 42%, transparent 72%);
   animation: glossyOrbitSlow 22s ease-in-out infinite alternate;
 }
 
 .ide-ambient-aura::after {
-  width: 560px;
-  height: 560px;
-  bottom: -220px;
-  right: -120px;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, rgba(16, 185, 129, 0.12) 55%, transparent 75%);
+  width: 680px;
+  height: 680px;
+  bottom: -260px;
+  right: -160px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, rgba(16, 185, 129, 0.12) 42%, transparent 72%);
   animation: glossyOrbitSlow 26s ease-in-out infinite alternate-reverse;
 }
 
@@ -429,16 +433,23 @@
   overflow: hidden;
 }
 
+/* Keep full-height panes free of backdrop-filter so iOS Safari position:fixed & Monaco scrolling never break */
 .ide-editor-section,
 .ide-terminal-section {
-  background: linear-gradient(180deg, rgba(10, 15, 30, 0.85) 0%, rgba(6, 10, 20, 0.92) 100%) !important;
-  backdrop-filter: blur(22px) saturate(165%);
-  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  background: linear-gradient(180deg, rgba(10, 15, 30, 0.94) 0%, rgba(6, 10, 20, 0.97) 100%) !important;
   border: 1px solid rgba(255, 255, 255, 0.09) !important;
   border-radius: 12px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.13),
     0 18px 42px -18px rgba(0, 0, 0, 0.85);
+}
+
+/* WebKit Flex Height Fix */
+.monaco-wrapper,
+.right-pane-body {
+  flex: 1 1 0% !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
 
 .ide-root.is-resizing-split iframe {
@@ -1007,18 +1018,118 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 18px 48px rgba(0, 0, 0, 0.9) !important;
 }
 
+/* Native smooth touch vertical scrolling inside scrollable IDE panels on iOS */
+.console-body,
+.sidebar-file-list,
+.mobile-sheet-content,
+.lang-matrix-grid,
+.algo-list-column,
+.algo-code-lines-container,
+.oj-modal-body,
+.arena-modal-body,
+.lb-modal-body,
+.cp-workbench-container,
+.memory-workbench-container,
+.recursion-visualizer-container {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Ensure iOS Safari never blocks input/textarea focus inside user-select:none shells */
+input,
+textarea,
+select,
+[contenteditable="true"],
+.monaco-editor .inputarea {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+/* Prevent iOS Safari auto-zoom (<16px font-size) without breaking iPad desktop select sizing */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  .monaco-editor .inputarea,
+  .mobile-nav-lang-select {
+    font-size: 16px !important;
+  }
+
+  .graphical-actions-bar .header-search-form input {
+    font-size: 16px !important;
+    height: 26px;
+    line-height: 26px;
+  }
+}
+
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select,
+  .monaco-editor .inputarea,
+  .mobile-nav-lang-select {
+    font-size: 16px !important;
+  }
+
+  .graphical-actions-bar .header-search-form input {
+    font-size: 16px !important;
+    height: 26px;
+    line-height: 26px;
+  }
+}
+
 /* ==========================================================================
-   8. MOBILE GLOSSY SHELL (<= 768px)
+   8. MOBILE GLOSSY SHELL (<= 768px) & iOS SAFARI OPTIMIZATIONS
    ========================================================================== */
 @media (max-width: 768px) {
+  .ide-root {
+    height: var(--app-height, 100dvh) !important;
+    max-height: var(--app-height, 100dvh) !important;
+  }
+
+  .ide-ambient-aura::before,
+  .ide-ambient-aura::after {
+    animation: none !important;
+  }
+
+  .ide-navbar {
+    height: calc(var(--header-height) + env(safe-area-inset-top, 0px)) !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    padding-left: max(0.5rem, env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(0.5rem, env(safe-area-inset-right, 0px)) !important;
+  }
+
+  .sidebar-backdrop {
+    top: calc(var(--header-height) + env(safe-area-inset-top, 0px)) !important;
+  }
+
   .ide-workspace {
     padding: 0;
   }
 
   .workspace-sidebar {
+    top: calc(var(--header-height) + env(safe-area-inset-top, 0px)) !important;
+    height: calc(100% - var(--header-height) - env(safe-area-inset-top, 0px)) !important;
     margin-right: 0 !important;
     border-radius: 0 16px 16px 0 !important;
     border-left: none !important;
+  }
+
+  .modal-overlay,
+  .modal-backdrop,
+  .college-modal-overlay,
+  .ai-modal-overlay,
+  .ai-healer-overlay {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    align-items: flex-start !important;
+    padding: max(12px, env(safe-area-inset-top, 12px)) 12px max(16px, env(safe-area-inset-bottom, 16px)) !important;
+  }
+
+  .user-profile-modal-card,
+  .command-palette-modal,
+  .share-code-modal,
+  .college-modal-card {
+    margin: auto !important;
   }
 
   .ide-panes-container {
@@ -1120,6 +1231,31 @@
 
   .canvas-floating-toolbar::-webkit-scrollbar {
     display: none !important;
+  }
+
+  .console-footer {
+    padding: 4px 8px !important;
+    gap: 8px !important;
+    font-size: 0.68rem !important;
+    white-space: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+  }
+
+  .console-footer::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .console-footer .footer-left,
+  .console-footer .footer-right {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  @media (max-width: 440px) {
+    .terminal-shell-tag {
+      display: none !important;
+    }
   }
 
   .mobile-menu-overlay {

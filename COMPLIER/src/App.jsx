@@ -189,6 +189,7 @@ export const extractPromptsFromCode = (code, lang) => {
 
 export default function App() {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState('editor'); // 'editor' | 'terminal' | 'graphical' | 'preview'
 
   // Multi-file workspace state with local storage fallback
@@ -389,10 +390,10 @@ export default function App() {
     } catch (e) {}
   }, [editorSplitPct]);
 
-  // Mobile viewport resize listener
+  // Mobile viewport & iOS Safari visualViewport keyboard synchronization
   const wasMobileRef = useRef(typeof window !== 'undefined' && window.innerWidth <= 768);
   useEffect(() => {
-    const handleResize = () => {
+    const syncViewportMetrics = () => {
       const mobile = window.innerWidth <= 768;
       if (mobile !== wasMobileRef.current) {
         wasMobileRef.current = mobile;
@@ -401,12 +402,38 @@ export default function App() {
         }
       }
       setIsMobile(mobile);
+
+      const vv = window.visualViewport;
+      if (vv && (mobile || window.innerWidth <= 1024)) {
+        document.documentElement.style.setProperty('--app-height', `${Math.round(vv.height)}px`);
+        const keyboardVisible = mobile && (window.innerHeight - vv.height > 140);
+        setIsKeyboardOpen(keyboardVisible);
+        if (window.scrollY !== 0 || window.scrollX !== 0) {
+          window.scrollTo(0, 0);
+        }
+      } else {
+        document.documentElement.style.removeProperty('--app-height');
+        setIsKeyboardOpen(false);
+      }
+
       if (editorInstanceRef.current) {
         editorInstanceRef.current.layout();
       }
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    syncViewportMetrics();
+    window.addEventListener('resize', syncViewportMetrics);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncViewportMetrics);
+      window.visualViewport.addEventListener('scroll', syncViewportMetrics);
+    }
+    return () => {
+      window.removeEventListener('resize', syncViewportMetrics);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', syncViewportMetrics);
+        window.visualViewport.removeEventListener('scroll', syncViewportMetrics);
+      }
+    };
   }, []);
 
   // When switching views on mobile, trigger Monaco layout recalculation
@@ -2451,8 +2478,8 @@ export default function App() {
         />
       )}
 
-      {/* Mobile Bottom Navigation Bar (Visible only on mobile devices) */}
-      {isMobile && (
+      {/* Mobile Bottom Navigation Bar (Visible only on mobile devices when keyboard is closed) */}
+      {isMobile && !isKeyboardOpen && (
         <nav className="mobile-view-tabs" aria-label="Mobile workspace view tabs">
           <button
             className={`mobile-tab-btn ${mobileActiveTab === 'editor' ? 'active' : ''}`}
