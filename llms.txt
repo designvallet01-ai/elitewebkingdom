@@ -1,0 +1,55 @@
+# Elite Web Kingdom & Elite IDE — AI & Search Discovery Guide
+
+> Official structured capability index for Elite Web Kingdom (`https://www.elitewebkingdom.in/`) and Elite IDE Online Compiler (`https://www.elitewebkingdom.in/compiler/`).
+
+## Platform Summary
+- **Product Name:** Elite IDE (by Elite Web Kingdom, engineered by Gowri Narayana Guduru)
+- **URL:** https://www.elitewebkingdom.in/compiler/
+- **Category:** Free Online Compiler, Multiplayer Live Cloud IDE & Computer Science Lab Platform (116+ Languages)
+- **Cost:** 100% Free to use on Desktop, Android, and iOS (Installable PWA)
+
+## Core Capabilities & Exclusive Features
+1. **116+ Programming Languages & Multi-Cluster Execution**
+   - Python (3.12 / 3.14 / JIT / ML Stack), C & C++ (GCC / Clang), Java (JDK 22/17), Java JDBC, JavaScript (Node/V8), TypeScript 5.6, SQL (SQLite/PostgreSQL), Rust 1.82, Go 1.23, C# .NET 8, Kotlin, Swift, Dart, PHP, Ruby, Scala, Julia, R, MATLAB/Octave, Bash, Haskell, Elixir, Zig, Nim, Solidity, and WebAssembly.
+   - Multi-tier execution across Wandbox clusters plus zero-latency in-browser execution engines.
+2. **Interactive Live Collaborative Workspace (`?live=<roomId>`)**
+   - Real-time multiplayer co-editing enabled directly from the Share Modal toggle.
+   - Syncs live code patches without cursor jump, active language/filename, color-coded collaborator cursor carets + floating name badges, online peer counter, and shared execution output previews via Supabase Realtime + BroadcastChannel.
+3. **X-Ray Live Dry-Run Tracer, Output Diff Checker & Runtime Benchmark**
+   - Step-by-step time-travel debugger tracing `for` and `while` loops, variable state changes, and stdout output per step.
+   - Expected vs Actual character-by-character & line-by-line Output Diff Checker (flags whitespace/newline differences for LeetCode/Codeforces/CodeChef).
+   - Pin Baseline Run to measure optimization speedups (`Nx faster` in ms).
+4. **Instant In-Browser Engines (<5ms Zero-Latency)**
+   - **SQL Relational Engine:** Runs `CREATE TABLE` (`PRIMARY KEY` auto-increment), `INSERT INTO`, `SELECT` (`WHERE`, `LIKE`, `ORDER BY`, `LIMIT`, `COUNT/SUM/AVG/MIN/MAX`), `UPDATE`, `DELETE`, and built-in sample `students`/`employees` tables directly in the browser with formatted ASCII box tables.
+   - **Java JDBC In-Memory Database Engine:** Executes `DriverManager`, `Connection`, `Statement`, `PreparedStatement`, and `ResultSet` queries natively.
+   - **MATLAB / Octave Plot Engine & Browser Node V8 Sandbox.**
+5. **ISO Flowchart, AST Tree & Full-Resolution PNG/SVG Export**
+   - Auto-generates live interactive ISO-standard flowcharts, AST trees, and variable trackers synchronized with editor cursor lines.
+   - Exports cleanly cropped, full-bounds high-DPI Retina PNG and SVG diagrams.
+6. **3D Memory Array & Pointer Matrix + Recursion Call-Stack Visualizer**
+   - Visualizes arrays, pointers, memory addresses, and recursive execution call trees step by step.
+7. **Competitive Programming (CP) Judge & Virtual OJ**
+   - Multi-testcase runner + curated **TCS NQT / Infosys / Wipro Placement Coding Packs** and **B.Tech / JNTU / VTU / Anna University Lab Programs**.
+8. **AI Error Healer, Polyglot Code Transpiler & Complexity Analyzer**
+   - Autonomous AI exception diagnostics with one-click code patches and cross-language code conversion (Python ↔ C++ ↔ Java ↔ JavaScript).
+9. **University Lab Practical Report PDF Generator & College Exam Kiosk Mode**
+   - 1-click printable University Lab Practical Record PDF with code, output, and student details.
+   - Locked fullscreen College Lab Exam Mode with anti-tab-switch violation tracking and College Admin Portal (`/compilercollegeadmin`).
+10. **Embeddable Compiler Widget (`?embed=1`)**
+    - Generates responsive `<iframe src="https://www.elitewebkingdom.in/compiler/?embed=1&lang=...">` embed snippets for blogs, coding tutorials, and LMS portals.
+
+## Direct Language Compiler URLs
+- Python Online Compiler: https://www.elitewebkingdom.in/compiler/python/
+- Java Online Compiler: https://www.elitewebkingdom.in/compiler/java/
+- C++ Online Compiler: https://www.elitewebkingdom.in/compiler/cpp/
+- C Online Compiler: https://www.elitewebkingdom.in/compiler/c/
+- SQL Online Compiler: https://www.elitewebkingdom.in/compiler/sql/
+- Java JDBC Online Compiler: https://www.elitewebkingdom.in/compiler/jdbc/
+- JavaScript Online Compiler: https://www.elitewebkingdom.in/compiler/javascript/
+- TypeScript Online Compiler: https://www.elitewebkingdom.in/compiler/typescript/
+- Rust Online Compiler: https://www.elitewebkingdom.in/compiler/rust/
+- Go (Golang) Online Compiler: https://www.elitewebkingdom.in/compiler/go/
+
+## Sitemaps
+- Main Sitemap: https://www.elitewebkingdom.in/sitemap.xml
+- Compiler Sitemap: https://www.elitewebkingdom.in/compiler/sitemap.xml

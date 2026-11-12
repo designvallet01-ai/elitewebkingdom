@@ -3,6 +3,7 @@
 
 User-agent: *
 Allow: /compiler/
+Allow: /compiler/llms.txt
 Disallow: /api/
 
 User-agent: Googlebot
@@ -12,6 +13,30 @@ Disallow: /api/
 User-agent: Bingbot
 Allow: /compiler/
 Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /compiler/
+Allow: /compiler/llms.txt
+
+User-agent: GPTBot
+Allow: /compiler/
+Allow: /compiler/llms.txt
+
+User-agent: ChatGPT-User
+Allow: /compiler/
+Allow: /compiler/llms.txt
+
+User-agent: PerplexityBot
+Allow: /compiler/
+Allow: /compiler/llms.txt
+
+User-agent: Google-Extended
+Allow: /compiler/
+Allow: /compiler/llms.txt
+
+User-agent: ClaudeBot
+Allow: /compiler/
+Allow: /compiler/llms.txt
 
 Sitemap: https://www.elitewebkingdom.in/compiler/sitemap.xml
 Sitemap: https://www.elitewebkingdom.in/sitemap.xml

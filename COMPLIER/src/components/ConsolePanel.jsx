@@ -269,6 +269,45 @@ export default function ConsolePanel({
               <br />
               Supports live interactive inputs (<kbd>input()</kbd>, <kbd>cin</kbd>, <kbd>scanf</kbd>) with Autonomous AI Error Healing!
             </p>
+            <div
+              className="console-capabilities-strip"
+              aria-label="Elite IDE Capabilities"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                gap: '6px',
+                marginTop: '14px',
+                maxWidth: '460px'
+              }}
+            >
+              {[
+                '116+ Languages',
+                'Live Co-Editing',
+                'X-Ray Trace & Output Diff',
+                'ISO Flowchart + PNG/SVG',
+                '<5ms SQL & JDBC',
+                '3D Memory & Recursion',
+                'CP Judge & TCS NQT Packs',
+                'Embed Widget (?embed=1)'
+              ].map((feat) => (
+                <span
+                  key={feat}
+                  style={{
+                    fontSize: '0.67rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: '#94a3b8',
+                    background: 'rgba(15, 23, 42, 0.72)',
+                    border: '1px solid rgba(56, 189, 248, 0.2)',
+                    borderRadius: '9999px',
+                    padding: '3px 9px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {feat}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

@@ -1,0 +1,30 @@
+# Elite IDE — AI & Search Discovery Guide
+
+> Structured capability manifest for Elite IDE (`https://www.elitewebkingdom.in/compiler/`), built by Elite Web Kingdom (Gowri Narayana Guduru).
+
+## Overview
+Elite IDE is a free browser-based online compiler, real-time multiplayer coding studio, and university lab environment supporting **116+ programming languages** across Desktop, Android, and iOS (PWA + Touch-first mobile UI).
+
+## Complete Feature Set
+- **116+ Languages:** Python (3.12/3.14), C++, C, Java (JDK 22), Java JDBC, JavaScript, TypeScript, SQL, Rust, Go, C# .NET 8, Kotlin, Swift, Dart, PHP, Ruby, Scala, Julia, R, MATLAB/Octave, Zig, Nim, Haskell, Elixir, Solidity, WebAssembly.
+- **Interactive Live Collaborative Workspace (`?live=<roomId>`):** Instant co-editing invite links from the Share modal; syncs code diffs without cursor jump, active language, color-coded collaborator cursors with name badges, peer presence count, and execution previews.
+- **X-Ray Dry-Run Tracer, Output Diff & Speedup Benchmark:** Interactive loop/variable step slider, live per-step stdout preview, expected vs actual line/character diff checker, and pinned baseline runtime comparison.
+- **Zero-Latency In-Browser Engines:** `<5ms` In-Browser SQL Engine (`CREATE`, `INSERT`, `SELECT`, `WHERE`, `ORDER BY`, aggregates, ASCII tables), Java JDBC In-Memory Relational Engine, MATLAB/Octave Plot Canvas, Browser V8 JS Sandbox.
+- **ISO Flowchart, AST Tree & Full-Resolution Export:** Auto-generated interactive flowcharts with cursor sync and high-DPI cropped Retina PNG & SVG downloads.
+- **3D Memory & Pointer Visualizer + Recursion Call-Stack Tree:** Live visual stack frames and pointer/array layout inspection.
+- **TCS NQT / Placement & B.Tech University Lab Packs + CP Judge:** Built-in Indian placement problems (TCS NQT, Infosys, Wipro) and engineering DS lab programs with multi-testcase evaluation.
+- **AI Error Healer & Polyglot Code Transpiler:** Automated error root-cause fixing + language-to-language transpiler.
+- **Embeddable `<iframe>` Compiler Widget (`?embed=1`):** Ready-to-copy blog/course embed widget snippets.
+- **University Lab Practical Record PDF & College Exam Kiosk Mode:** One-click practical record PDF generator + strict fullscreen exam lockdown portal (`/compilercollegeadmin`).
+
+## Dedicated Language Entry Pages
+- https://www.elitewebkingdom.in/compiler/python/
+- https://www.elitewebkingdom.in/compiler/java/
+- https://www.elitewebkingdom.in/compiler/cpp/
+- https://www.elitewebkingdom.in/compiler/c/
+- https://www.elitewebkingdom.in/compiler/sql/
+- https://www.elitewebkingdom.in/compiler/jdbc/
+- https://www.elitewebkingdom.in/compiler/javascript/
+- https://www.elitewebkingdom.in/compiler/typescript/
+- https://www.elitewebkingdom.in/compiler/rust/
+- https://www.elitewebkingdom.in/compiler/go/

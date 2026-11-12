@@ -1,4 +1,4 @@
-import{n as e}from"./rolldown-runtime-CbXtAM7H.js";import{r as t,t as n}from"./vendor-react-CPYPbbnH.js";import{J as r,Lt as i,V as a,Wt as o,_ as s,d as c,i as l,zt as u}from"./vendor-icons-Cnt9RDKQ.js";import{D as d}from"./index-DVT49H4i.js";import{t as f}from"./confetti.module-Uxh4CK4s.js";var p=e(t(),1),m=[{id:1,name:`Standard Case 1`,input:`5
+import{n as e}from"./rolldown-runtime-CbXtAM7H.js";import{r as t,t as n}from"./vendor-react-CPYPbbnH.js";import{J as r,Lt as i,V as a,Wt as o,_ as s,d as c,i as l,zt as u}from"./vendor-icons-Cnt9RDKQ.js";import{D as d}from"./index-Bw0caMT4.js";import{t as f}from"./confetti.module-Uxh4CK4s.js";var p=e(t(),1),m=[{id:1,name:`Standard Case 1`,input:`5
 1 2 3 4 5`,expected:`15`,weight:20},{id:2,name:`Negative Values`,input:`3
 -10 20 -5`,expected:`5`,weight:20},{id:3,name:`Boundary Zero`,input:`4
 0 0 0 0`,expected:`0`,weight:20},{id:4,name:`Single Element`,input:`1

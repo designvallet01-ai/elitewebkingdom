@@ -22,6 +22,37 @@ Allow: /compiler/
 Disallow: /admin/
 Disallow: /api/
 
-# XML Sitemap Locations
+# AI Search & Assistant Crawlers
+User-agent: OAI-SearchBot
+Allow: /
+Allow: /compiler/
+Allow: /llms.txt
+
+User-agent: GPTBot
+Allow: /
+Allow: /compiler/
+Allow: /llms.txt
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /compiler/
+Allow: /llms.txt
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /compiler/
+Allow: /llms.txt
+
+User-agent: Google-Extended
+Allow: /
+Allow: /compiler/
+Allow: /llms.txt
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /compiler/
+Allow: /llms.txt
+
+# XML Sitemap & AI Discovery Manifest
 Sitemap: https://www.elitewebkingdom.in/sitemap.xml
 Sitemap: https://www.elitewebkingdom.in/compiler/sitemap.xml
