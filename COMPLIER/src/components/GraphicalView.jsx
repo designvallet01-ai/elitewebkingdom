@@ -212,29 +212,34 @@ export default function GraphicalView({
     }
   }, [graph.nodes, onSelectLine]);
 
-  // Fit view automatically based on graph bounds
+  // Fit view automatically based on graph bounds (stays readable even for tall graphs)
   const handleFitView = useCallback(() => {
     if (!containerRef.current) return;
     const { clientWidth, clientHeight } = containerRef.current;
     if (clientWidth === 0 || clientHeight === 0) return;
 
     const b = graph.bounds || { minX: 200, maxX: 600, minY: 0, maxY: 500, width: 800, height: 500 };
-    const padding = clientWidth < 600 ? 30 : 60;
-    const graphW = Math.max(b.maxX - b.minX + padding * 2, 600);
-    const graphH = Math.max(b.maxY - b.minY + padding * 2, 500);
+    const padding = clientWidth < 600 ? 28 : 52;
+    const graphW = Math.max(b.maxX - b.minX + padding * 2, 340);
+    const graphH = Math.max(b.maxY - b.minY + padding * 2, 320);
 
     const scaleX = clientWidth / graphW;
     const scaleY = clientHeight / graphH;
-    const fitScale = Math.min(scaleX, scaleY, 1.25);
-    const safeScale = Math.max(Number(fitScale.toFixed(2)), 0.2);
+    const rawFit = Math.min(scaleX, scaleY, 1.15);
+    // Keep tall flowcharts readable (floor 0.62x anchored near top) while still fitting width
+    const readableScale = Math.max(rawFit, Math.min(scaleX, 0.72));
+    const safeScale = Math.min(Math.max(Number(readableScale.toFixed(2)), 0.45), 1.15);
 
     setZoom(safeScale);
     const centerX = (b.minX + b.maxX) / 2;
     const centerY = (b.minY + b.maxY) / 2;
+    const isTallOverflow = graphH * safeScale > clientHeight;
 
     setPan({
       x: Math.round(clientWidth / 2 - centerX * safeScale),
-      y: Math.round(clientHeight / 2 - centerY * safeScale)
+      y: isTallOverflow
+        ? Math.round(28 - b.minY * safeScale)
+        : Math.round(clientHeight / 2 - centerY * safeScale)
     });
   }, [graph.bounds]);
 
@@ -485,10 +490,83 @@ export default function GraphicalView({
     setTimeout(() => setCopiedMermaid(false), 2000);
   };
 
-  // Export Flowchart as SVG File
+  // Build a cropped, full-resolution SVG clone normalized to exact graph bounds
+  const buildCleanExportSvg = useCallback(() => {
+    const svgEl = svgRef.current;
+    if (!svgEl) return null;
+
+    const contentGroup = svgEl.querySelector('.zoomable-canvas-content');
+    let vbX = 0;
+    let vbY = 0;
+    let vbW = 900;
+    let vbH = 600;
+    const pad = 48;
+
+    try {
+      if (contentGroup && typeof contentGroup.getBBox === 'function') {
+        const bbox = contentGroup.getBBox();
+        if (bbox && bbox.width > 10 && bbox.height > 10) {
+          vbX = Math.floor(bbox.x - pad);
+          vbY = Math.floor(bbox.y - pad);
+          vbW = Math.ceil(bbox.width + pad * 2);
+          vbH = Math.ceil(bbox.height + pad * 2);
+        }
+      }
+    } catch {}
+
+    if (vbW <= 100 && Array.isArray(graph.nodes) && graph.nodes.length > 0) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      graph.nodes.forEach((n) => {
+        const hw = (n.width || 160) / 2;
+        const hh = (n.height || 50) / 2;
+        minX = Math.min(minX, n.x - hw);
+        minY = Math.min(minY, n.y - hh);
+        maxX = Math.max(maxX, n.x + hw);
+        maxY = Math.max(maxY, n.y + hh);
+      });
+      vbX = Math.floor(minX - pad * 2);
+      vbY = Math.floor(minY - pad);
+      vbW = Math.max(360, Math.ceil(maxX - minX + pad * 4));
+      vbH = Math.max(300, Math.ceil(maxY - minY + pad * 2));
+    }
+
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+    clone.setAttribute('width', String(vbW));
+    clone.setAttribute('height', String(vbH));
+    clone.style.background = themeMode === 'blueprint' ? '#0f172a' : '#090a0f';
+
+    const bgColor = themeMode === 'blueprint' ? '#0f172a' : '#090a0f';
+    const clonedGridRect = clone.querySelector('rect[fill="url(#flowGrid)"]');
+    if (clonedGridRect) {
+      clonedGridRect.setAttribute('x', String(vbX));
+      clonedGridRect.setAttribute('y', String(vbY));
+      clonedGridRect.setAttribute('width', String(vbW));
+      clonedGridRect.setAttribute('height', String(vbH));
+      const solidBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      solidBg.setAttribute('x', String(vbX));
+      solidBg.setAttribute('y', String(vbY));
+      solidBg.setAttribute('width', String(vbW));
+      solidBg.setAttribute('height', String(vbH));
+      solidBg.setAttribute('fill', bgColor);
+      clonedGridRect.parentNode.insertBefore(solidBg, clonedGridRect);
+    }
+
+    const clonedContent = clone.querySelector('.zoomable-canvas-content');
+    if (clonedContent) {
+      clonedContent.setAttribute('transform', 'translate(0, 0) scale(1)');
+      clonedContent.removeAttribute('style');
+    }
+
+    return { clone, vbW, vbH, bgColor };
+  }, [graph.nodes, themeMode]);
+
+  // Export Flowchart as Clean Cropped SVG File
   const handleExportSvg = () => {
-    if (!svgRef.current) return;
-    const svgData = new XMLSerializer().serializeToString(svgRef.current);
+    const prepared = buildCleanExportSvg();
+    if (!prepared) return;
+    const svgData = new XMLSerializer().serializeToString(prepared.clone);
     const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -500,27 +578,30 @@ export default function GraphicalView({
     URL.revokeObjectURL(url);
   };
 
-  // Export Flowchart as High-Res PNG
+  // Export Flowchart as Sharp Full-Bounds High-Res PNG
   const handleExportPng = () => {
-    if (!svgRef.current) return;
-    const svgData = new XMLSerializer().serializeToString(svgRef.current);
+    const prepared = buildCleanExportSvg();
+    if (!prepared) return;
+    const { clone, vbW, vbH, bgColor } = prepared;
+    const svgData = new XMLSerializer().serializeToString(clone);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
 
-    const bounds = graph.bounds || { width: 1200, height: 800 };
-    const scale = 2; // 2x high resolution
-    canvas.width = Math.max(bounds.width, 1000) * scale;
-    canvas.height = Math.max(bounds.height, 800) * scale;
+    // High-DPI Retina scale while safely staying within browser max canvas limits
+    const maxDim = 4096;
+    const desiredScale = vbW < 800 ? 3 : 2;
+    const scale = Math.min(desiredScale, maxDim / Math.max(vbW, vbH));
+    canvas.width = Math.max(400, Math.round(vbW * scale));
+    canvas.height = Math.max(300, Math.round(vbH * scale));
 
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
 
     img.onload = () => {
-      ctx.fillStyle = themeMode === 'blueprint' ? '#0f172a' : '#090a0f';
+      ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
 
       const pngUrl = canvas.toDataURL('image/png');

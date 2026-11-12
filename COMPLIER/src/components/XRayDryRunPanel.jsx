@@ -5,25 +5,30 @@ import {
   SkipBack,
   SkipForward,
   RotateCcw,
-  Sparkles,
   Cpu,
-  HelpCircle,
-  ChevronRight,
-  Layers
+  Layers,
+  GitCompare,
+  Pin,
+  CheckCircle2,
+  XCircle,
+  Gauge
 } from 'lucide-react';
 import { generateDryRunTrace } from '../services/dryRunTracer';
 
 export default function XRayDryRunPanel({
   code = '',
   language = 'python',
-  onSelectLine
+  onSelectLine,
+  terminalEntries = [],
+  lastStats = null
 }) {
   const trace = useMemo(() => generateDryRunTrace(code, language), [code, language]);
   const steps = trace.steps || [];
 
   const [stepIdx, setStepIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [openVivaIdx, setOpenVivaIdx] = useState(0);
+  const [expectedOutput, setExpectedOutput] = useState('');
+  const [baselineRun, setBaselineRun] = useState(null);
 
   useEffect(() => {
     setStepIdx(0);
@@ -40,7 +45,7 @@ export default function XRayDryRunPanel({
         }
         return prev + 1;
       });
-    }, 650);
+    }, 600);
     return () => clearInterval(timer);
   }, [isPlaying, steps.length]);
 
@@ -53,7 +58,44 @@ export default function XRayDryRunPanel({
     }
   }, [stepIdx]);
 
+  const actualStdout = useMemo(() => {
+    return (terminalEntries || [])
+      .filter((e) => e.type === 'stdout')
+      .map((e) => e.text)
+      .join('')
+      .trimEnd();
+  }, [terminalEntries]);
+
+  const diffReport = useMemo(() => {
+    if (!expectedOutput.trim() && !actualStdout) return null;
+    const expTrimmed = expectedOutput.replace(/\r\n/g, '\n').trimEnd();
+    const actTrimmed = actualStdout.replace(/\r\n/g, '\n').trimEnd();
+    const expLines = expTrimmed.split('\n');
+    const actLines = actTrimmed.split('\n');
+    const maxLen = Math.max(expLines.length, actLines.length);
+    const rows = [];
+    let mismatchCount = 0;
+
+    for (let i = 0; i < maxLen; i++) {
+      const eLine = expLines[i] ?? '';
+      const aLine = actLines[i] ?? '';
+      const exact = eLine === aLine;
+      const trimmedMatch = !exact && eLine.trim() === aLine.trim();
+      if (!exact) mismatchCount++;
+      rows.push({ line: i + 1, expected: eLine, actual: aLine, exact, trimmedMatch });
+    }
+    return {
+      isExactMatch: mismatchCount === 0 && expTrimmed.length > 0,
+      mismatchCount,
+      rows
+    };
+  }, [expectedOutput, actualStdout]);
+
   const varEntries = activeStep ? Object.entries(activeStep.variables || {}) : [];
+  const currentTimeMs = lastStats?.executionTime ?? null;
+  const speedupRatio = baselineRun?.timeMs && currentTimeMs
+    ? Number((baselineRun.timeMs / Math.max(1, currentTimeMs)).toFixed(2))
+    : null;
 
   return (
     <div
@@ -66,10 +108,10 @@ export default function XRayDryRunPanel({
         WebkitOverflowScrolling: 'touch',
         padding: '14px',
         gap: '12px',
-        background: 'rgba(6, 10, 22, 0.6)'
+        background: 'rgba(6, 10, 22, 0.62)'
       }}
     >
-      {/* Header + Controls */}
+      {/* 1. X-Ray Header + Time-Travel Controls */}
       <div
         style={{
           display: 'flex',
@@ -92,7 +134,7 @@ export default function XRayDryRunPanel({
             <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
               {steps.length > 0
                 ? `Step ${stepIdx + 1} of ${steps.length} • Line ${activeStep?.lineNumber || 1}`
-                : 'Write variables or loops to inspect step-by-step execution'}
+                : 'Write variables or loops to trace execution state'}
             </div>
           </div>
         </div>
@@ -100,19 +142,10 @@ export default function XRayDryRunPanel({
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             type="button"
-            className="admin-page-btn"
             onClick={() => { setIsPlaying(false); setStepIdx(0); }}
             disabled={steps.length === 0 || stepIdx === 0}
             title="Reset to Step 1"
-            style={{
-              height: '28px',
-              padding: '0 8px',
-              borderRadius: '8px',
-              border: '1px solid rgba(148,163,184,0.28)',
-              background: 'rgba(15,23,42,0.75)',
-              color: '#cbd5e1',
-              cursor: 'pointer'
-            }}
+            style={{ height: '28px', padding: '0 8px', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.75)', color: '#cbd5e1', cursor: 'pointer' }}
           >
             <RotateCcw size={13} />
           </button>
@@ -121,15 +154,7 @@ export default function XRayDryRunPanel({
             onClick={() => { setIsPlaying(false); setStepIdx((s) => Math.max(0, s - 1)); }}
             disabled={steps.length === 0 || stepIdx === 0}
             title="Previous Step"
-            style={{
-              height: '28px',
-              padding: '0 8px',
-              borderRadius: '8px',
-              border: '1px solid rgba(148,163,184,0.28)',
-              background: 'rgba(15,23,42,0.75)',
-              color: '#cbd5e1',
-              cursor: 'pointer'
-            }}
+            style={{ height: '28px', padding: '0 8px', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.75)', color: '#cbd5e1', cursor: 'pointer' }}
           >
             <SkipBack size={13} />
           </button>
@@ -163,22 +188,14 @@ export default function XRayDryRunPanel({
             onClick={() => { setIsPlaying(false); setStepIdx((s) => Math.min(steps.length - 1, s + 1)); }}
             disabled={steps.length === 0 || stepIdx >= steps.length - 1}
             title="Next Step"
-            style={{
-              height: '28px',
-              padding: '0 8px',
-              borderRadius: '8px',
-              border: '1px solid rgba(148,163,184,0.28)',
-              background: 'rgba(15,23,42,0.75)',
-              color: '#cbd5e1',
-              cursor: 'pointer'
-            }}
+            style={{ height: '28px', padding: '0 8px', borderRadius: '8px', border: '1px solid rgba(148,163,184,0.28)', background: 'rgba(15,23,42,0.75)', color: '#cbd5e1', cursor: 'pointer' }}
           >
             <SkipForward size={13} />
           </button>
         </div>
       </div>
 
-      {/* Live Step Scrubber + Active Variable Memory State */}
+      {/* 2. Active Variable Memory State + Accumulated Step Output */}
       {activeStep && (
         <div
           style={{
@@ -215,7 +232,7 @@ export default function XRayDryRunPanel({
             <Layers size={12} /> Live Variable Watch:
           </div>
           {varEntries.length === 0 ? (
-            <div style={{ fontSize: '0.74rem', color: '#64748b', fontStyle: 'italic' }}>No scalar variables assigned up to this step.</div>
+            <div style={{ fontSize: '0.74rem', color: '#64748b', fontStyle: 'italic' }}>No variables assigned yet.</div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {varEntries.map(([name, val]) => {
@@ -240,17 +257,24 @@ export default function XRayDryRunPanel({
               })}
             </div>
           )}
+
+          {activeStep.accumulatedOutput && (
+            <div style={{ marginTop: '10px', padding: '8px 10px', borderRadius: '8px', background: '#030712', border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#a7f3d0', whiteSpace: 'pre-wrap' }}>
+              <span style={{ color: '#64748b', fontSize: '0.66rem', display: 'block', marginBottom: '3px' }}>STDOUT AT STEP {activeStep.step}:</span>
+              {activeStep.accumulatedOutput}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Compact Iteration Execution Table */}
+      {/* 3. Iteration Execution Table */}
       {steps.length > 0 && (
         <div
           style={{
             borderRadius: '12px',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             overflowX: 'auto',
-            maxHeight: '210px',
+            maxHeight: '190px',
             overflowY: 'auto',
             WebkitOverflowScrolling: 'touch',
             background: 'rgba(9, 14, 28, 0.78)'
@@ -261,7 +285,7 @@ export default function XRayDryRunPanel({
               <tr style={{ background: 'rgba(15, 23, 42, 0.96)', color: '#94a3b8', textAlign: 'left' }}>
                 <th style={{ padding: '7px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>#</th>
                 <th style={{ padding: '7px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Line</th>
-                <th style={{ padding: '7px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Action / State</th>
+                <th style={{ padding: '7px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>State</th>
                 <th style={{ padding: '7px 10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>Snapshot</th>
               </tr>
             </thead>
@@ -292,76 +316,113 @@ export default function XRayDryRunPanel({
         </div>
       )}
 
-      {/* Placement Interview & Lab Viva Q&A Generator */}
+      {/* 4. Execution Output Diff Checker & Runtime Speedup Comparator */}
       <div
         style={{
           padding: '12px',
           borderRadius: '12px',
-          background: 'linear-gradient(155deg, rgba(22, 33, 62, 0.65), rgba(9, 14, 28, 0.85))',
-          border: '1px solid rgba(168, 85, 247, 0.28)'
+          background: 'linear-gradient(155deg, rgba(16, 25, 48, 0.72), rgba(7, 11, 24, 0.88))',
+          border: '1px solid rgba(56, 189, 248, 0.24)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '8px', color: '#e9d5ff', fontWeight: 700, fontSize: '0.8rem' }}>
-          <Sparkles size={14} className="text-purple-400" />
-          <span>Auto Lab Viva & Placement Interview Questions (From Your Code)</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.8rem', fontWeight: 700, color: '#e2e8f0' }}>
+            <GitCompare size={15} className="text-cyan-400" />
+            <span>Output Diff Checker &amp; Runtime Benchmark</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {currentTimeMs !== null && (
+              <span style={{ fontSize: '0.7rem', fontFamily: 'var(--font-mono)', color: '#38bdf8', background: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.3)', padding: '2px 8px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Gauge size={11} /> {currentTimeMs}ms
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setBaselineRun({ timeMs: currentTimeMs || 1, output: actualStdout })}
+              disabled={!actualStdout && currentTimeMs === null}
+              title="Pin current run as baseline to compare optimization speedup"
+              style={{
+                padding: '3px 9px',
+                borderRadius: '7px',
+                border: '1px solid rgba(16, 185, 129, 0.38)',
+                background: 'rgba(16, 185, 129, 0.12)',
+                color: '#6ee7b7',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              <Pin size={11} />
+              <span>{baselineRun ? `Baseline: ${baselineRun.timeMs}ms` : 'Pin Baseline Run'}</span>
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {(trace.vivaQuestions || []).map((item, qIdx) => {
-            const opened = openVivaIdx === qIdx;
-            return (
-              <div
-                key={qIdx}
-                style={{
-                  borderRadius: '9px',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  background: 'rgba(15, 23, 42, 0.65)',
-                  overflow: 'hidden'
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpenVivaIdx(opened ? -1 : qIdx)}
+        {speedupRatio !== null && baselineRun && (
+          <div style={{ fontSize: '0.72rem', fontFamily: 'var(--font-mono)', color: speedupRatio >= 1 ? '#34d399' : '#fbbf24', padding: '5px 9px', borderRadius: '8px', background: 'rgba(15,23,42,0.75)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            Benchmark Compare: Baseline {baselineRun.timeMs}ms vs Current {currentTimeMs}ms → {speedupRatio >= 1 ? `${speedupRatio}x faster` : `${(1 / speedupRatio).toFixed(2)}x slower`}
+          </div>
+        )}
+
+        <textarea
+          value={expectedOutput}
+          onChange={(e) => setExpectedOutput(e.target.value)}
+          placeholder="Paste expected stdout (e.g., Codeforces / LeetCode / sample test output) to diff character-by-character against your last run..."
+          rows={3}
+          style={{
+            width: '100%',
+            resize: 'vertical',
+            background: '#030712',
+            border: '1px solid rgba(148, 163, 184, 0.22)',
+            borderRadius: '8px',
+            padding: '8px 10px',
+            color: '#e2e8f0',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.74rem',
+            outline: 'none'
+          }}
+        />
+
+        {diffReport && expectedOutput.trim() && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', fontWeight: 700, color: diffReport.isExactMatch ? '#34d399' : '#fb7185' }}>
+              {diffReport.isExactMatch ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+              <span>
+                {diffReport.isExactMatch
+                  ? 'EXACT MATCH (100% character-identical)'
+                  : `${diffReport.mismatchCount} line mismatch(es) detected`}
+              </span>
+            </div>
+            <div style={{ maxHeight: '140px', overflowY: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', background: '#020617', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
+              {diffReport.rows.map((r) => (
+                <div
+                  key={r.line}
                   style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 10px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#f1f5f9',
-                    fontSize: '0.76rem',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    display: 'grid',
+                    gridTemplateColumns: '36px 1fr 1fr',
                     gap: '8px',
-                    cursor: 'pointer'
+                    padding: '4px 8px',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    background: r.exact ? 'transparent' : r.trimmedMatch ? 'rgba(245,158,11,0.12)' : 'rgba(244,63,94,0.14)'
                   }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <HelpCircle size={13} className="text-cyan-400" />
-                    {item.q}
+                  <span style={{ color: '#64748b' }}>L{r.line}</span>
+                  <span style={{ color: '#34d399', whiteSpace: 'pre-wrap' }} title="Expected">{r.expected || '∅'}</span>
+                  <span style={{ color: r.exact ? '#cbd5e1' : '#fda4af', whiteSpace: 'pre-wrap' }} title="Actual">
+                    {r.actual || '∅'}{r.trimmedMatch ? ' (trailing space diff)' : ''}
                   </span>
-                  <ChevronRight
-                    size={14}
-                    style={{
-                      flexShrink: 0,
-                      transform: opened ? 'rotate(90deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.16s ease'
-                    }}
-                  />
-                </button>
-                {opened && (
-                  <div style={{ padding: '0 10px 9px 28px', fontSize: '0.74rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                    {item.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-

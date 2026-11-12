@@ -2778,6 +2778,8 @@ export default function App() {
                   code={activeFile.code}
                   language={activeLanguage}
                   onSelectLine={handleSelectLine}
+                  terminalEntries={terminalEntries}
+                  lastStats={lastStats}
                 />
               )}
 
