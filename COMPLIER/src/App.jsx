@@ -1,44 +1,49 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import EditorPanel from './components/EditorPanel';
 import ConsolePanel from './components/ConsolePanel';
 import GraphicalView from './components/GraphicalView';
 import WebPreview from './components/WebPreview';
 import FileSidebar from './components/FileSidebar';
-import AlgorithmModal from './components/AlgorithmModal';
-import AiExplainerModal from './components/AiExplainerModal';
-import CpTestCaseWorkbench from './components/CpTestCaseWorkbench';
-import MemoryArrayVisualizer from './components/MemoryArrayVisualizer';
-import RecursionVisualizer from './components/RecursionVisualizer';
-import CodeTranspilerModal from './components/CodeTranspilerModal';
-import LabReportModal from './components/LabReportModal';
 import MobileAccessoryBar from './components/MobileAccessoryBar';
-import CollegeModeModal from './components/CollegeModeModal';
 import CollegeExamBanner from './components/CollegeExamBanner';
-import CollegeAdminPortal from './components/CollegeAdminPortal';
 import SystemLockedOverlay from './components/SystemLockedOverlay';
-import ShareCodeModal from './components/ShareCodeModal';
-import CommandPaletteModal from './components/CommandPaletteModal';
-import AiErrorFixModal from './components/AiErrorFixModal';
-import GitControlModal from './components/GitControlModal';
 import ActivityBar from './components/ActivityBar';
 import StatusBar from './components/StatusBar';
-import LanguageMatrixModal from './components/LanguageMatrixModal';
-import UniversalJudgeModal from './components/UniversalJudgeModal';
-import SpeedCodingArenaModal from './components/SpeedCodingArenaModal';
-import LeaderboardBadgesModal from './components/LeaderboardBadgesModal';
-import FullStackWorkspaceModal from './components/FullStackWorkspaceModal';
-import EmbeddedMiniBrowser from './components/EmbeddedMiniBrowser';
-import EphemeralTerminalModal from './components/EphemeralTerminalModal';
-import AiOneClickDebuggerModal from './components/AiOneClickDebuggerModal';
-import ComplexityVisualizerModal from './components/ComplexityVisualizerModal';
-import ServerlessDeploymentModal from './components/ServerlessDeploymentModal';
-import AiSmartProctoringModal from './components/AiSmartProctoringModal';
-import BatchGradingModal from './components/BatchGradingModal';
 import UserProfileModal from './components/UserProfileModal';
 import { diagnoseAndHealError } from './services/aiErrorHealer';
 import { executeInBrowserNode } from './services/clientNodeRunner';
+import { evaluateSqlLocally } from './services/clientSqlRunner';
 import { recordExecutionTelemetry } from './services/liveLeaderboardService';
+
+// Lazy-load heavy modals and simulation panes to slash initial 4G mobile load
+const AlgorithmModal = lazy(() => import('./components/AlgorithmModal'));
+const AiExplainerModal = lazy(() => import('./components/AiExplainerModal'));
+const CpTestCaseWorkbench = lazy(() => import('./components/CpTestCaseWorkbench'));
+const MemoryArrayVisualizer = lazy(() => import('./components/MemoryArrayVisualizer'));
+const RecursionVisualizer = lazy(() => import('./components/RecursionVisualizer'));
+const CodeTranspilerModal = lazy(() => import('./components/CodeTranspilerModal'));
+const LabReportModal = lazy(() => import('./components/LabReportModal'));
+const CollegeModeModal = lazy(() => import('./components/CollegeModeModal'));
+const CollegeAdminPortal = lazy(() => import('./components/CollegeAdminPortal'));
+const ShareCodeModal = lazy(() => import('./components/ShareCodeModal'));
+const CommandPaletteModal = lazy(() => import('./components/CommandPaletteModal'));
+const AiErrorFixModal = lazy(() => import('./components/AiErrorFixModal'));
+const GitControlModal = lazy(() => import('./components/GitControlModal'));
+const LanguageMatrixModal = lazy(() => import('./components/LanguageMatrixModal'));
+const UniversalJudgeModal = lazy(() => import('./components/UniversalJudgeModal'));
+const SpeedCodingArenaModal = lazy(() => import('./components/SpeedCodingArenaModal'));
+const LeaderboardBadgesModal = lazy(() => import('./components/LeaderboardBadgesModal'));
+const FullStackWorkspaceModal = lazy(() => import('./components/FullStackWorkspaceModal'));
+const EmbeddedMiniBrowser = lazy(() => import('./components/EmbeddedMiniBrowser'));
+const EphemeralTerminalModal = lazy(() => import('./components/EphemeralTerminalModal'));
+const AiOneClickDebuggerModal = lazy(() => import('./components/AiOneClickDebuggerModal'));
+const ComplexityVisualizerModal = lazy(() => import('./components/ComplexityVisualizerModal'));
+const ServerlessDeploymentModal = lazy(() => import('./components/ServerlessDeploymentModal'));
+const AiSmartProctoringModal = lazy(() => import('./components/AiSmartProctoringModal'));
+const BatchGradingModal = lazy(() => import('./components/BatchGradingModal'));
+const VisualGuiPlotViewer = lazy(() => import('./components/VisualGuiPlotViewer'));
+const XRayDryRunPanel = lazy(() => import('./components/XRayDryRunPanel'));
 import { 
   initCompilerTelemetry, 
   updateTelemetryLanguage, 
@@ -61,8 +66,7 @@ import { ALL_LANGUAGES, STARTER_TEMPLATES, EXTENSION_MAP, getLanguageById } from
 import { evaluateMatlabLocally } from './services/clientMatlabRunner';
 import { evaluateJdbcLocally } from './services/clientJdbcRunner';
 import { createLiveRoomId, joinLiveWorkspace } from './services/liveCollabService';
-import VisualGuiPlotViewer from './components/VisualGuiPlotViewer';
-import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages, Monitor } from 'lucide-react';
+import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages, Monitor, Cpu, ExternalLink } from 'lucide-react';
 
 const STORAGE_FILES_KEY = 'elite_ide_workspace_files_v2';
 const STORAGE_ACTIVE_KEY = 'elite_ide_active_file_id_v2';
@@ -224,9 +228,13 @@ export default function App() {
     return true;
   });
 
+  const [isEmbedMode] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('embed') === '1'; } catch { return false; }
+  });
   const [isAlgorithmModalOpen, setIsAlgorithmModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(() => getUserProfile());
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('embed') === '1') return false;
     const existing = getUserProfile();
     return !isProfileRegistered(existing);
   });
@@ -242,12 +250,12 @@ export default function App() {
     } catch (e) {}
   }, []);
 
-  // Enforce profile registration gate on launch: keep open until validly registered
+  // Enforce profile registration gate on launch: keep open until validly registered (skipped only in ?embed=1 widget)
   useEffect(() => {
-    if (!isProfileRegistered(userProfile)) {
+    if (!isEmbedMode && !isProfileRegistered(userProfile)) {
       setIsProfileModalOpen(true);
     }
-  }, [userProfile]);
+  }, [userProfile, isEmbedMode]);
   const [fontSize, setFontSize] = useState(14);
   const [rightPaneView, setRightPaneView] = useState('console'); // 'console' | 'graphical' | 'preview'
   const [selectedLine, setSelectedLine] = useState(null);
@@ -735,6 +743,18 @@ export default function App() {
         setTerminalEntries([
           { type: 'system', text: `🌐 [Live Workspace Joined]: Connecting to room "${liveParam}" and syncing latest buffer...\n` }
         ]);
+      } else if (sharedLang && STARTER_TEMPLATES[sharedLang]) {
+        const lang = sharedLang;
+        const langInfo = getLanguageById(lang);
+        const ext = (langInfo?.extension || 'txt').replace(/^\./, '');
+        const fileName = sharedName || `${lang === 'java' ? 'Main' : 'main'}.${ext}`;
+        const newFileId = 'file-lang-' + Date.now();
+        setFiles(prev => [
+          { id: newFileId, name: fileName, code: STARTER_TEMPLATES[lang], language: lang, isModified: false },
+          ...prev.filter((f) => Boolean(f.isModified) && f.name !== fileName)
+        ]);
+        setActiveFileId(newFileId);
+        setManualLanguage(lang);
       }
     } catch (err) {
       console.warn('Shared link parser error:', err);
@@ -1418,6 +1438,37 @@ export default function App() {
         } catch (jdbcErr) {
           console.warn('Local JDBC runner fallback to Cloud:', jdbcErr);
         }
+      }
+
+      // 1.9 Client-side Instant In-Browser Relational SQL Engine (<5ms)
+      if (lang === 'sql' || lang === 'sqlite' || lang === 'mysql' || lang === 'postgres' || lang === 'postgresql') {
+        const sqlResult = evaluateSqlLocally(codeToRun);
+        setTerminalEntries([
+          { type: 'cmd', text: `sqlite3 :memory: < ${activeFile?.name || 'query.sql'}` },
+          ...(sqlResult.stdout ? [{ type: 'stdout', text: sqlResult.stdout }] : []),
+          ...(sqlResult.stderr ? [{ type: 'stderr', text: sqlResult.stderr }] : []),
+          {
+            type: 'process-exit',
+            exitCode: sqlResult.code || 0,
+            time: sqlResult.executionTime || 2,
+            runner: sqlResult.runner
+          }
+        ]);
+        setLastStats(sqlResult);
+        setIsRunning(false);
+        liveControllerRef.current?.broadcastRunOutput(sqlResult, lang);
+        try {
+          logCompilerRun({
+            language: lang,
+            success: sqlResult.code === 0,
+            code: codeToRun,
+            executionTime: sqlResult.executionTime || 2,
+            errorMessage: sqlResult.stderr || '',
+            runner: sqlResult.runner,
+            collegeData: collegeStudentInfo
+          });
+        } catch (e) {}
+        return;
       }
 
       // 2. Client-side Node.js / JavaScript Virtual Engine (Strategy 1)
@@ -2369,7 +2420,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''} ${isResizingSplit ? 'is-resizing-split' : ''}`}>
+    <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''} ${isResizingSplit ? 'is-resizing-split' : ''} ${isEmbedMode ? 'embed-widget-mode' : ''}`}>
       {/* Ambient Liquid-Glass Aura Layer */}
       <div className="ide-ambient-aura" aria-hidden="true" />
 
@@ -2429,10 +2480,38 @@ export default function App() {
         />
       )}
 
+      {/* Embed Widget Banner when rendered inside an external blog/course iframe (?embed=1) */}
+      {isEmbedMode && (
+        <div
+          className="embed-widget-topbar"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '5px 12px',
+            background: 'rgba(10, 15, 29, 0.94)',
+            borderBottom: '1px solid rgba(56, 189, 248, 0.25)',
+            fontSize: '0.75rem',
+            color: '#94a3b8'
+          }}
+        >
+          <span>⚡ Powered by <strong style={{ color: '#38bdf8' }}>Elite IDE</strong> ({activeLanguage.toUpperCase()})</span>
+          <a
+            href={window.location.href.replace(/[?&]embed=1/, '')}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#34d399', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
+          >
+            <span>Open Full Studio</span>
+            <ExternalLink size={12} />
+          </a>
+        </div>
+      )}
+
       {/* Main Workspace: Split Pane on Desktop, Tabbed Switcher on Mobile */}
       <main className="ide-workspace">
-        {/* Desktop VS Code-Grade Activity Bar */}
-        {!isMobile && (
+        {/* Desktop VS Code-Grade Activity Bar (Hidden in Embed Widget mode) */}
+        {!isMobile && !isEmbedMode && (
           <ActivityBar
             isSidebarOpen={isSidebarOpen}
             onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
@@ -2462,19 +2541,21 @@ export default function App() {
           />
         )}
 
-        {/* Workspace Files Sidebar (Drawer overlay on Mobile, Left pane on Desktop) */}
-        <FileSidebar
-          files={files}
-          activeFileId={activeFileId}
-          onSelectFile={handleSelectFile}
-          onCreateFile={handleCreateFile}
-          onCloseFile={handleCloseFile}
-          onRenameFile={handleRenameFile}
-          onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
-          isOpen={isSidebarOpen}
-          onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
-          isMobile={isMobile}
-        />
+        {/* Workspace Files Sidebar (Hidden in compact Embed Widget mode) */}
+        {!isEmbedMode && (
+          <FileSidebar
+            files={files}
+            activeFileId={activeFileId}
+            onSelectFile={handleSelectFile}
+            onCreateFile={handleCreateFile}
+            onCloseFile={handleCloseFile}
+            onRenameFile={handleRenameFile}
+            onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
+            isOpen={isSidebarOpen}
+            onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+            isMobile={isMobile}
+          />
+        )}
 
         {/* Editor & Right Output Resizable Panes Container */}
         <div className="ide-panes-container" ref={panesContainerRef}>
@@ -2550,6 +2631,16 @@ export default function App() {
                   {lastStats && (
                     <span className={`pill-badge ${lastStats.code === 0 ? 'success' : 'error'}`} />
                   )}
+                </button>
+
+                <button
+                  className={`view-mode-btn ${rightPaneView === 'xray' ? 'active' : ''}`}
+                  onClick={() => setRightPaneView('xray')}
+                  id="btn-view-xray"
+                  title="X-Ray Live Dry-Run Stepper & Auto Lab Viva Q&A"
+                >
+                  <Cpu size={14} className="text-emerald-400" />
+                  <span>X-Ray Trace</span>
                 </button>
 
                 <button
@@ -2681,55 +2772,65 @@ export default function App() {
               />
             )}
 
-            {rightPaneView === 'testcases' && (
-              <CpTestCaseWorkbench
-                code={activeFile.code}
-                language={activeLanguage}
-                onRunSingle={handleRunSingleTestCase}
-                isRunning={isRunning}
-                isMobile={isMobile}
-              />
-            )}
+            <Suspense fallback={<div style={{ padding: '18px', fontSize: '0.82rem', color: '#94a3b8' }}>Loading studio module...</div>}>
+              {rightPaneView === 'xray' && (
+                <XRayDryRunPanel
+                  code={activeFile.code}
+                  language={activeLanguage}
+                  onSelectLine={handleSelectLine}
+                />
+              )}
 
-            {rightPaneView === 'memory' && (
-              <MemoryArrayVisualizer
-                code={activeFile.code}
-                language={activeLanguage}
-                isMobile={isMobile}
-              />
-            )}
+              {rightPaneView === 'testcases' && (
+                <CpTestCaseWorkbench
+                  code={activeFile.code}
+                  language={activeLanguage}
+                  onRunSingle={handleRunSingleTestCase}
+                  isRunning={isRunning}
+                  isMobile={isMobile}
+                />
+              )}
 
-            {rightPaneView === 'recursion' && (
-              <RecursionVisualizer
-                code={activeFile.code}
-                language={activeLanguage}
-                onApplyCode={handleCodeChange}
-                isMobile={isMobile}
-              />
-            )}
+              {rightPaneView === 'memory' && (
+                <MemoryArrayVisualizer
+                  code={activeFile.code}
+                  language={activeLanguage}
+                  isMobile={isMobile}
+                />
+              )}
 
-            {rightPaneView === 'preview' && (
-              <EmbeddedMiniBrowser 
-                files={files} 
-                activeCode={activeFile.code} 
-                isRunning={isRunning} 
-              />
-            )}
+              {rightPaneView === 'recursion' && (
+                <RecursionVisualizer
+                  code={activeFile.code}
+                  language={activeLanguage}
+                  onApplyCode={handleCodeChange}
+                  isMobile={isMobile}
+                />
+              )}
 
-            {rightPaneView === 'gui' && (
-              <VisualGuiPlotViewer
-                code={activeFile ? activeFile.code : ''}
-                language={activeLanguage}
-                isMobile={isMobile}
-                onClose={() => {
-                  if (isMobile) {
-                    setMobileActiveTab('editor');
-                  } else {
-                    setRightPaneView('console');
-                  }
-                }}
-              />
-            )}
+              {rightPaneView === 'preview' && (
+                <EmbeddedMiniBrowser 
+                  files={files} 
+                  activeCode={activeFile.code} 
+                  isRunning={isRunning} 
+                />
+              )}
+
+              {rightPaneView === 'gui' && (
+                <VisualGuiPlotViewer
+                  code={activeFile ? activeFile.code : ''}
+                  language={activeLanguage}
+                  isMobile={isMobile}
+                  onClose={() => {
+                    if (isMobile) {
+                      setMobileActiveTab('editor');
+                    } else {
+                      setRightPaneView('console');
+                    }
+                  }}
+                />
+              )}
+            </Suspense>
           </div>
         </section>
         </div>
@@ -2767,6 +2868,15 @@ export default function App() {
             {lastStats && (
               <span className={`mobile-tab-dot ${lastStats.code === 0 ? 'success' : 'error'}`} />
             )}
+          </button>
+
+          <button
+            className={`mobile-tab-btn ${mobileActiveTab === 'xray' ? 'active' : ''}`}
+            onClick={() => { setMobileActiveTab('xray'); setRightPaneView('xray'); }}
+            id="mobile-tab-xray"
+          >
+            <Cpu size={16} />
+            <span>X-Ray</span>
           </button>
 
           <button
@@ -2828,94 +2938,104 @@ export default function App() {
         </nav>
       )}
 
-      {/* Algorithm & Data Structures Template Library Modal */}
-      <AlgorithmModal
-        isOpen={isAlgorithmModalOpen}
-        onClose={() => setIsAlgorithmModalOpen(false)}
-        onOpenInNewTab={handleOpenAlgorithmInNewTab}
-        onLoadIntoCurrent={handleLoadAlgorithmIntoCurrent}
-        currentLanguage={activeLanguage}
-      />
+      <Suspense fallback={null}>
+        {/* Algorithm & Data Structures Template Library Modal */}
+        {isAlgorithmModalOpen && (
+          <AlgorithmModal
+            isOpen={isAlgorithmModalOpen}
+            onClose={() => setIsAlgorithmModalOpen(false)}
+            onOpenInNewTab={handleOpenAlgorithmInNewTab}
+            onLoadIntoCurrent={handleLoadAlgorithmIntoCurrent}
+            currentLanguage={activeLanguage}
+          />
+        )}
 
-      {/* AI Code & Flow Intelligence Modal */}
-      <AiExplainerModal
-        isOpen={isAiModalOpen}
-        onClose={() => setIsAiModalOpen(false)}
-        code={activeFile.code}
-        language={activeLanguage}
-        onApplyOptimizedCode={handleCodeChange}
-        onSelectLine={handleSelectLine}
-      />
+        {/* AI Code & Flow Intelligence Modal */}
+        {isAiModalOpen && (
+          <AiExplainerModal
+            isOpen={isAiModalOpen}
+            onClose={() => setIsAiModalOpen(false)}
+            code={activeFile.code}
+            language={activeLanguage}
+            onApplyOptimizedCode={handleCodeChange}
+            onSelectLine={handleSelectLine}
+          />
+        )}
 
-      {/* University Lab Practical Report & Interview Record Modal */}
-      <LabReportModal
-        isOpen={isLabReportModalOpen}
-        onClose={() => setIsLabReportModalOpen(false)}
-        code={activeFile.code}
-        language={activeLanguage}
-        studentInfo={collegeStudentInfo}
-        terminalOutput={terminalEntries.map(e => e.text).join('')}
-        lastStats={lastStats}
-        activeFileName={activeFile.name}
-      />
+        {/* University Lab Practical Report & Interview Record Modal */}
+        {isLabReportModalOpen && (
+          <LabReportModal
+            isOpen={isLabReportModalOpen}
+            onClose={() => setIsLabReportModalOpen(false)}
+            code={activeFile.code}
+            language={activeLanguage}
+            studentInfo={collegeStudentInfo}
+            terminalOutput={terminalEntries.map(e => e.text).join('')}
+            lastStats={lastStats}
+            activeFileName={activeFile.name}
+          />
+        )}
 
-      {/* Polyglot Code Transpiler Modal */}
-      <CodeTranspilerModal
-        isOpen={isTranspilerModalOpen}
-        onClose={() => setIsTranspilerModalOpen(false)}
-        sourceCode={activeFile.code}
-        sourceLanguage={activeLanguage}
-        onApplyConvertedCode={(newCode, newLang) => {
-          const extMap = {
-            python: 'py', cpp: 'cpp', c: 'c', java: 'java', jdbc: 'java', javascript: 'js',
-            typescript: 'ts', rust: 'rs', go: 'go', csharp: 'cs', php: 'php',
-            ruby: 'rb', kotlin: 'kt', swift: 'swift', dart: 'dart', sql: 'sql'
-          };
-          const ext = extMap[newLang] || 'txt';
-          const parts = activeFile.name.split('.');
-          let base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
-          if (newLang === 'java' && base.toLowerCase() === 'main') base = 'Main';
-          const newName = `${base}.${ext}`;
+        {/* Polyglot Code Transpiler Modal */}
+        {isTranspilerModalOpen && (
+          <CodeTranspilerModal
+            isOpen={isTranspilerModalOpen}
+            onClose={() => setIsTranspilerModalOpen(false)}
+            sourceCode={activeFile.code}
+            sourceLanguage={activeLanguage}
+            onApplyConvertedCode={(newCode, newLang) => {
+              const extMap = {
+                python: 'py', cpp: 'cpp', c: 'c', java: 'java', jdbc: 'java', javascript: 'js',
+                typescript: 'ts', rust: 'rs', go: 'go', csharp: 'cs', php: 'php',
+                ruby: 'rb', kotlin: 'kt', swift: 'swift', dart: 'dart', sql: 'sql'
+              };
+              const ext = extMap[newLang] || 'txt';
+              const parts = activeFile.name.split('.');
+              let base = parts.length > 1 ? parts.slice(0, -1).join('.') : parts[0];
+              if (newLang === 'java' && base.toLowerCase() === 'main') base = 'Main';
+              const newName = `${base}.${ext}`;
 
-          setManualLanguage(newLang);
-          setFiles(prev => prev.map(f => f.id === activeFileId ? {
-            ...f,
-            name: newName,
-            language: newLang,
-            code: newCode
-          } : f));
+              setManualLanguage(newLang);
+              setFiles(prev => prev.map(f => f.id === activeFileId ? {
+                ...f,
+                name: newName,
+                language: newLang,
+                code: newCode
+              } : f));
 
-          if (editorInstanceRef.current) {
-            editorInstanceRef.current.setValue(newCode);
-          }
-        }}
-      />
+              if (editorInstanceRef.current) {
+                editorInstanceRef.current.setValue(newCode);
+              }
+            }}
+          />
+        )}
 
-      {/* College Exam Mode Setup / PIN Exit / Security Lockdown Modal */}
-      <CollegeModeModal
-        isOpen={collegeModalState.isOpen}
-        mode={collegeModalState.mode}
-        onClose={() => setCollegeModalState({ isOpen: false, mode: 'setup' })}
-        onActivateCollegeMode={handleActivateCollegeMode}
-        onDeactivateCollegeMode={handleDeactivateCollegeMode}
-        onOpenAdminPortal={() => {
-          setCollegeModalState({ isOpen: false, mode: 'setup' });
-          handleOpenCollegeAdmin();
-        }}
-        currentPin={collegePin}
-        violationsCount={collegeViolations}
-        studentInfo={collegeStudentInfo}
-        examDuration={collegeStartTime ? Math.floor((Date.now() - collegeStartTime) / 1000) : 0}
-        code={activeFile.code}
-      />
+        {/* College Exam Mode Setup / PIN Exit / Security Lockdown Modal */}
+        <CollegeModeModal
+          isOpen={collegeModalState.isOpen}
+          mode={collegeModalState.mode}
+          onClose={() => setCollegeModalState({ isOpen: false, mode: 'setup' })}
+          onActivateCollegeMode={handleActivateCollegeMode}
+          onDeactivateCollegeMode={handleDeactivateCollegeMode}
+          onOpenAdminPortal={() => {
+            setCollegeModalState({ isOpen: false, mode: 'setup' });
+            handleOpenCollegeAdmin();
+          }}
+          currentPin={collegePin}
+          violationsCount={collegeViolations}
+          studentInfo={collegeStudentInfo}
+          examDuration={collegeStartTime ? Math.floor((Date.now() - collegeStartTime) / 1000) : 0}
+          code={activeFile.code}
+        />
 
-      {/* Separate College Admin Portal */}
-      <CollegeAdminPortal
-        isOpen={isCollegeAdminPortalOpen}
-        onClose={handleCloseCollegeAdmin}
-        onLockSystemFromPortal={(config) => handleActivateCollegeMode(config)}
-        onUnlockSystemFromPortal={() => handleDeactivateCollegeMode()}
-      />
+        {/* Separate College Admin Portal */}
+        <CollegeAdminPortal
+          isOpen={isCollegeAdminPortalOpen}
+          onClose={handleCloseCollegeAdmin}
+          onLockSystemFromPortal={(config) => handleActivateCollegeMode(config)}
+          onUnlockSystemFromPortal={() => handleDeactivateCollegeMode()}
+        />
+      </Suspense>
 
       {/* Strict System Locked Overlay (Only PIN Text and Accept Button) */}
       <SystemLockedOverlay
@@ -2960,99 +3080,109 @@ export default function App() {
         </div>
       )}
 
-      {/* Share Code Modal */}
-      <ShareCodeModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        code={activeFile.code}
-        language={activeLanguage}
-        fileName={activeFile.name}
-        isLiveMode={Boolean(liveRoomId)}
-        liveRoomId={liveRoomId}
-        liveStatus={liveStatus}
-        livePeers={livePeers}
-        onToggleLiveMode={handleToggleLiveMode}
-        onEndLiveSession={() => handleToggleLiveMode(false)}
-      />
+      <Suspense fallback={null}>
+        {/* Share Code Modal */}
+        {isShareModalOpen && (
+          <ShareCodeModal
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+            code={activeFile.code}
+            language={activeLanguage}
+            fileName={activeFile.name}
+            isLiveMode={Boolean(liveRoomId)}
+            liveRoomId={liveRoomId}
+            liveStatus={liveStatus}
+            livePeers={livePeers}
+            onToggleLiveMode={handleToggleLiveMode}
+            onEndLiveSession={() => handleToggleLiveMode(false)}
+          />
+        )}
 
-      {/* VS Code-Style Command Palette */}
-      <CommandPaletteModal
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        onRun={handleRun}
-        onClearConsole={handleClearConsole}
-        onFormatCode={handleFormatCode}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
-        onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
-        onOpenAiExplainer={() => setIsAiModalOpen(true)}
-        onOpenLabReport={() => setIsLabReportModalOpen(true)}
-        onOpenTranspiler={() => setIsTranspilerModalOpen(true)}
-        onOpenCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'setup' })}
-        onOpenShareCode={() => setIsShareModalOpen(true)}
-        onChangeRightPaneView={(view) => setRightPaneView(view)}
-        onSelectLanguage={handleLanguageChange}
-        onDownloadCode={handleDownloadCode}
-      />
+        {/* VS Code-Style Command Palette */}
+        {isCommandPaletteOpen && (
+          <CommandPaletteModal
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+            onRun={handleRun}
+            onClearConsole={handleClearConsole}
+            onFormatCode={handleFormatCode}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
+            onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
+            onOpenAiExplainer={() => setIsAiModalOpen(true)}
+            onOpenLabReport={() => setIsLabReportModalOpen(true)}
+            onOpenTranspiler={() => setIsTranspilerModalOpen(true)}
+            onOpenCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'setup' })}
+            onOpenShareCode={() => setIsShareModalOpen(true)}
+            onChangeRightPaneView={(view) => setRightPaneView(view)}
+            onSelectLanguage={handleLanguageChange}
+            onDownloadCode={handleDownloadCode}
+          />
+        )}
 
-      {/* AI-Powered One-Click Fix Debugger & Code Doctor Modal */}
-      <AiOneClickDebuggerModal
-        isOpen={isAiHealerModalOpen}
-        onClose={() => setIsAiHealerModalOpen(false)}
-        healingData={aiHealingData}
-        code={activeFile ? activeFile.code : ''}
-        language={activeFile ? activeFile.language : manualLanguage}
-        stderr={terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '')}
-        stdout={terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n')}
-        lastStats={lastStats}
-        onApplyFix={(fixedCode) => {
-          if (!fixedCode || !activeFile) return;
-          handleCodeChange(fixedCode);
-          if (editorInstanceRef.current) {
-            editorInstanceRef.current.setValue(fixedCode);
-          }
-          setTerminalEntries(prev => [
-            ...prev,
-            { type: 'system', text: '\n✨ [AI One-Click Fix]: Clean AST repaired patch applied to editor!\n' }
-          ]);
-        }}
-        onApplyAndRun={(fixedCode) => {
-          if (!fixedCode || !activeFile) return;
-          handleCodeChange(fixedCode);
-          if (editorInstanceRef.current) {
-            editorInstanceRef.current.setValue(fixedCode);
-          }
-          setTerminalEntries(prev => [
-            ...prev,
-            { type: 'system', text: '\n⚡ [AI One-Click Fix]: Applied patch! Re-running code pipeline...\n' }
-          ]);
-          setTimeout(() => {
-            handleRun();
-          }, 150);
-        }}
-      />
+        {/* AI-Powered One-Click Fix Debugger & Code Doctor Modal */}
+        {isAiHealerModalOpen && (
+          <AiOneClickDebuggerModal
+            isOpen={isAiHealerModalOpen}
+            onClose={() => setIsAiHealerModalOpen(false)}
+            healingData={aiHealingData}
+            code={activeFile ? activeFile.code : ''}
+            language={activeFile ? activeFile.language : manualLanguage}
+            stderr={terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '')}
+            stdout={terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n')}
+            lastStats={lastStats}
+            onApplyFix={(fixedCode) => {
+              if (!fixedCode || !activeFile) return;
+              handleCodeChange(fixedCode);
+              if (editorInstanceRef.current) {
+                editorInstanceRef.current.setValue(fixedCode);
+              }
+              setTerminalEntries(prev => [
+                ...prev,
+                { type: 'system', text: '\n✨ [AI One-Click Fix]: Clean AST repaired patch applied to editor!\n' }
+              ]);
+            }}
+            onApplyAndRun={(fixedCode) => {
+              if (!fixedCode || !activeFile) return;
+              handleCodeChange(fixedCode);
+              if (editorInstanceRef.current) {
+                editorInstanceRef.current.setValue(fixedCode);
+              }
+              setTerminalEntries(prev => [
+                ...prev,
+                { type: 'system', text: '\n⚡ [AI One-Click Fix]: Applied patch! Re-running code pipeline...\n' }
+              ]);
+              setTimeout(() => {
+                handleRun();
+              }, 150);
+            }}
+          />
+        )}
 
-      {/* GitHub Version Control & Codespaces Modal */}
-      <GitControlModal
-        isOpen={isGitModalOpen}
-        onClose={() => setIsGitModalOpen(false)}
-        files={files}
-        activeFile={activeFile}
-        onUpdateFileCode={(code) => handleCodeChange(code)}
-        onAddFiles={(newFiles) => {
-          if (!newFiles || !newFiles.length) return;
-          setFiles(prev => [...prev, ...newFiles]);
-          setActiveFileId(newFiles[0].id);
-          setTerminalEntries(prev => [
-            ...prev,
-            { type: 'system', text: `\n[Git Engine]: Cloned ${newFiles.length} file(s) into workspace successfully!\n` }
-          ]);
-        }}
-      />
+        {/* GitHub Version Control & Codespaces Modal */}
+        {isGitModalOpen && (
+          <GitControlModal
+            isOpen={isGitModalOpen}
+            onClose={() => setIsGitModalOpen(false)}
+            files={files}
+            activeFile={activeFile}
+            onUpdateFileCode={(code) => handleCodeChange(code)}
+            onAddFiles={(newFiles) => {
+              if (!newFiles || !newFiles.length) return;
+              setFiles(prev => [...prev, ...newFiles]);
+              setActiveFileId(newFiles[0].id);
+              setTerminalEntries(prev => [
+                ...prev,
+                { type: 'system', text: `\n[Git Engine]: Cloned ${newFiles.length} file(s) into workspace successfully!\n` }
+              ]);
+            }}
+          />
+        )}
+      </Suspense>
 
-      {/* Desktop Professional Status Bar */}
-      {!isMobile && (
+      {/* Desktop Professional Status Bar (Hidden in Embed Widget mode) */}
+      {!isMobile && !isEmbedMode && (
         <StatusBar
           cursorLine={cursorPos.line}
           cursorCol={cursorPos.col}
@@ -3077,112 +3207,134 @@ export default function App() {
         />
       )}
 
-      {/* Universal 116+ Languages & Compiler Hub Modal */}
-      <LanguageMatrixModal
-        isOpen={isLanguageModalOpen}
-        onClose={() => setIsLanguageModalOpen(false)}
-        currentLanguage={activeLanguage}
-        onSelectLanguage={handleLanguageChange}
-      />
+      <Suspense fallback={null}>
+        {/* Universal 116+ Languages & Compiler Hub Modal */}
+        {isLanguageModalOpen && (
+          <LanguageMatrixModal
+            isOpen={isLanguageModalOpen}
+            onClose={() => setIsLanguageModalOpen(false)}
+            currentLanguage={activeLanguage}
+            onSelectLanguage={handleLanguageChange}
+          />
+        )}
 
-      {/* S-Tier 1: Universal Virtual Judge (OJ System) */}
-      <UniversalJudgeModal
-        isOpen={isUniversalJudgeOpen}
-        onClose={() => setIsUniversalJudgeOpen(false)}
-        activeLanguage={activeLanguage}
-        currentCode={activeFile.code}
-        onLoadProblemIntoEditor={({ code, language, problem }) => {
-          if (!activeFile) return;
-          handleCodeChange(code);
-          if (editorInstanceRef.current) {
-            editorInstanceRef.current.setValue(code);
-          }
-          if (language && language !== manualLanguage) {
-            setManualLanguage(language);
-          }
-          setRightPaneView('testcases');
-          setTerminalEntries(prev => [
-            ...prev,
-            { type: 'system', text: `\n✨ [Virtual Judge]: Problem "${problem.title}" (${problem.platformName}) loaded into editor.\n` }
-          ]);
-        }}
-      />
+        {/* S-Tier 1: Universal Virtual Judge (OJ System) */}
+        {isUniversalJudgeOpen && (
+          <UniversalJudgeModal
+            isOpen={isUniversalJudgeOpen}
+            onClose={() => setIsUniversalJudgeOpen(false)}
+            activeLanguage={activeLanguage}
+            currentCode={activeFile.code}
+            onLoadProblemIntoEditor={({ code, language, problem }) => {
+              if (!activeFile) return;
+              handleCodeChange(code);
+              if (editorInstanceRef.current) {
+                editorInstanceRef.current.setValue(code);
+              }
+              if (language && language !== manualLanguage) {
+                setManualLanguage(language);
+              }
+              setRightPaneView('testcases');
+              setTerminalEntries(prev => [
+                ...prev,
+                { type: 'system', text: `\n✨ [Virtual Judge]: Problem "${problem.title}" (${problem.platformName}) loaded into editor.\n` }
+              ]);
+            }}
+          />
+        )}
 
-      {/* S-Tier 1: 1v1 Speed Coding Arenas */}
-      <SpeedCodingArenaModal
-        isOpen={isSpeedArenaOpen}
-        onClose={() => setIsSpeedArenaOpen(false)}
-        activeLanguage={activeLanguage}
-      />
+        {/* S-Tier 1: 1v1 Speed Coding Arenas */}
+        {isSpeedArenaOpen && (
+          <SpeedCodingArenaModal
+            isOpen={isSpeedArenaOpen}
+            onClose={() => setIsSpeedArenaOpen(false)}
+            activeLanguage={activeLanguage}
+          />
+        )}
 
-      {/* S-Tier 1: Global Leaderboards, Streaks & Coding Badges */}
-      <LeaderboardBadgesModal
-        isOpen={isLeaderboardBadgesOpen}
-        onClose={() => setIsLeaderboardBadgesOpen(false)}
-      />
+        {/* S-Tier 1: Global Leaderboards, Streaks & Coding Badges */}
+        {isLeaderboardBadgesOpen && (
+          <LeaderboardBadgesModal
+            isOpen={isLeaderboardBadgesOpen}
+            onClose={() => setIsLeaderboardBadgesOpen(false)}
+          />
+        )}
 
-      {/* S-Tier 2: Full-Stack Cloud Workspace Architectures */}
-      <FullStackWorkspaceModal
-        isOpen={isFullStackWorkspaceOpen}
-        onClose={() => setIsFullStackWorkspaceOpen(false)}
-        onApplyWorkspaceFiles={(newFiles) => {
-          if (!newFiles || !newFiles.length) return;
-          setFiles(newFiles);
-          setActiveFileId(newFiles[0].id);
-          const lang = newFiles[0].language || 'javascript';
-          setManualLanguage(lang);
-          setRightPaneView('preview');
-          setTerminalEntries(prev => [
-            ...prev,
-            { type: 'system', text: `\n🚀 [Full-Stack Sandbox Initialized]: Loaded ${newFiles.length} workspace files. Hot-reload preview online.\n` }
-          ]);
-        }}
-      />
+        {/* S-Tier 2: Full-Stack Cloud Workspace Architectures */}
+        {isFullStackWorkspaceOpen && (
+          <FullStackWorkspaceModal
+            isOpen={isFullStackWorkspaceOpen}
+            onClose={() => setIsFullStackWorkspaceOpen(false)}
+            onApplyWorkspaceFiles={(newFiles) => {
+              if (!newFiles || !newFiles.length) return;
+              setFiles(newFiles);
+              setActiveFileId(newFiles[0].id);
+              const lang = newFiles[0].language || 'javascript';
+              setManualLanguage(lang);
+              setRightPaneView('preview');
+              setTerminalEntries(prev => [
+                ...prev,
+                { type: 'system', text: `\n🚀 [Full-Stack Sandbox Initialized]: Loaded ${newFiles.length} workspace files. Hot-reload preview online.\n` }
+              ]);
+            }}
+          />
+        )}
 
-      {/* S-Tier 2: Ephemeral Web Terminal */}
-      <EphemeralTerminalModal
-        isOpen={isEphemeralTerminalOpen}
-        onClose={() => setIsEphemeralTerminalOpen(false)}
-        files={files}
-        onCreateFileFromTerminal={(fileName) => {
-          handleCreateFile('file');
-        }}
-        onRunDevServer={() => {
-          setRightPaneView('preview');
-        }}
-      />
+        {/* S-Tier 2: Ephemeral Web Terminal */}
+        {isEphemeralTerminalOpen && (
+          <EphemeralTerminalModal
+            isOpen={isEphemeralTerminalOpen}
+            onClose={() => setIsEphemeralTerminalOpen(false)}
+            files={files}
+            onCreateFileFromTerminal={(fileName) => {
+              handleCreateFile('file');
+            }}
+            onRunDevServer={() => {
+              setRightPaneView('preview');
+            }}
+          />
+        )}
 
-      {/* S-Tier 3: Time & Space Complexity Visualizer */}
-      <ComplexityVisualizerModal
-        isOpen={isComplexityVisualizerOpen}
-        onClose={() => setIsComplexityVisualizerOpen(false)}
-        code={activeFile.code}
-        language={activeLanguage}
-      />
+        {/* S-Tier 3: Time & Space Complexity Visualizer */}
+        {isComplexityVisualizerOpen && (
+          <ComplexityVisualizerModal
+            isOpen={isComplexityVisualizerOpen}
+            onClose={() => setIsComplexityVisualizerOpen(false)}
+            code={activeFile.code}
+            language={activeLanguage}
+          />
+        )}
 
-      {/* S-Tier 3: One-Click Serverless Deployment */}
-      <ServerlessDeploymentModal
-        isOpen={isServerlessDeployOpen}
-        onClose={() => setIsServerlessDeployOpen(false)}
-        files={files}
-      />
+        {/* S-Tier 3: One-Click Serverless Deployment */}
+        {isServerlessDeployOpen && (
+          <ServerlessDeploymentModal
+            isOpen={isServerlessDeployOpen}
+            onClose={() => setIsServerlessDeployOpen(false)}
+            files={files}
+          />
+        )}
 
-      {/* S-Tier 4: AI Smart Proctoring Hub */}
-      <AiSmartProctoringModal
-        isOpen={isSmartProctoringOpen}
-        onClose={() => setIsSmartProctoringOpen(false)}
-        violationsCount={collegeViolations}
-        isCollegeMode={isCollegeMode}
-        onViolationOccurred={(count) => {
-          setCollegeViolations(count);
-        }}
-      />
+        {/* S-Tier 4: AI Smart Proctoring Hub */}
+        {isSmartProctoringOpen && (
+          <AiSmartProctoringModal
+            isOpen={isSmartProctoringOpen}
+            onClose={() => setIsSmartProctoringOpen(false)}
+            violationsCount={collegeViolations}
+            isCollegeMode={isCollegeMode}
+            onViolationOccurred={(count) => {
+              setCollegeViolations(count);
+            }}
+          />
+        )}
 
-      {/* S-Tier 4: Automated Batch Grading Engine */}
-      <BatchGradingModal
-        isOpen={isBatchGradingOpen}
-        onClose={() => setIsBatchGradingOpen(false)}
-      />
+        {/* S-Tier 4: Automated Batch Grading Engine */}
+        {isBatchGradingOpen && (
+          <BatchGradingModal
+            isOpen={isBatchGradingOpen}
+            onClose={() => setIsBatchGradingOpen(false)}
+          />
+        )}
+      </Suspense>
 
       {/* Developer Profile Modal (Name, Mobile, Email) - Access Gatekeeper */}
       <UserProfileModal

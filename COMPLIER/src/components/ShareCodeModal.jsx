@@ -28,6 +28,7 @@ export default function ShareCodeModal({
   onEndLiveSession
 }) {
   const [copied, setCopied] = useState(false);
+  const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
 
   useEffect(() => {
@@ -356,7 +357,8 @@ export default function ShareCodeModal({
             color: '#94a3b8',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '8px',
+            marginBottom: '12px'
           }}>
             <Sparkles size={16} color={isLiveMode ? '#34d399' : '#38bdf8'} style={{ flexShrink: 0 }} />
             <span>
@@ -364,6 +366,58 @@ export default function ShareCodeModal({
                 ? 'Live Mode keeps your code, language selection, cursor positions, and run results synchronized across all joined browsers & phones!'
                 : 'Anyone with this link opens Elite IDE with a copy of your code ready to run.'}
             </span>
+          </div>
+
+          {/* Embeddable Widget Snippet for Blogs / Notes / College Portals */}
+          <div style={{
+            background: 'rgba(10, 16, 32, 0.72)',
+            border: '1px solid rgba(148, 163, 184, 0.2)',
+            borderRadius: '10px',
+            padding: '10px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px'
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Code2 size={14} color="#38bdf8" />
+                <span>Embed Widget (&lt;iframe&gt;) for Blogs &amp; Notes</span>
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>
+                Drop runnable Elite IDE inside any portfolio, tutorial, or LMS page
+              </div>
+            </div>
+            <button
+              type="button"
+              id="copy-embed-widget-btn"
+              onClick={() => {
+                if (!shareUrl) return;
+                const u = new URL(shareUrl);
+                u.searchParams.set('embed', '1');
+                const htmlSnippet = `<iframe src="${u.toString()}" width="100%" height="520" style="border:1px solid rgba(56,189,248,0.3);border-radius:12px;" allow="clipboard-read; clipboard-write" loading="lazy"></iframe>`;
+                navigator.clipboard.writeText(htmlSnippet);
+                setCopiedEmbed(true);
+                setTimeout(() => setCopiedEmbed(false), 1800);
+              }}
+              style={{
+                background: copiedEmbed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(56, 189, 248, 0.14)',
+                border: copiedEmbed ? '1px solid rgba(52, 211, 153, 0.45)' : '1px solid rgba(56, 189, 248, 0.35)',
+                color: copiedEmbed ? '#6ee7b7' : '#38bdf8',
+                borderRadius: '8px',
+                padding: '7px 11px',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+            >
+              {copiedEmbed ? <Check size={13} /> : <Copy size={13} />}
+              <span>{copiedEmbed ? 'Embed Copied' : 'Copy Embed'}</span>
+            </button>
           </div>
         </div>
 

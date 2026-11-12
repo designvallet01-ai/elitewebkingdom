@@ -1,22 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-  
-  <!-- Elite IDE - Professional Online Compiler & Developer Studio -->
+
+  <!-- Elite IDE - India's #1 Free Online Compiler & Live Collaborative Studio -->
   <url>
     <loc>https://www.elitewebkingdom.in/compiler/</loc>
-    <lastmod>2026-10-24</lastmod>
+    <lastmod>2026-11-12</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://www.elitewebkingdom.in/compiler/icon-512.png</image:loc>
       <image:title>Elite IDE - High Performance Online Compiler and Developer Studio</image:title>
-      <image:caption>Online compiler supporting 116+ programming languages by Elite Web Kingdom</image:caption>
+      <image:caption>Online compiler supporting 116+ programming languages with Live Collaborative Workspace and X-Ray Dry Run Tracer</image:caption>
     </image:image>
     <image:image>
       <image:loc>https://www.elitewebkingdom.in/compiler/og-image.png</image:loc>
       <image:title>Elite IDE Studio Workspace</image:title>
-      <image:caption>Monaco code editor with sub-second compilation, interactive stdin terminal and exam kiosk</image:caption>
+      <image:caption>Monaco code editor with sub-second compilation, interactive stdin terminal, X-Ray tracer and college lab kiosk</image:caption>
     </image:image>
   </url>
+
+  <url><loc>https://www.elitewebkingdom.in/compiler/python/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/java/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/cpp/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/c/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/sql/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/jdbc/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/javascript/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/typescript/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/rust/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://www.elitewebkingdom.in/compiler/go/</loc><lastmod>2026-11-12</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
 </urlset>

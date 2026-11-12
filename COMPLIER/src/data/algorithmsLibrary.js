@@ -3,6 +3,8 @@
 
 export const ALGORITHM_CATEGORIES = [
   { id: 'all', label: 'All Templates' },
+  { id: 'placement', label: '🏢 TCS NQT / Placements' },
+  { id: 'unilab', label: '🎓 B.Tech / University Lab' },
   { id: 'ds', label: 'Data Structures' },
   { id: 'algorithms', label: 'Algorithms' },
   { id: 'cp', label: 'Competitive Programming' },
@@ -1472,6 +1474,257 @@ int main() {
 `,
       javascript: `// JavaScript Transaction Reference
 console.log("Transactions ensure ACID properties in relational databases.");
+`
+    }
+  },
+  // TCS NQT / Infosys / Wipro Placement Classics
+  {
+    id: 'tcs_kadane_max_subarray',
+    title: 'Kadane\'s Max Subarray (TCS NQT / Infosys)',
+    category: 'placement',
+    tags: ['TCS NQT', 'Array', 'DP', 'Placement'],
+    difficulty: 'Easy',
+    timeComplexity: 'O(N)',
+    spaceComplexity: 'O(1)',
+    description: 'Most asked TCS NQT & Infosys coding problem: find maximum contiguous subarray sum in linear O(N) time.',
+    code: {
+      python: `# TCS NQT / Placement Classic: Kadane's Algorithm
+nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+max_sum = nums[0]
+curr_sum = 0
+
+for x in nums:
+    curr_sum = max(x, curr_sum + x)
+    max_sum = max(max_sum, curr_sum)
+
+print("Array:", nums)
+print("Maximum Subarray Sum:", max_sum)
+`,
+      cpp: `#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    vector<int> nums = {-2, 1, -3, 4, -1, 2, 1, -5, 4};
+    int maxSum = nums[0], currSum = 0;
+    for (int x : nums) {
+        currSum = max(x, currSum + x);
+        maxSum = max(maxSum, currSum);
+    }
+    cout << "Maximum Subarray Sum: " << maxSum << endl;
+    return 0;
+}
+`,
+      java: `public class Main {
+    public static void main(String[] args) {
+        int[] nums = {-2, 1, -3, 4, -1, 2, 1, -5, 4};
+        int maxSum = nums[0], currSum = 0;
+        for (int x : nums) {
+            currSum = Math.max(x, currSum + x);
+            maxSum = Math.max(maxSum, currSum);
+        }
+        System.out.println("Maximum Subarray Sum: " + maxSum);
+    }
+}
+`,
+      javascript: `const nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+let maxSum = nums[0], currSum = 0;
+for (const x of nums) {
+  currSum = Math.max(x, currSum + x);
+  maxSum = Math.max(maxSum, currSum);
+}
+console.log("Maximum Subarray Sum:", maxSum);
+`
+    }
+  },
+  {
+    id: 'wipro_two_sum_hash',
+    title: 'Two Sum Optimal HashMap (Wipro / Accenture)',
+    category: 'placement',
+    tags: ['Wipro', 'HashMap', 'Array', 'Interview'],
+    difficulty: 'Easy',
+    timeComplexity: 'O(N)',
+    spaceComplexity: 'O(N)',
+    description: 'Return indices of two numbers adding to target using HashMap lookup in O(N) instead of O(N^2).',
+    code: {
+      python: `nums = [2, 7, 11, 15]
+target = 9
+seen = {}
+
+for i, num in enumerate(nums):
+    need = target - num
+    if need in seen:
+        print(f"Pair indices: [{seen[need]}, {i}] -> ({nums[seen[need]]} + {num} = {target})")
+        break
+    seen[num] = i
+`,
+      cpp: `#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+int main() {
+    vector<int> nums = {2, 7, 11, 15};
+    int target = 9;
+    unordered_map<int, int> seen;
+    for (int i = 0; i < (int)nums.size(); i++) {
+        int need = target - nums[i];
+        if (seen.count(need)) {
+            cout << "Indices: " << seen[need] << ", " << i << endl;
+            break;
+        }
+        seen[nums[i]] = i;
+    }
+    return 0;
+}
+`,
+      java: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        int[] nums = {2, 7, 11, 15};
+        int target = 9;
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            int need = target - nums[i];
+            if (map.containsKey(need)) {
+                System.out.println("Indices: " + map.get(need) + ", " + i);
+                break;
+            }
+            map.put(nums[i], i);
+        }
+    }
+}
+`,
+      javascript: `const nums = [2, 7, 11, 15], target = 9;
+const seen = new Map();
+for (let i = 0; i < nums.length; i++) {
+  const need = target - nums[i];
+  if (seen.has(need)) {
+    console.log("Indices:", seen.get(need), i);
+    break;
+  }
+  seen.set(nums[i], i);
+}
+`
+    }
+  },
+  // B.Tech / VTU / JNTU Lab Pack
+  {
+    id: 'unilab_circular_queue',
+    title: 'Circular Queue Lab Program (JNTU / VTU / Anna Univ)',
+    category: 'unilab',
+    tags: ['DS Lab', 'Queue', 'JNTU', 'VTU'],
+    difficulty: 'Medium',
+    timeComplexity: 'O(1) enqueue/dequeue',
+    spaceComplexity: 'O(N)',
+    description: 'Standard B.Tech Data Structures Lab Circular Queue implementation with modulo wrap-around & overflow checks.',
+    code: {
+      python: `class CircularQueue:
+    def __init__(self, cap):
+        self.cap = cap
+        self.q = [None] * cap
+        self.front = self.rear = -1
+
+    def enqueue(self, val):
+        if (self.rear + 1) % self.cap == self.front:
+            print("Queue Overflow!")
+            return
+        if self.front == -1:
+            self.front = 0
+        self.rear = (self.rear + 1) % self.cap
+        self.q[self.rear] = val
+        print(f"Enqueued {val}")
+
+    def dequeue(self):
+        if self.front == -1:
+            print("Queue Underflow!")
+            return None
+        val = self.q[self.front]
+        if self.front == self.rear:
+            self.front = self.rear = -1
+        else:
+            self.front = (self.front + 1) % self.cap
+        print(f"Dequeued {val}")
+        return val
+
+cq = CircularQueue(4)
+cq.enqueue(10)
+cq.enqueue(20)
+cq.enqueue(30)
+cq.dequeue()
+cq.enqueue(40)
+cq.enqueue(50)
+`,
+      cpp: `#include <iostream>
+using namespace std;
+
+class CircularQueue {
+    int arr[5], front = -1, rear = -1, cap = 5;
+public:
+    void enqueue(int v) {
+        if ((rear + 1) % cap == front) { cout << "Overflow\\n"; return; }
+        if (front == -1) front = 0;
+        rear = (rear + 1) % cap;
+        arr[rear] = v;
+        cout << "Enqueued " << v << "\\n";
+    }
+    void dequeue() {
+        if (front == -1) { cout << "Underflow\\n"; return; }
+        cout << "Dequeued " << arr[front] << "\\n";
+        if (front == rear) front = rear = -1;
+        else front = (front + 1) % cap;
+    }
+};
+
+int main() {
+    CircularQueue cq;
+    cq.enqueue(10); cq.enqueue(20); cq.enqueue(30);
+    cq.dequeue(); cq.enqueue(40);
+    return 0;
+}
+`,
+      java: `public class Main {
+    static int[] q = new int[5];
+    static int front = -1, rear = -1, cap = 5;
+    static void enqueue(int v) {
+        if ((rear + 1) % cap == front) { System.out.println("Overflow"); return; }
+        if (front == -1) front = 0;
+        rear = (rear + 1) % cap;
+        q[rear] = v;
+        System.out.println("Enqueued " + v);
+    }
+    static void dequeue() {
+        if (front == -1) { System.out.println("Underflow"); return; }
+        System.out.println("Dequeued " + q[front]);
+        if (front == rear) front = rear = -1;
+        else front = (front + 1) % cap;
+    }
+    public static void main(String[] args) {
+        enqueue(10); enqueue(20); enqueue(30);
+        dequeue(); enqueue(40);
+    }
+}
+`,
+      javascript: `class CircularQueue {
+  constructor(cap = 5) { this.cap = cap; this.q = new Array(cap); this.front = -1; this.rear = -1; }
+  enqueue(v) {
+    if ((this.rear + 1) % this.cap === this.front) return console.log("Overflow");
+    if (this.front === -1) this.front = 0;
+    this.rear = (this.rear + 1) % this.cap;
+    this.q[this.rear] = v;
+    console.log("Enqueued", v);
+  }
+  dequeue() {
+    if (this.front === -1) return console.log("Underflow");
+    console.log("Dequeued", this.q[this.front]);
+    if (this.front === this.rear) this.front = this.rear = -1;
+    else this.front = (this.front + 1) % this.cap;
+  }
+}
+const cq = new CircularQueue(4);
+cq.enqueue(10); cq.enqueue(20); cq.dequeue(); cq.enqueue(30);
 `
     }
   }

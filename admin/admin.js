@@ -673,7 +673,7 @@ async function loadVisitorLogs(isManualRefresh = false) {
         .from('pageviews')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(1000);
 
       if (!error && Array.isArray(data)) {
         list = data;
@@ -962,6 +962,7 @@ window.filterVisitorsTable = function() {
   tbody.innerHTML = '';
 
   if (filtered.length === 0) {
+    window.adminTablePager?.clearBar('visitors-tbody');
     tbody.innerHTML = `
       <tr>
         <td colspan="7" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
@@ -976,7 +977,11 @@ window.filterVisitorsTable = function() {
     return;
   }
 
-  filtered.forEach(v => {
+  const pageItems = window.adminTablePager
+    ? window.adminTablePager.paginate('visitors', filtered, 'visitors-tbody', window.filterVisitorsTable, `${search}|${deviceFilter}|${timeFilter}|${fromVal}|${toVal}`)
+    : filtered;
+
+  pageItems.forEach(v => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>
@@ -1385,6 +1390,7 @@ window.filterLeadsTable = function() {
 
   leadsTbody.innerHTML = '';
   if (filtered.length === 0) {
+    window.adminTablePager?.clearBar('leads-tbody');
     leadsTbody.innerHTML = `
       <tr>
         <td colspan="6" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
@@ -1396,7 +1402,11 @@ window.filterLeadsTable = function() {
     return;
   }
 
-  filtered.forEach((l) => {
+  const pageItems = window.adminTablePager
+    ? window.adminTablePager.paginate('leads', filtered, 'leads-tbody', window.filterLeadsTable, `${search}|${categoryFilter}|${fromVal}|${toVal}`)
+    : filtered;
+
+  pageItems.forEach((l) => {
     const tr = document.createElement('tr');
     const companyLabel = l.company && l.company !== 'N/A' ? `<span style="font-size:0.75rem; color: var(--accent-cyan); display:block;">${l.company}</span>` : '';
     const origIndex = allLeads.findIndex(item => item.id === l.id);
@@ -3070,7 +3080,7 @@ async function loadCompilerActivity(isManualRefresh = false) {
         .from('compiler_telemetry')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(250);
+        .limit(1000);
 
       if (!error && Array.isArray(data)) {
         runsList = data;
@@ -3508,6 +3518,7 @@ window.filterCompilerRunsTable = function() {
   }
 
   if (filtered.length === 0) {
+    window.adminTablePager?.clearBar('compiler-runs-tbody');
     tbody.innerHTML = `
       <tr>
         <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
@@ -3519,8 +3530,12 @@ window.filterCompilerRunsTable = function() {
     return;
   }
 
+  const pageRuns = window.adminTablePager
+    ? window.adminTablePager.paginate('compilerRuns', filtered, 'compiler-runs-tbody', window.filterCompilerRunsTable, `${searchInput}|${langFilter}|${statusFilter}|${timeFilter}|${fromVal}|${toVal}`)
+    : filtered;
+
   let html = '';
-  filtered.forEach((r, idx) => {
+  pageRuns.forEach((r, idx) => {
     // Original index in window.allCompilerRuns
     const origIdx = window.allCompilerRuns.indexOf(r);
     const timeStr = formatRunTime(r.created_at);
@@ -4115,7 +4130,7 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
         .from('compiler_telemetry')
         .select('user_id, user_name, user_mobile, user_email, system_name, device, os, browser, ip, created_at')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(1000);
 
       if (Array.isArray(telemetryUsers)) {
         telemetryUsers.forEach(tu => {
@@ -4211,11 +4226,12 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
   }
 };
 
-function renderCompilerProfilesTable(profiles) {
+function renderCompilerProfilesTable(profiles, filterSig = 'all') {
   const tbody = document.getElementById('compiler-profiles-tbody');
   if (!tbody) return;
 
   if (!profiles || profiles.length === 0) {
+    window.adminTablePager?.clearBar('compiler-profiles-tbody');
     tbody.innerHTML = `
       <tr>
         <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
@@ -4227,6 +4243,13 @@ function renderCompilerProfilesTable(profiles) {
     return;
   }
 
+  const pageProfiles = window.adminTablePager
+    ? window.adminTablePager.paginate('compilerProfiles', profiles, 'compiler-profiles-tbody', () => window.renderCompilerProfilesTablePage?.(), filterSig)
+    : profiles;
+
+  window._lastPagedProfilesSource = profiles;
+  window._lastPagedProfilesSig = filterSig;
+
   const avatarColors = [
     'linear-gradient(135deg, #10b981, #047857)',
     'linear-gradient(135deg, #3b82f6, #1d4ed8)',
@@ -4236,7 +4259,7 @@ function renderCompilerProfilesTable(profiles) {
   ];
 
   let html = '';
-  profiles.forEach((p, idx) => {
+  pageProfiles.forEach((p, idx) => {
     const initials = (p.name || 'Dev').substring(0, 2).toUpperCase();
     const bgGrad = avatarColors[idx % avatarColors.length];
     const registeredDate = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently';
@@ -4355,7 +4378,7 @@ window.filterCompilerProfilesTable = function() {
     const totalAll = (window.allCompilerProfiles || []).length;
     summaryEl.textContent = `Showing ${filtered.length} of ${totalAll} profiles`;
   }
-  renderCompilerProfilesTable(filtered);
+  renderCompilerProfilesTable(filtered, `${query}|${fromVal}|${toVal}`);
 };
 
 window.exportCompilerProfilesCSV = function() {
@@ -5314,6 +5337,170 @@ window.copyCertDirectLink = function(certId) {
     prompt("Copy this verification URL:", url);
   });
 };
+
+// ==========================================================================
+// ADMIN TABLES: 20-PER-PAGE PAGINATION + DUAL-AXIS TOUCH/WHEEL SCROLLER
+// ==========================================================================
+window.renderCompilerProfilesTablePage = function() {
+  if (Array.isArray(window._lastPagedProfilesSource)) {
+    renderCompilerProfilesTable(window._lastPagedProfilesSource, window._lastPagedProfilesSig || 'all');
+  } else {
+    renderCompilerProfilesTable(window.allCompilerProfiles || [], 'all');
+  }
+};
+
+window.adminTablePager = {
+  state: {},
+  callbacks: {},
+
+  getState(key) {
+    if (!this.state[key]) {
+      this.state[key] = { page: 1, pageSize: 20, lastSig: null };
+    }
+    return this.state[key];
+  },
+
+  clearBar(tbodyId) {
+    const existing = document.getElementById(`${tbodyId}-pagination`);
+    if (existing) existing.remove();
+  },
+
+  panHorizontal(tbodyId, deltaX) {
+    const tbody = document.getElementById(tbodyId);
+    const wrapper = tbody ? tbody.closest('.table-wrapper') : null;
+    if (!wrapper) return;
+    wrapper.scrollBy({ left: deltaX, behavior: 'smooth' });
+  },
+
+  go(key, nextPage) {
+    const st = this.getState(key);
+    st.page = Math.max(1, Number(nextPage) || 1);
+    const cb = this.callbacks[key];
+    if (typeof cb === 'function') cb();
+    const tbodyId = st.tbodyId;
+    if (tbodyId) {
+      const wrapper = document.getElementById(tbodyId)?.closest('.table-wrapper');
+      if (wrapper) wrapper.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  },
+
+  changeSize(key, val) {
+    const st = this.getState(key);
+    st.pageSize = val === 'all' ? 'all' : Math.max(1, Number(val) || 20);
+    st.page = 1;
+    const cb = this.callbacks[key];
+    if (typeof cb === 'function') cb();
+  },
+
+  paginate(key, items, tbodyId, renderCallback, filterSig = 'default') {
+    const st = this.getState(key);
+    st.tbodyId = tbodyId;
+    this.callbacks[key] = renderCallback;
+
+    if (st.lastSig !== null && st.lastSig !== filterSig) {
+      st.page = 1;
+    }
+    st.lastSig = filterSig;
+
+    const total = Array.isArray(items) ? items.length : 0;
+    const size = st.pageSize === 'all' ? Math.max(1, total) : Number(st.pageSize || 20);
+    const totalPages = Math.max(1, Math.ceil(total / size));
+    if (st.page > totalPages) st.page = totalPages;
+
+    const startIdx = st.pageSize === 'all' ? 0 : (st.page - 1) * size;
+    const endIdx = st.pageSize === 'all' ? total : Math.min(total, startIdx + size);
+    const sliced = items.slice(startIdx, endIdx);
+
+    this.renderBar(key, tbodyId, total, startIdx, endIdx, st.page, totalPages, st.pageSize);
+    setupAdminTableScrollers();
+    return sliced;
+  },
+
+  renderBar(key, tbodyId, total, startIdx, endIdx, page, totalPages, pageSize) {
+    const tbody = document.getElementById(tbodyId);
+    const wrapper = tbody ? tbody.closest('.table-wrapper') : null;
+    if (!wrapper || !wrapper.parentElement) return;
+
+    const barId = `${tbodyId}-pagination`;
+    let bar = document.getElementById(barId);
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = barId;
+      bar.className = 'admin-pagination-bar';
+      wrapper.insertAdjacentElement('afterend', bar);
+    }
+
+    const fromNum = total === 0 ? 0 : startIdx + 1;
+    const toNum = endIdx;
+
+    // Build compact page button list around current page
+    const pages = [];
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) {
+        pages.push(p);
+      } else if (pages[pages.length - 1] !== '...') {
+        pages.push('...');
+      }
+    }
+
+    const pageBtnsHtml = pages.map((p) => {
+      if (p === '...') {
+        return `<span style="color: var(--text-muted); padding: 0 4px; font-size: 0.78rem;">…</span>`;
+      }
+      return `<button type="button" class="admin-page-btn ${p === page ? 'active' : ''}" onclick="adminTablePager.go('${key}', ${p})">${p}</button>`;
+    }).join('');
+
+    bar.innerHTML = `
+      <div class="admin-pagination-info">
+        <span>Showing <strong>${fromNum}–${toNum}</strong> of <strong>${total}</strong> • Page <strong>${page}</strong> / ${totalPages}</span>
+        <span class="admin-scroll-hint">↔ Swipe / Shift+Wheel to scroll columns</span>
+      </div>
+      <div class="admin-pagination-controls">
+        <div class="admin-hscroll-group" title="Scroll Table Horizontally">
+          <button type="button" class="admin-page-btn" onclick="adminTablePager.panHorizontal('${tbodyId}', -280)" title="Scroll Left">◀</button>
+          <button type="button" class="admin-page-btn" onclick="adminTablePager.panHorizontal('${tbodyId}', 280)" title="Scroll Right">▶</button>
+        </div>
+        <select class="admin-page-select" onchange="adminTablePager.changeSize('${key}', this.value)" title="Rows per page">
+          <option value="20" ${pageSize === 20 ? 'selected' : ''}>20 / page</option>
+          <option value="50" ${pageSize === 50 ? 'selected' : ''}>50 / page</option>
+          <option value="100" ${pageSize === 100 ? 'selected' : ''}>100 / page</option>
+          <option value="all" ${pageSize === 'all' ? 'selected' : ''}>Show All</option>
+        </select>
+        <button type="button" class="admin-page-btn" onclick="adminTablePager.go('${key}', ${page - 1})" ${page <= 1 ? 'disabled' : ''}>« Prev</button>
+        ${pageBtnsHtml}
+        <button type="button" class="admin-page-btn" onclick="adminTablePager.go('${key}', ${page + 1})" ${page >= totalPages ? 'disabled' : ''}>Next »</button>
+      </div>
+    `;
+  }
+};
+
+function setupAdminTableScrollers() {
+  document.querySelectorAll('.table-wrapper').forEach((wrapper) => {
+    if (wrapper.dataset.scrollEnhanced === '1') return;
+    wrapper.dataset.scrollEnhanced = '1';
+
+    wrapper.addEventListener('wheel', (e) => {
+      const canScrollX = wrapper.scrollWidth > wrapper.clientWidth + 2;
+      const canScrollY = wrapper.scrollHeight > wrapper.clientHeight + 2;
+      if (!canScrollX) return;
+
+      // Shift+Wheel or mouse-wheel when table has no vertical overflow pans smoothly left/right
+      if (e.shiftKey || (!canScrollY && Math.abs(e.deltaY) > Math.abs(e.deltaX))) {
+        if (e.deltaY !== 0) {
+          wrapper.scrollLeft += e.deltaY;
+          e.preventDefault();
+        }
+      }
+    }, { passive: false });
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupAdminTableScrollers);
+} else {
+  setupAdminTableScrollers();
+}
+
 
 
 

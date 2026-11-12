@@ -1556,6 +1556,15 @@ select,
   }
 }
 
+.embed-widget-mode .ide-menubar,
+.embed-widget-mode .brand-badge {
+  display: none !important;
+}
+
+.embed-widget-mode .nav-left {
+  flex: 0 1 auto !important;
+}
+
 /* Share & Live Workspace Modal Header + Close Button */
 .share-code-modal .modal-header {
   display: flex;

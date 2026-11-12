@@ -383,11 +383,14 @@ select.form-control option,
 .admin-main {
   flex: 1;
   display: flex;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* SIDEBAR */
 .admin-sidebar {
   width: 260px;
+  flex-shrink: 0;
   background: rgba(11, 15, 25, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -433,16 +436,28 @@ select.form-control option,
 /* CONTENT PANELS */
 .admin-content {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
   padding: 36px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .tab-panel {
   display: none;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .tab-panel.active {
   display: block;
+}
+
+.admin-card,
+.glass-card {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .admin-section-header {
@@ -497,38 +512,185 @@ select.form-control option,
   border: 1px solid rgba(0, 242, 254, 0.2);
 }
 
-/* DATA TABLES */
+/* DATA TABLES - Dual Vertical + Horizontal Scroll + Touch Momentum */
 .table-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  max-height: 62vh;
   overflow-x: auto;
-  margin-top: 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+  margin-top: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(6, 10, 22, 0.55);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 242, 254, 0.45) rgba(2, 6, 23, 0.65);
+}
+
+.table-wrapper::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: rgba(2, 6, 23, 0.72);
+  border-radius: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.48), rgba(59, 130, 246, 0.52));
+  border-radius: 8px;
+  border: 2px solid rgba(2, 6, 23, 0.75);
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #00f2fe, #3b82f6);
+}
+
+.table-wrapper::-webkit-scrollbar-corner {
+  background: rgba(2, 6, 23, 0.72);
 }
 
 .admin-table {
   width: 100%;
+  min-width: max-content;
   border-collapse: collapse;
   text-align: left;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+}
+
+.admin-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: rgba(11, 16, 30, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .admin-table th {
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.03);
+  padding: 14px 16px;
+  background: rgba(15, 23, 42, 0.94);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--text-subtle);
+  font-size: 0.74rem;
+  color: var(--text-muted);
   text-transform: uppercase;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .admin-table td {
-  padding: 16px 20px;
+  padding: 13px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   color: var(--text-main);
   vertical-align: middle;
 }
 
 .admin-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+/* Pagination & Horizontal Pan Toolbar */
+.admin-pagination-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.admin-pagination-info {
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-scroll-hint {
+  font-size: 0.7rem;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.22);
+  color: var(--cyan-primary);
+  white-space: nowrap;
+}
+
+.admin-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.admin-hscroll-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px;
+  padding-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.admin-page-btn:hover:not(:disabled) {
+  background: rgba(0, 242, 254, 0.14);
+  border-color: rgba(0, 242, 254, 0.45);
+  color: #ffffff;
+}
+
+.admin-page-btn.active {
+  background: linear-gradient(135deg, rgba(0, 242, 254, 0.26), rgba(59, 130, 246, 0.26));
+  border-color: var(--cyan-primary);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(0, 242, 254, 0.28);
+}
+
+.admin-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-page-select {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+  font-size: 0.76rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
 }
 
 /* MEDIA QUERIES */
@@ -538,11 +700,46 @@ select.form-control option,
   }
   .admin-sidebar {
     width: 100%;
+    height: auto;
+    position: static;
     flex-direction: row;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+  .sidebar-link {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 0.82rem;
   }
   .admin-content {
-    padding: 20px;
+    padding: 14px;
+  }
+  .admin-header {
+    padding: 10px 14px;
+    height: auto;
+    min-height: 60px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .admin-user-info {
+    display: none;
+  }
+  .admin-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .admin-section-title {
+    font-size: 1.35rem;
+  }
+  .table-wrapper {
+    max-height: 58vh;
+  }
+  .admin-card {
+    padding: 14px !important;
   }
 }
 
