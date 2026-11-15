@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspens
 import Navbar from './components/Navbar';
 import EditorPanel from './components/EditorPanel';
 import ConsolePanel from './components/ConsolePanel';
+import ProblemsPanel, { parseDiagnostics } from './components/ProblemsPanel';
 import GraphicalView from './components/GraphicalView';
 import WebPreview from './components/WebPreview';
 import FileSidebar from './components/FileSidebar';
@@ -66,7 +67,7 @@ import { ALL_LANGUAGES, STARTER_TEMPLATES, EXTENSION_MAP, getLanguageById } from
 import { evaluateMatlabLocally } from './services/clientMatlabRunner';
 import { evaluateJdbcLocally } from './services/clientJdbcRunner';
 import { createLiveRoomId, joinLiveWorkspace } from './services/liveCollabService';
-import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages, Monitor, Cpu, ExternalLink } from 'lucide-react';
+import { Terminal, GitFork, Globe, Code2, FolderTree, ShieldAlert, Lock, FlaskConical, Database, FileCheck2, GitCommit, Languages, Monitor, Cpu, ExternalLink, AlertCircle } from 'lucide-react';
 
 const STORAGE_FILES_KEY = 'elite_ide_workspace_files_v2';
 const STORAGE_ACTIVE_KEY = 'elite_ide_active_file_id_v2';
@@ -354,6 +355,8 @@ export default function App() {
   const [awaitingPrompt, setAwaitingPrompt] = useState(null);
 
   const editorInstanceRef = useRef(null);
+  const monacoInstanceRef = useRef(null);
+  const errorFlashDecorationsRef = useRef([]);
   const wsRef = useRef(null);
   const lastRunTimeRef = useRef(0);
   const panesContainerRef = useRef(null);
@@ -649,6 +652,14 @@ export default function App() {
   const activeFile = useMemo(() => {
     return files.find(f => f.id === activeFileId) || files[0] || DEFAULT_INITIAL_FILES[0];
   }, [files, activeFileId]);
+
+  // Diagnostics & problems count for right pane tab bar
+  const diagnosticsCount = useMemo(() => {
+    const diags = parseDiagnostics(terminalEntries, activeFile);
+    if (diags.length > 0) return diags.length;
+    if (lastStats && lastStats.code !== 0) return 1;
+    return 0;
+  }, [terminalEntries, activeFile, lastStats]);
 
   // Auto-sync files on mount: if code is empty, populate starter template; if code has detectable language, sync extension
   useEffect(() => {
@@ -2344,6 +2355,52 @@ export default function App() {
     }
   };
 
+  // Jump to specific line and column in Monaco editor with glowing flash decoration
+  const handleJumpToLine = useCallback((line, col = 1) => {
+    const numLine = parseInt(line, 10);
+    const numCol = parseInt(col, 10) || 1;
+    if (isNaN(numLine) || numLine < 1) return;
+
+    setSelectedLine(numLine);
+
+    // If on mobile and in terminal view, switch to editor tab so the user sees the line!
+    if (isMobile) {
+      setMobileActiveTab('editor');
+    }
+
+    if (editorInstanceRef.current) {
+      const editor = editorInstanceRef.current;
+      editor.revealLineInCenter(numLine);
+      editor.setPosition({ lineNumber: numLine, column: numCol });
+      editor.focus();
+
+      if (monacoInstanceRef.current) {
+        const monaco = monacoInstanceRef.current;
+        try {
+          const decs = editor.deltaDecorations(errorFlashDecorationsRef.current, [
+            {
+              range: new monaco.Range(numLine, 1, numLine, 1),
+              options: {
+                isWholeLine: true,
+                className: 'highlighted-error-line-flash'
+              }
+            }
+          ]);
+          errorFlashDecorationsRef.current = decs;
+          setTimeout(() => {
+            try {
+              if (editorInstanceRef.current) {
+                errorFlashDecorationsRef.current = editorInstanceRef.current.deltaDecorations(errorFlashDecorationsRef.current, []);
+              }
+            } catch (e) {}
+          }, 2500);
+        } catch (e) {
+          console.warn('Monaco line flash decoration error:', e);
+        }
+      }
+    }
+  }, [isMobile]);
+
   // Mobile Code Accessory Bar Actions
   const handleInsertText = useCallback((text) => {
     if (!editorInstanceRef.current) return;
@@ -2580,8 +2637,9 @@ export default function App() {
               fontSize={fontSize}
               filename={activeFile.name}
               isMobile={isMobile}
-              onMountEditor={(editor) => {
+              onMountEditor={(editor, monaco) => {
                 editorInstanceRef.current = editor;
+                monacoInstanceRef.current = monaco;
               }}
               onCursorChange={(line, col) => {
                 setSelectedLine(line);
@@ -2630,6 +2688,19 @@ export default function App() {
                   <span>Terminal</span>
                   {lastStats && (
                     <span className={`pill-badge ${lastStats.code === 0 ? 'success' : 'error'}`} />
+                  )}
+                </button>
+
+                <button
+                  className={`view-mode-btn ${rightPaneView === 'problems' ? 'active' : ''}`}
+                  onClick={() => setRightPaneView('problems')}
+                  id="btn-view-problems"
+                  title="Diagnostics & Problems"
+                >
+                  <AlertCircle size={14} className={diagnosticsCount > 0 ? "text-rose-400" : "text-slate-400"} />
+                  <span>Problems</span>
+                  {diagnosticsCount > 0 && (
+                    <span className="pill-badge error">{diagnosticsCount}</span>
                   )}
                 </button>
 
@@ -2756,7 +2827,28 @@ export default function App() {
                   setAiHealingData(diagnosis);
                   setIsAiHealerModalOpen(true);
                 }}
+                onJumpToLine={handleJumpToLine}
+                onSwitchToProblems={() => setRightPaneView('problems')}
                 files={files}
+              />
+            )}
+
+            {rightPaneView === 'problems' && (
+              <ProblemsPanel
+                terminalEntries={terminalEntries}
+                lastStats={lastStats}
+                files={files}
+                onJumpToLine={handleJumpToLine}
+                onOpenAiHealer={() => {
+                  const currentCode = activeFile ? activeFile.code : '';
+                  const currentLang = activeFile ? activeFile.language : manualLanguage;
+                  const stderrText = terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '');
+                  const stdoutText = terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n');
+                  const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText, lastStats);
+                  setAiHealingData(diagnosis);
+                  setIsAiHealerModalOpen(true);
+                }}
+                onSwitchToTerminal={() => setRightPaneView('console')}
               />
             )}
 

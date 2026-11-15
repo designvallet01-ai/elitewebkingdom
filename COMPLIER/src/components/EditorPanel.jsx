@@ -1,13 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import { 
-  FileCode2, 
-  Copy, 
-  Check, 
-  Plus, 
-  X, 
-  PanelLeftClose, 
-  PanelLeft, 
+import {
+  FileCode2,
+  Copy,
+  Check,
+  Plus,
+  X,
+  PanelLeftClose,
+  PanelLeft,
   BookOpen,
   Sparkles,
   Mic,
@@ -41,13 +41,14 @@ export default function EditorPanel({
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const remoteDecorationsRef = useRef([]);
-  const remoteWidgetsRef = useRef([]);
   const dsaMenuRef = useRef(null);
   const [copied, setCopied] = useState(false);
-  const [editorReadyTick, setEditorReadyTick] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [showDsaSnippets, setShowDsaSnippets] = useState(false);
+  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const recognitionRef = useRef(null);
+
+  const totalLines = (code || '').split('\n').length;
 
   // Close DSA Arsenal dropdown on outside click
   useEffect(() => {
@@ -87,11 +88,11 @@ export default function EditorPanel({
 
     if (lower.startsWith('print ') || lower.startsWith('console log ')) {
       const msg = transcript.replace(/^(print|console\s+log)\s+/i, '');
-      formatted = language === 'cpp' 
+      formatted = language === 'cpp'
         ? `std::cout << "${msg}" << std::endl;`
         : language === 'javascript'
-        ? `console.log("${msg}");`
-        : `print("${msg}")`;
+          ? `console.log("${msg}");`
+          : `print("${msg}")`;
     } else if (lower.startsWith('for loop') || lower.startsWith('for each')) {
       formatted = language === 'cpp'
         ? `for (int i = 0; i < 10; i++) {\n    // code\n}`
@@ -211,7 +212,6 @@ export default function EditorPanel({
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
-    setEditorReadyTick((t) => t + 1);
     if (monaco && monaco.editor && typeof monaco.editor.setUnexpectedErrorHandler === 'function') {
       monaco.editor.setUnexpectedErrorHandler((e) => {
         const msg = e?.message || e?.name || String(e || '');
@@ -273,10 +273,23 @@ export default function EditorPanel({
     }
     // Track cursor line changes in real time for live flowchart synchronization
     editor.onDidChangeCursorPosition((e) => {
-      if (onCursorChange && e.position) {
-        onCursorChange(e.position.lineNumber, e.position.column);
+      if (e.position) {
+        setCursorPos({ line: e.position.lineNumber, col: e.position.column });
+        if (onCursorChange) {
+          onCursorChange(e.position.lineNumber, e.position.column);
+        }
       }
     });
+  };
+
+  const handleFormatDocument = () => {
+    if (editorRef.current) {
+      try {
+        editorRef.current.getAction('editor.action.formatDocument')?.run();
+      } catch (e) {
+        console.warn('Format document error:', e);
+      }
+    }
   };
 
   // Render live collaborator cursors & name tags inside Monaco
@@ -288,17 +301,6 @@ export default function EditorPanel({
     const model = editor.getModel();
     if (!model) return;
 
-    const clearWidgets = () => {
-      if (remoteWidgetsRef.current.length > 0) {
-        remoteWidgetsRef.current.forEach((widget) => {
-          try { editor.removeContentWidget(widget); } catch {}
-        });
-        remoteWidgetsRef.current = [];
-      }
-    };
-
-    clearWidgets();
-
     const maxLine = Math.max(1, model.getLineCount());
     const newDecorations = (remoteCursors || []).map((peer) => {
       const line = Math.min(maxLine, Math.max(1, Number(peer.line) || 1));
@@ -307,36 +309,14 @@ export default function EditorPanel({
       const colorIdx = (peer.colorIdx ?? 0) % 6;
       const shortName = (peer.name || 'Peer').trim().split(/\s+/)[0].slice(0, 12);
 
-      // Register floating collaborator name badge as a Monaco ContentWidget
-      // so the name pill hovers cleanly above/below the caret without shifting code text.
-      const domNode = document.createElement('div');
-      domNode.className = `remote-cursor-widget remote-cursor-widget-${colorIdx}`;
-      const badgeEl = document.createElement('span');
-      badgeEl.className = `remote-collab-tag remote-collab-tag-${colorIdx}`;
-      badgeEl.textContent = shortName;
-      domNode.appendChild(badgeEl);
-
-      const widget = {
-        getId: () => `remote-cursor-widget-${peer.clientId}`,
-        getDomNode: () => domNode,
-        getPosition: () => ({
-          position: { lineNumber: line, column: col },
-          preference: [
-            monaco.editor.ContentWidgetPositionPreference.ABOVE,
-            monaco.editor.ContentWidgetPositionPreference.BELOW
-          ]
-        })
-      };
-
-      try {
-        editor.addContentWidget(widget);
-        remoteWidgetsRef.current.push(widget);
-      } catch {}
-
       return {
         range: new monaco.Range(line, col, line, col),
         options: {
           className: `remote-collab-caret remote-collab-caret-${colorIdx}`,
+          after: {
+            content: ` ${shortName}`,
+            inlineClassName: `remote-collab-tag remote-collab-tag-${colorIdx}`
+          },
           hoverMessage: { value: `**${peer.name || 'Collaborator'}** (Ln ${line}, Col ${col})` },
           stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
         }
@@ -348,10 +328,8 @@ export default function EditorPanel({
         remoteDecorationsRef.current || [],
         newDecorations
       );
-    } catch {}
-
-    return clearWidgets;
-  }, [remoteCursors, code, editorReadyTick]);
+    } catch { }
+  }, [remoteCursors, code]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code);
@@ -422,9 +400,9 @@ export default function EditorPanel({
                 onClick={() => onSelectFile && onSelectFile(file.id)}
                 title={`${file.name} (${file.language})`}
               >
-                <span 
-                  className="tab-lang-bullet" 
-                  style={{ backgroundColor: getLanguageColor(file.language) }} 
+                <span
+                  className="tab-lang-bullet"
+                  style={{ backgroundColor: getLanguageColor(file.language) }}
                 />
                 <span className="tab-title">{file.name}</span>
 
@@ -494,16 +472,16 @@ export default function EditorPanel({
                 </div>
 
                 {/* Fast I/O */}
-                <button 
+                <button
                   className="dsa-menu-item"
                   onClick={() => {
                     const snip = (language === 'cpp' || language === 'c')
                       ? 'std::ios_base::sync_with_stdio(false);\nstd::cin.tie(NULL);'
                       : language === 'java'
-                      ? 'BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\nStringTokenizer st;'
-                      : language === 'javascript' || language === 'typescript'
-                      ? 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim().split(/\\s+/);'
-                      : 'import sys\ninput = sys.stdin.readline';
+                        ? 'BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\nStringTokenizer st;'
+                        : language === 'javascript' || language === 'typescript'
+                          ? 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim().split(/\\s+/);'
+                          : 'import sys\ninput = sys.stdin.readline';
                     insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
@@ -513,16 +491,16 @@ export default function EditorPanel({
                 </button>
 
                 {/* Binary Search */}
-                <button 
+                <button
                   className="dsa-menu-item"
                   onClick={() => {
                     const snip = (language === 'cpp' || language === 'c')
                       ? `int binarySearch(const std::vector<int>& arr, int target) {\n    int low = 0, high = (int)arr.size() - 1;\n    while (low <= high) {\n        int mid = low + (high - low) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
                       : language === 'java'
-                      ? `public static int binarySearch(int[] arr, int target) {\n    int low = 0, high = arr.length - 1;\n    while (low <= high) {\n        int mid = low + (high - low) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
-                      : language === 'javascript' || language === 'typescript'
-                      ? `function binarySearch(arr, target) {\n    let low = 0, high = arr.length - 1;\n    while (low <= high) {\n        const mid = Math.floor((low + high) / 2);\n        if (arr[mid] === target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
-                      : `def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: low = mid + 1\n        else: high = mid - 1\n    return -1`;
+                        ? `public static int binarySearch(int[] arr, int target) {\n    int low = 0, high = arr.length - 1;\n    while (low <= high) {\n        int mid = low + (high - low) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
+                        : language === 'javascript' || language === 'typescript'
+                          ? `function binarySearch(arr, target) {\n    let low = 0, high = arr.length - 1;\n    while (low <= high) {\n        const mid = Math.floor((low + high) / 2);\n        if (arr[mid] === target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
+                          : `def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: low = mid + 1\n        else: high = mid - 1\n    return -1`;
                     insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
@@ -532,16 +510,16 @@ export default function EditorPanel({
                 </button>
 
                 {/* Kadane's Algorithm */}
-                <button 
+                <button
                   className="dsa-menu-item"
                   onClick={() => {
                     const snip = (language === 'cpp' || language === 'c')
                       ? `int maxSubArray(const std::vector<int>& nums) {\n    int maxSoFar = nums[0], currMax = nums[0];\n    for (size_t i = 1; i < nums.size(); ++i) {\n        currMax = std::max(nums[i], currMax + nums[i]);\n        maxSoFar = std::max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
                       : language === 'java'
-                      ? `public static int maxSubArray(int[] nums) {\n    int maxSoFar = nums[0], currMax = nums[0];\n    for (int i = 1; i < nums.length; i++) {\n        currMax = Math.max(nums[i], currMax + nums[i]);\n        maxSoFar = Math.max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
-                      : language === 'javascript' || language === 'typescript'
-                      ? `function maxSubArray(nums) {\n    let maxSoFar = nums[0], currMax = nums[0];\n    for (let i = 1; i < nums.length; i++) {\n        currMax = Math.max(nums[i], currMax + nums[i]);\n        maxSoFar = Math.max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
-                      : `def kadane_max_subarray(nums):\n    max_so_far = curr_max = nums[0]\n    for x in nums[1:]:\n        curr_max = max(x, curr_max + x)\n        max_so_far = max(max_so_far, curr_max)\n    return max_so_far`;
+                        ? `public static int maxSubArray(int[] nums) {\n    int maxSoFar = nums[0], currMax = nums[0];\n    for (int i = 1; i < nums.length; i++) {\n        currMax = Math.max(nums[i], currMax + nums[i]);\n        maxSoFar = Math.max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
+                        : language === 'javascript' || language === 'typescript'
+                          ? `function maxSubArray(nums) {\n    let maxSoFar = nums[0], currMax = nums[0];\n    for (let i = 1; i < nums.length; i++) {\n        currMax = Math.max(nums[i], currMax + nums[i]);\n        maxSoFar = Math.max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
+                          : `def kadane_max_subarray(nums):\n    max_so_far = curr_max = nums[0]\n    for x in nums[1:]:\n        curr_max = max(x, curr_max + x)\n        max_so_far = max(max_so_far, curr_max)\n    return max_so_far`;
                     insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
@@ -551,14 +529,14 @@ export default function EditorPanel({
                 </button>
 
                 {/* Sieve of Eratosthenes */}
-                <button 
+                <button
                   className="dsa-menu-item"
                   onClick={() => {
                     const snip = (language === 'cpp' || language === 'c')
                       ? `std::vector<int> sieve(int n) {\n    std::vector<bool> isPrime(n + 1, true);\n    isPrime[0] = isPrime[1] = false;\n    for (int p = 2; p * p <= n; ++p) {\n        if (isPrime[p]) {\n            for (int i = p * p; i <= n; i += p) isPrime[i] = false;\n        }\n    }\n    std::vector<int> primes;\n    for (int p = 2; p <= n; ++p) if (isPrime[p]) primes.push_back(p);\n    return primes;\n}`
                       : language === 'java'
-                      ? `public static java.util.List<Integer> sieve(int n) {\n    boolean[] isPrime = new boolean[n + 1];\n    java.util.Arrays.fill(isPrime, true);\n    isPrime[0] = isPrime[1] = false;\n    for (int p = 2; p * p <= n; p++) {\n        if (isPrime[p]) {\n            for (int i = p * p; i <= n; i += p) isPrime[i] = false;\n        }\n    }\n    java.util.List<Integer> primes = new java.util.ArrayList<>();\n    for (int p = 2; p <= n; p++) if (isPrime[p]) primes.add(p);\n    return primes;\n}`
-                      : `def sieve(n):\n    primes = [True] * (n + 1)\n    primes[0] = primes[1] = False\n    for p in range(2, int(n**0.5) + 1):\n        if primes[p]:\n            for i in range(p*p, n+1, p): primes[i] = False\n    return [p for p in range(2, n+1) if primes[p]]`;
+                        ? `public static java.util.List<Integer> sieve(int n) {\n    boolean[] isPrime = new boolean[n + 1];\n    java.util.Arrays.fill(isPrime, true);\n    isPrime[0] = isPrime[1] = false;\n    for (int p = 2; p * p <= n; p++) {\n        if (isPrime[p]) {\n            for (int i = p * p; i <= n; i += p) isPrime[i] = false;\n        }\n    }\n    java.util.List<Integer> primes = new java.util.ArrayList<>();\n    for (int p = 2; p <= n; p++) if (isPrime[p]) primes.add(p);\n    return primes;\n}`
+                        : `def sieve(n):\n    primes = [True] * (n + 1)\n    primes[0] = primes[1] = False\n    for p in range(2, int(n**0.5) + 1):\n        if primes[p]:\n            for i in range(p*p, n+1, p): primes[i] = False\n    return [p for p in range(2, n+1) if primes[p]]`;
                     insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
@@ -568,14 +546,14 @@ export default function EditorPanel({
                 </button>
 
                 {/* BFS Traversal */}
-                <button 
+                <button
                   className="dsa-menu-item"
                   onClick={() => {
                     const snip = (language === 'cpp' || language === 'c')
                       ? `void bfs(int start, const std::vector<std::vector<int>>& adj) {\n    std::vector<bool> visited(adj.size(), false);\n    std::queue<int> q;\n    visited[start] = true;\n    q.push(start);\n    while (!q.empty()) {\n        int u = q.front(); q.pop();\n        for (int v : adj[u]) {\n            if (!visited[v]) {\n                visited[v] = true;\n                q.push(v);\n            }\n        }\n    }\n}`
                       : language === 'java'
-                      ? `public static void bfs(int start, java.util.List<java.util.List<Integer>> adj) {\n    boolean[] visited = new boolean[adj.size()];\n    java.util.Queue<Integer> q = new java.util.LinkedList<>();\n    visited[start] = true;\n    q.offer(start);\n    while (!q.isEmpty()) {\n        int u = q.poll();\n        for (int v : adj.get(u)) {\n            if (!visited[v]) {\n                visited[v] = true;\n                q.offer(v);\n            }\n        }\n    }\n}`
-                      : `from collections import deque\ndef bfs(graph, start):\n    visited, queue = set([start]), deque([start])\n    while queue:\n        curr = queue.popleft()\n        for nxt in graph.get(curr, []):\n            if nxt not in visited:\n                visited.add(nxt)\n                queue.append(nxt)`;
+                        ? `public static void bfs(int start, java.util.List<java.util.List<Integer>> adj) {\n    boolean[] visited = new boolean[adj.size()];\n    java.util.Queue<Integer> q = new java.util.LinkedList<>();\n    visited[start] = true;\n    q.offer(start);\n    while (!q.isEmpty()) {\n        int u = q.poll();\n        for (int v : adj.get(u)) {\n            if (!visited[v]) {\n                visited[v] = true;\n                q.offer(v);\n            }\n        }\n    }\n}`
+                        : `from collections import deque\ndef bfs(graph, start):\n    visited, queue = set([start]), deque([start])\n    while queue:\n        curr = queue.popleft()\n        for nxt in graph.get(curr, []):\n            if nxt not in visited:\n                visited.add(nxt)\n                queue.append(nxt)`;
                     insertTextAtCursor(snip);
                     setShowDsaSnippets(false);
                   }}
@@ -607,7 +585,7 @@ export default function EditorPanel({
             )}
           </div>
 
-          <button 
+          <button
             className="tab-action-btn"
             onClick={handleCopyCode}
             title="Copy Source Code"
@@ -628,8 +606,23 @@ export default function EditorPanel({
             <FileCode2 size={13} style={{ color: getLanguageColor(language) }} />
             <span>{filename || 'main'}</span>
           </span>
+          <span className="breadcrumb-metrics">
+            <span className="breadcrumb-line-count">{totalLines} lines</span>
+            <span className="breadcrumb-sep">•</span>
+            <span className="breadcrumb-caret-pos">Ln {cursorPos.line}, Col {cursorPos.col}</span>
+          </span>
         </div>
         <div className="breadcrumbs-info" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            type="button"
+            className="breadcrumb-action-chip"
+            onClick={handleFormatDocument}
+            title="Format Document (Shift + Alt + F)"
+            id="breadcrumb-format-btn"
+          >
+            <Sparkles size={11} className="text-cyan-400" />
+            <span>Format</span>
+          </button>
           {isLiveMode && (
             <span className="breadcrumb-live-tag" title="Interactive Live Workspace Active">
               <span className="live-sync-dot" />
@@ -637,6 +630,7 @@ export default function EditorPanel({
             </span>
           )}
           <span className="breadcrumb-engine-tag">{getLanguageById(language)?.name || language}</span>
+          <span className="breadcrumb-encoding-tag">UTF-8</span>
         </div>
       </div>
 
@@ -652,10 +646,15 @@ export default function EditorPanel({
           onMount={handleEditorDidMount}
           options={{
             fontSize: isMobile ? 13 : (fontSize || 14),
-            fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace",
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace",
             fontLigatures: true,
             tabSize: 4,
-            minimap: { enabled: !isMobile },
+            minimap: {
+              enabled: !isMobile,
+              renderCharacters: false,
+              maxColumn: 80,
+              showSlider: 'mouseover'
+            },
             scrollBeyondLastLine: false,
             automaticLayout: true,
             wordWrap: 'on',
@@ -663,11 +662,41 @@ export default function EditorPanel({
             lineNumbersMinChars: isMobile ? 2 : 4,
             renderWhitespace: 'selection',
             cursorBlinking: 'smooth',
-            cursorSmoothCaretAnimation: 'on',
+            cursorSmoothCaretAnimation: 'explicit',
             smoothScrolling: true,
-            bracketPairColorization: { enabled: true },
-            guides: { bracketPairs: true, indentation: true },
-            padding: { top: isMobile ? 8 : 12, bottom: isMobile ? 36 : 12 },
+            bracketPairColorization: {
+              enabled: true,
+              independentColorPoolPerBracketType: true
+            },
+            guides: {
+              bracketPairs: true,
+              indentation: true,
+              bracketPairsHorizontal: true,
+              highlightActiveBracketPair: true
+            },
+            stickyScroll: {
+              enabled: true,
+              maxLineCount: 5
+            },
+            quickSuggestions: {
+              other: 'on',
+              comments: false,
+              strings: true
+            },
+            suggest: {
+              preview: true,
+              showStatusBar: true,
+              snippetsPreventQuickSuggestions: false
+            },
+            acceptSuggestionOnEnter: 'on',
+            tabCompletion: 'on',
+            formatOnPaste: true,
+            formatOnType: true,
+            renderLineHighlight: 'all',
+            renderLineHighlightOnlyWhenFocus: false,
+            overviewRulerBorder: false,
+            hideCursorInOverviewRuler: true,
+            padding: { top: isMobile ? 8 : 12, bottom: isMobile ? 36 : 14 },
             hover: { enabled: !isMobile },
             links: !isMobile,
             dragAndDrop: !isMobile,

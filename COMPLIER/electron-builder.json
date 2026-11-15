@@ -1,0 +1,55 @@
+{
+  "appId": "in.elitewebkingdom.ide",
+  "productName": "Elite IDE",
+  "copyright": "Copyright © 2026 Elite Web Kingdom",
+  "directories": {
+    "output": "../dist-desktop"
+  },
+  "files": [
+    "electron/**/*",
+    "server/**/*",
+    "src/services/**/*",
+    "package.json",
+    "build/**/*",
+    "public/**/*",
+    "../compiler/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "bin",
+      "to": "bin",
+      "filter": ["**/*"]
+    },
+    {
+      "from": "../compiler",
+      "to": "compiler",
+      "filter": ["**/*"]
+    }
+  ],
+  "win": {
+    "icon": "build/icon.ico",
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      },
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Elite IDE",
+    "installerIcon": "build/icon.ico",
+    "uninstallerIcon": "build/icon.ico"
+  },
+  "portable": {
+    "artifactName": "Elite-IDE-Offline-v2-Portable.exe"
+  },
+  "asar": false
+}

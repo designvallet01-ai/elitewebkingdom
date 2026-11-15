@@ -6,6 +6,7 @@ import { WebSocketServer } from 'ws';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
 import { evaluateMatlabLocally } from '../src/services/clientMatlabRunner.js';
 import { evaluateJdbcLocally } from '../src/services/clientJdbcRunner.js';
 import { diagnoseAndHealError } from '../src/services/aiErrorHealer.js';
@@ -16,6 +17,54 @@ const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+// Detect Portable Standalone Compilers for 100% Offline Desktop Studio
+const __filename = fileURLToPath(import.meta.url);
+const serverDir = path.dirname(__filename);
+const resourcesDir = process.env.RESOURCES_PATH;
+
+const binCandidates = [
+  process.env.PORTABLE_BIN_DIR,
+  resourcesDir ? path.join(resourcesDir, 'bin') : null,
+  path.resolve(serverDir, '..', '..', 'bin'), // dist-desktop/win-unpacked/resources/bin
+  path.resolve(serverDir, '..', 'bin'),       // COMPLIER/bin
+  path.resolve(process.cwd(), 'bin'),
+  'D:\\elite we kingdom website\\COMPLIER\\bin'
+].filter(Boolean);
+
+function findPortableBinary(relPaths) {
+  for (const binDir of binCandidates) {
+    if (!fs.existsSync(binDir)) continue;
+    for (const rel of relPaths) {
+      const full = path.join(binDir, rel);
+      if (fs.existsSync(full)) return full;
+    }
+  }
+  return null;
+}
+
+const PORTABLE_PYTHON = findPortableBinary(['python/python.exe', 'python/python']);
+const PORTABLE_GPP = findPortableBinary(['mingw64/bin/g++.exe', 'gcc/bin/g++.exe']);
+const PORTABLE_GCC = findPortableBinary(['mingw64/bin/gcc.exe', 'gcc/bin/gcc.exe', 'tcc64/tcc/tcc.exe', 'tcc/tcc.exe']);
+
+// Ensure MinGW and Python paths are prepended to PATH so toolchains resolve internal tools (as, ld, etc.)
+if (PORTABLE_GPP) {
+  const mingwBin = path.dirname(PORTABLE_GPP);
+  if (!process.env.PATH.includes(mingwBin)) {
+    process.env.PATH = `${mingwBin}${path.delimiter}${process.env.PATH}`;
+  }
+}
+if (PORTABLE_PYTHON) {
+  const pyDir = path.dirname(PORTABLE_PYTHON);
+  if (!process.env.PATH.includes(pyDir)) {
+    process.env.PATH = `${pyDir}${path.delimiter}${process.env.PATH}`;
+  }
+}
+
+console.log('⚡ [Elite IDE Offline Engine] Portable Compilers Detection:');
+console.log('   - Python 3.12:', PORTABLE_PYTHON ? `[Active] ${PORTABLE_PYTHON}` : '[System Fallback]');
+console.log('   - G++ C++:', PORTABLE_GPP ? `[Active] ${PORTABLE_GPP}` : '[WSL Fallback]');
+console.log('   - GCC C:', PORTABLE_GCC ? `[Active] ${PORTABLE_GCC}` : '[WSL Fallback]');
 
 // Supported languages configuration with real local compilers
 const LANGUAGES = [
@@ -70,7 +119,7 @@ function runCommand(cmd, args, stdinInput = '', timeoutMs = 45000, cwd = undefin
 
     let child;
     try {
-      child = spawn(cmd, args, { shell: false, cwd });
+      child = spawn(cmd, args, { shell: false, cwd, env: process.env });
     } catch (err) {
       return resolve({
         stdout: '',
@@ -155,76 +204,133 @@ app.post('/api/run', async (req, res) => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ide_compile_'));
 
   try {
-    // 1. C++ (G++ Native via WSL)
+    // 1. C++ (Portable MinGW-w64 G++ Native or WSL Fallback)
     if (langConfig.runner === 'native-gpp') {
       const srcFile = path.join(tempDir, 'main.cpp');
       fs.writeFileSync(srcFile, code, 'utf-8');
-      const wslSrc = toWslPath(srcFile);
-      const wslOut = `${wslSrc}.out`;
 
-      const compileRes = await runCommand('wsl', ['-e', 'g++', '-O2', '-Wall', wslSrc, '-o', wslOut], '', 45000);
-      if (compileRes.code !== 0) {
+      if (PORTABLE_GPP) {
+        const exeOut = path.join(tempDir, 'main.exe');
+        const compileRes = await runCommand(PORTABLE_GPP, ['-O2', '-Wall', srcFile, '-o', exeOut], '', 45000, tempDir);
+        if (compileRes.code !== 0) {
+          return res.json({
+            stdout: '',
+            stderr: compileRes.stderr || compileRes.stdout,
+            code: compileRes.code,
+            executionTime: compileRes.executionTime,
+            status: 'COMPILE_ERROR',
+            runner: 'GNU C++ (Portable MinGW-w64 G++)'
+          });
+        }
+
+        const runRes = await runCommand(exeOut, [], stdin, 30000, tempDir);
         return res.json({
-          stdout: '',
-          stderr: compileRes.stderr || compileRes.stdout,
-          code: compileRes.code,
-          executionTime: compileRes.executionTime,
-          status: 'COMPILE_ERROR',
-          runner: 'GNU C++ (G++ 13.3.0)'
+          stdout: runRes.stdout,
+          stderr: runRes.stderr,
+          code: runRes.code,
+          executionTime: compileRes.executionTime + runRes.executionTime,
+          compileTime: compileRes.executionTime,
+          status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
+          runner: 'GNU C++ (MinGW-w64 Offline Native)'
+        });
+      } else {
+        const wslSrc = toWslPath(srcFile);
+        const wslOut = `${wslSrc}.out`;
+
+        const compileRes = await runCommand('wsl', ['-e', 'g++', '-O2', '-Wall', wslSrc, '-o', wslOut], '', 45000);
+        if (compileRes.code !== 0) {
+          return res.json({
+            stdout: '',
+            stderr: compileRes.stderr || compileRes.stdout,
+            code: compileRes.code,
+            executionTime: compileRes.executionTime,
+            status: 'COMPILE_ERROR',
+            runner: 'GNU C++ (G++ 13.3.0)'
+          });
+        }
+
+        const runRes = await runCommand('wsl', ['-e', wslOut], stdin, 30000);
+        return res.json({
+          stdout: runRes.stdout,
+          stderr: runRes.stderr,
+          code: runRes.code,
+          executionTime: compileRes.executionTime + runRes.executionTime,
+          compileTime: compileRes.executionTime,
+          status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
+          runner: 'GNU C++ (G++ 13.3.0 Native)'
         });
       }
-
-      const runRes = await runCommand('wsl', ['-e', wslOut], stdin, 30000);
-      return res.json({
-        stdout: runRes.stdout,
-        stderr: runRes.stderr,
-        code: runRes.code,
-        executionTime: compileRes.executionTime + runRes.executionTime,
-        compileTime: compileRes.executionTime,
-        status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
-        runner: 'GNU C++ (G++ 13.3.0 Native)'
-      });
     }
 
-    // 2. C (GCC Native via WSL)
+    // 2. C (Portable MinGW-w64 GCC / TCC Native or WSL Fallback)
     if (langConfig.runner === 'native-gcc') {
       const srcFile = path.join(tempDir, 'main.c');
       fs.writeFileSync(srcFile, code, 'utf-8');
-      const wslSrc = toWslPath(srcFile);
-      const wslOut = `${wslSrc}.out`;
 
-      const compileRes = await runCommand('wsl', ['-e', 'gcc', '-O2', '-Wall', wslSrc, '-o', wslOut], '', 45000);
-      if (compileRes.code !== 0) {
+      if (PORTABLE_GCC) {
+        const exeOut = path.join(tempDir, 'main.exe');
+        const isTcc = PORTABLE_GCC.toLowerCase().includes('tcc');
+        const compileArgs = isTcc ? [srcFile, '-o', exeOut] : ['-O2', '-Wall', srcFile, '-o', exeOut];
+        const compileRes = await runCommand(PORTABLE_GCC, compileArgs, '', 45000, tempDir);
+        if (compileRes.code !== 0) {
+          return res.json({
+            stdout: '',
+            stderr: compileRes.stderr || compileRes.stdout,
+            code: compileRes.code,
+            executionTime: compileRes.executionTime,
+            status: 'COMPILE_ERROR',
+            runner: isTcc ? 'Tiny C Compiler (Portable TCC 64)' : 'GNU C (MinGW-w64 GCC)'
+          });
+        }
+
+        const runRes = await runCommand(exeOut, [], stdin, 30000, tempDir);
         return res.json({
-          stdout: '',
-          stderr: compileRes.stderr || compileRes.stdout,
-          code: compileRes.code,
-          executionTime: compileRes.executionTime,
-          status: 'COMPILE_ERROR',
-          runner: 'GNU C (GCC 13.3.0)'
+          stdout: runRes.stdout,
+          stderr: runRes.stderr,
+          code: runRes.code,
+          executionTime: compileRes.executionTime + runRes.executionTime,
+          compileTime: compileRes.executionTime,
+          status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
+          runner: isTcc ? 'Tiny C Compiler (Portable TCC 64 Native)' : 'GNU C (MinGW-w64 GCC Native)'
+        });
+      } else {
+        const wslSrc = toWslPath(srcFile);
+        const wslOut = `${wslSrc}.out`;
+
+        const compileRes = await runCommand('wsl', ['-e', 'gcc', '-O2', '-Wall', wslSrc, '-o', wslOut], '', 45000);
+        if (compileRes.code !== 0) {
+          return res.json({
+            stdout: '',
+            stderr: compileRes.stderr || compileRes.stdout,
+            code: compileRes.code,
+            executionTime: compileRes.executionTime,
+            status: 'COMPILE_ERROR',
+            runner: 'GNU C (GCC 13.3.0)'
+          });
+        }
+
+        const runRes = await runCommand('wsl', ['-e', wslOut], stdin, 30000);
+        return res.json({
+          stdout: runRes.stdout,
+          stderr: runRes.stderr,
+          code: runRes.code,
+          executionTime: compileRes.executionTime + runRes.executionTime,
+          compileTime: compileRes.executionTime,
+          status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
+          runner: 'GNU C (GCC 13.3.0 Native)'
         });
       }
-
-      const runRes = await runCommand('wsl', ['-e', wslOut], stdin, 30000);
-      return res.json({
-        stdout: runRes.stdout,
-        stderr: runRes.stderr,
-        code: runRes.code,
-        executionTime: compileRes.executionTime + runRes.executionTime,
-        compileTime: compileRes.executionTime,
-        status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
-        runner: 'GNU C (GCC 13.3.0 Native)'
-      });
     }
 
-    // 3. Python 3.11 (Native Local)
+    // 3. Python 3 (Portable Embeddable Python or Native Local)
     if (langConfig.runner === 'native-python') {
       const scriptPath = path.join(tempDir, 'main.py');
       fs.writeFileSync(scriptPath, code, 'utf-8');
-      const result = await runCommand('python', ['-u', scriptPath], stdin, 30000, tempDir);
+      const pyCmd = PORTABLE_PYTHON || 'python';
+      const result = await runCommand(pyCmd, ['-u', scriptPath], stdin, 30000, tempDir);
       return res.json({
         ...result,
-        runner: 'Python 3.11 (Native CPython)'
+        runner: PORTABLE_PYTHON ? 'Python 3.12 (Embedded Portable CPython)' : 'Python 3.11 (Native CPython)'
       });
     }
 
@@ -402,18 +508,20 @@ wss.on('connection', (ws) => {
 
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ide_terminal_'));
 
-        // 1. Python (Native CPython with -u for fully unbuffered interactive stdio)
+        // 1. Python (Portable CPython or Native Local with -u for fully unbuffered interactive stdio)
         if (language === 'python') {
           const scriptPath = path.join(tempDir, 'main.py');
           fs.writeFileSync(scriptPath, code, 'utf-8');
+          const pyBin = PORTABLE_PYTHON || 'python';
+          const runnerName = PORTABLE_PYTHON ? 'Python 3.12 (Embedded Portable CPython)' : 'Python 3.11 (Native CPython)';
 
           ws.send(JSON.stringify({
             type: 'system',
-            data: `[Elite IDE Terminal] Launching Python 3.11 (Interactive Mode)\r\n`
+            data: `[Elite IDE Terminal] Launching ${runnerName} (Interactive Mode)\r\n`
           }));
 
-          child = spawn('python', ['-u', scriptPath], { cwd: tempDir, shell: false });
-          setupChildHandlers(child, ws, cleanup, startTime, 'Python 3.11 (Native CPython)');
+          child = spawn(pyBin, ['-u', scriptPath], { cwd: tempDir, shell: false, env: process.env });
+          setupChildHandlers(child, ws, cleanup, startTime, runnerName);
           return;
         }
 
@@ -427,7 +535,7 @@ wss.on('connection', (ws) => {
             data: `[Elite IDE Terminal] Launching Node.js v24 (Interactive Mode)\r\n`
           }));
 
-          child = spawn('node', [scriptPath], { cwd: tempDir, shell: false });
+          child = spawn('node', [scriptPath], { cwd: tempDir, shell: false, env: process.env });
           setupChildHandlers(child, ws, cleanup, startTime, 'Node.js 24 (V8 Engine)');
           return;
         }
@@ -456,82 +564,156 @@ wss.on('connection', (ws) => {
           return;
         }
 
-        // 4. C++ (G++ 13.3 Native via WSL)
+        // 4. C++ (Portable MinGW-w64 G++ or WSL Fallback)
         if (language === 'cpp') {
           const srcFile = path.join(tempDir, 'main.cpp');
           fs.writeFileSync(srcFile, code, 'utf-8');
-          const wslSrc = toWslPath(srcFile);
-          const wslOut = `${wslSrc}.out`;
 
-          ws.send(JSON.stringify({
-            type: 'system',
-            data: `[Elite IDE Terminal] Compiling C++ with GNU G++ 13.3.0...\r\n`
-          }));
+          if (PORTABLE_GPP) {
+            const exeOut = path.join(tempDir, 'main.exe');
+            ws.send(JSON.stringify({
+              type: 'system',
+              data: `[Elite IDE Terminal] Compiling C++ with Portable MinGW-w64 G++...\r\n`
+            }));
 
-          const compileRes = await runCommand('wsl', ['-e', 'g++', '-O2', '-Wall', wslSrc, '-o', wslOut], '', 45000);
-          if (compileRes.code !== 0) {
+            const compileRes = await runCommand(PORTABLE_GPP, ['-O2', '-Wall', srcFile, '-o', exeOut], '', 45000, tempDir);
+            if (compileRes.code !== 0) {
+              ws.send(JSON.stringify({
+                type: 'stderr',
+                data: compileRes.stderr || compileRes.stdout
+              }));
+              ws.send(JSON.stringify({
+                type: 'exit',
+                code: compileRes.code,
+                status: 'COMPILE_ERROR',
+                executionTime: compileRes.executionTime,
+                runner: 'GNU C++ (Portable MinGW-w64 G++)'
+              }));
+              cleanup();
+              return;
+            }
+
             ws.send(JSON.stringify({
-              type: 'stderr',
-              data: compileRes.stderr || compileRes.stdout
+              type: 'system',
+              data: `[Elite IDE Terminal] Compilation successful! Running program...\r\n`
             }));
+
+            child = spawn(exeOut, [], { cwd: tempDir, shell: false, env: process.env });
+            setupChildHandlers(child, ws, cleanup, startTime, 'GNU C++ (Portable MinGW-w64 Native)');
+            return;
+          } else {
+            const wslSrc = toWslPath(srcFile);
+            const wslOut = `${wslSrc}.out`;
+
             ws.send(JSON.stringify({
-              type: 'exit',
-              code: compileRes.code,
-              status: 'COMPILE_ERROR',
-              executionTime: compileRes.executionTime,
-              runner: 'GNU C++ (G++ 13.3.0)'
+              type: 'system',
+              data: `[Elite IDE Terminal] Compiling C++ with GNU G++ 13.3.0...\r\n`
             }));
-            cleanup();
+
+            const compileRes = await runCommand('wsl', ['-e', 'g++', '-O2', '-Wall', wslSrc, '-o', wslOut], '', 45000);
+            if (compileRes.code !== 0) {
+              ws.send(JSON.stringify({
+                type: 'stderr',
+                data: compileRes.stderr || compileRes.stdout
+              }));
+              ws.send(JSON.stringify({
+                type: 'exit',
+                code: compileRes.code,
+                status: 'COMPILE_ERROR',
+                executionTime: compileRes.executionTime,
+                runner: 'GNU C++ (G++ 13.3.0)'
+              }));
+              cleanup();
+              return;
+            }
+
+            ws.send(JSON.stringify({
+              type: 'system',
+              data: `[Elite IDE Terminal] Compilation successful! Running program...\r\n`
+            }));
+
+            child = spawn('wsl', ['-e', wslOut], { shell: false });
+            setupChildHandlers(child, ws, cleanup, startTime, 'GNU C++ (G++ 13.3.0)');
             return;
           }
-
-          ws.send(JSON.stringify({
-            type: 'system',
-            data: `[Elite IDE Terminal] Compilation successful! Running program...\r\n`
-          }));
-
-          child = spawn('wsl', ['-e', wslOut], { shell: false });
-          setupChildHandlers(child, ws, cleanup, startTime, 'GNU C++ (G++ 13.3.0)');
-          return;
         }
 
-        // 4. C (GCC 13.3 Native via WSL)
+        // 5. C (Portable MinGW-w64 GCC / TCC 64 or WSL Fallback)
         if (language === 'c') {
           const srcFile = path.join(tempDir, 'main.c');
           fs.writeFileSync(srcFile, code, 'utf-8');
-          const wslSrc = toWslPath(srcFile);
-          const wslOut = `${wslSrc}.out`;
 
-          ws.send(JSON.stringify({
-            type: 'system',
-            data: `[Elite IDE Terminal] Compiling C with GNU GCC 13.3.0...\r\n`
-          }));
+          if (PORTABLE_GCC) {
+            const exeOut = path.join(tempDir, 'main.exe');
+            const isTcc = PORTABLE_GCC.toLowerCase().includes('tcc');
+            const compilerName = isTcc ? 'Tiny C Compiler (Portable TCC 64)' : 'GNU C (Portable MinGW-w64 GCC)';
+            
+            ws.send(JSON.stringify({
+              type: 'system',
+              data: `[Elite IDE Terminal] Compiling C with ${compilerName}...\r\n`
+            }));
 
-          const compileRes = await runCommand('wsl', ['-e', 'gcc', '-O2', '-Wall', wslSrc, '-o', wslOut], '', 45000);
-          if (compileRes.code !== 0) {
+            const compileArgs = isTcc ? [srcFile, '-o', exeOut] : ['-O2', '-Wall', srcFile, '-o', exeOut];
+            const compileRes = await runCommand(PORTABLE_GCC, compileArgs, '', 45000, tempDir);
+            if (compileRes.code !== 0) {
+              ws.send(JSON.stringify({
+                type: 'stderr',
+                data: compileRes.stderr || compileRes.stdout
+              }));
+              ws.send(JSON.stringify({
+                type: 'exit',
+                code: compileRes.code,
+                status: 'COMPILE_ERROR',
+                executionTime: compileRes.executionTime,
+                runner: compilerName
+              }));
+              cleanup();
+              return;
+            }
+
             ws.send(JSON.stringify({
-              type: 'stderr',
-              data: compileRes.stderr || compileRes.stdout
+              type: 'system',
+              data: `[Elite IDE Terminal] Compilation successful! Running program...\r\n`
             }));
+
+            child = spawn(exeOut, [], { cwd: tempDir, shell: false, env: process.env });
+            setupChildHandlers(child, ws, cleanup, startTime, `${compilerName} Native`);
+            return;
+          } else {
+            const wslSrc = toWslPath(srcFile);
+            const wslOut = `${wslSrc}.out`;
+
             ws.send(JSON.stringify({
-              type: 'exit',
-              code: compileRes.code,
-              status: 'COMPILE_ERROR',
-              executionTime: compileRes.executionTime,
-              runner: 'GNU C (GCC 13.3.0)'
+              type: 'system',
+              data: `[Elite IDE Terminal] Compiling C with GNU GCC 13.3.0...\r\n`
             }));
-            cleanup();
+
+            const compileRes = await runCommand('wsl', ['-e', 'gcc', '-O2', '-Wall', wslSrc, '-o', wslOut], '', 45000);
+            if (compileRes.code !== 0) {
+              ws.send(JSON.stringify({
+                type: 'stderr',
+                data: compileRes.stderr || compileRes.stdout
+              }));
+              ws.send(JSON.stringify({
+                type: 'exit',
+                code: compileRes.code,
+                status: 'COMPILE_ERROR',
+                executionTime: compileRes.executionTime,
+                runner: 'GNU C (GCC 13.3.0)'
+              }));
+              cleanup();
+              return;
+            }
+
+            ws.send(JSON.stringify({
+              type: 'system',
+              data: `[Elite IDE Terminal] Compilation successful! Running program...\r\n`
+            }));
+
+            child = spawn('wsl', ['-e', wslOut], { shell: false });
+            setupChildHandlers(child, ws, cleanup, startTime, 'GNU C (GCC 13.3.0)');
             return;
           }
-
-          ws.send(JSON.stringify({
-            type: 'system',
-            data: `[Elite IDE Terminal] Compilation successful! Running program...\r\n`
-          }));
-
-          child = spawn('wsl', ['-e', wslOut], { shell: false });
-          setupChildHandlers(child, ws, cleanup, startTime, 'GNU C (GCC 13.3.0)');
-          return;
         }
 
         // 5. Java (Microsoft OpenJDK 17)
@@ -641,6 +823,36 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     cleanup();
   });
+});
+
+// Serve built compiler static files if present for standalone desktop and web production
+const compilerDistCandidates = [
+  resourcesDir ? path.join(resourcesDir, 'compiler') : null,
+  path.resolve(serverDir, '..', '..', 'compiler'),
+  path.resolve(serverDir, '..', 'compiler'),
+  path.resolve(process.cwd(), 'compiler'),
+  path.resolve(process.cwd(), '..', 'compiler'),
+  'D:\\elite we kingdom website\\compiler'
+].filter(Boolean);
+
+const activeDist = compilerDistCandidates.find(d => fs.existsSync(d) && fs.existsSync(path.join(d, 'index.html')));
+
+if (activeDist) {
+  console.log(`[ELITE IDE] Serving production static UI from: ${activeDist}`);
+  app.use('/compiler', express.static(activeDist));
+  app.use(express.static(activeDist));
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(activeDist, 'index.html'));
+  });
+}
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`[ELITE IDE] Port ${PORT} already active. Reusing running server.`);
+  } else {
+    console.error('[ELITE IDE Server Error]:', err);
+  }
 });
 
 server.listen(PORT, () => {

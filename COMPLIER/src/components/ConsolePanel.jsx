@@ -12,9 +12,17 @@ import {
   CornerDownLeft, 
   Play, 
   Sparkles,
-  ClipboardPaste,
+  Zap,
+  Layers,
   Wrench
 } from 'lucide-react';
+
+// Clean ANSI color codes from terminal output
+function stripAnsiCodes(text) {
+  if (!text) return '';
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\u001b\[[0-9;]*m/g, '');
+}
 
 export default function ConsolePanel({
   terminalEntries = [],
@@ -29,6 +37,8 @@ export default function ConsolePanel({
   awaitingPrompt = null,
   onInlinePromptSubmit = null,
   onOpenAiHealer = null,
+  onJumpToLine = null,
+  onSwitchToProblems = null,
   files = []
 }) {
   const [copied, setCopied] = useState(false);
@@ -58,7 +68,7 @@ export default function ConsolePanel({
     }
   }, [awaitingPrompt]);
 
-  // Focus input when process starts running or when requested
+  // Focus input when process starts running
   useEffect(() => {
     if (isRunning && inputRef.current) {
       try {
@@ -68,33 +78,18 @@ export default function ConsolePanel({
   }, [isRunning]);
 
   const handleCopyOutput = () => {
-    const text = terminalEntries.map(e => e.text).join('');
+    const text = terminalEntries.map(e => stripAnsiCodes(e.text)).join('');
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const handlePasteInput = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        setCurrentInput(prev => prev + text);
-        if (inputRef.current) inputRef.current.focus();
-      }
-    } catch (e) {
-      console.warn('Clipboard read error:', e);
-    }
-  };
-
   const handleSend = (e) => {
     if (e) e.preventDefault();
     if (!isRunning) {
-      // If not running, pass currentInput as custom standard input to onRun!
       if (onRun) onRun(currentInput);
       return;
     }
-
-    // Send stdin to the running process
     if (onSendStdin) {
       onSendStdin(currentInput);
     }
@@ -111,7 +106,6 @@ export default function ConsolePanel({
     }
   };
 
-  // Touching or clicking on terminal body immediately focuses the input!
   const handleBodyClick = (e) => {
     if (e.target && (e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('textarea'))) {
       return;
@@ -121,7 +115,6 @@ export default function ConsolePanel({
     }
   };
 
-  // Detect if the output failed due to missing stdin (EOFError in Python, NoSuchElementException in Java, etc.)
   const hasEofError = useMemo(() => {
     return terminalEntries.some(e => 
       (e.type === 'stderr' || e.type === 'stdout') && (
@@ -133,7 +126,6 @@ export default function ConsolePanel({
     );
   }, [terminalEntries]);
 
-  // Detect if any execution exception / compile error occurred
   const hasAnyError = useMemo(() => {
     return (
       (lastStats && (lastStats.status === 'RUNTIME_ERROR' || lastStats.status === 'COMPILE_ERROR' || lastStats.code !== 0)) ||
@@ -144,9 +136,49 @@ export default function ConsolePanel({
   const isSuccess = lastStats && lastStats.code === 0;
   const isError = lastStats && lastStats.code !== 0;
 
+  // Render a single stderr line with an interactive jump-to-line pill
+  const renderStderrLineWithJump = (rawText, keyPrefix) => {
+    const clean = stripAnsiCodes(rawText);
+    const lines = clean.split('\n');
+
+    return lines.map((lineStr, lineIdx) => {
+      if (!lineStr.trim()) return null;
+
+      // Extract line and column numbers
+      const match = /(?:File\s+["'][^"']+["'],\s+line\s+(\d+)|([a-zA-Z0-9_\-\./\\]+\.[a-zA-Z0-9]+):(\d+)(?::(\d+))?|line\s+(\d+))/i.exec(lineStr);
+      let targetLine = null;
+      let targetCol = 1;
+
+      if (match) {
+        targetLine = parseInt(match[1] || match[3] || match[5], 10);
+        if (match[4]) targetCol = parseInt(match[4], 10);
+      }
+
+      return (
+        <div key={`${keyPrefix}-${lineIdx}`} className="terminal-stderr-line-row">
+          <span className="stderr-text">{lineStr}</span>
+          {targetLine && onJumpToLine && (
+            <button
+              type="button"
+              className="terminal-inline-jump-chip"
+              onClick={(e) => {
+                e.stopPropagation();
+                onJumpToLine(targetLine, targetCol);
+              }}
+              title={`Jump to Line ${targetLine} in editor`}
+            >
+              <Zap size={11} className="text-amber-400" />
+              <span>Ln {targetLine}</span>
+            </button>
+          )}
+        </div>
+      );
+    });
+  };
+
   return (
     <div className="console-panel-container">
-      {/* Terminal Header */}
+      {/* Clean Single-Row Terminal Header with Zero Overlap */}
       <div className="console-header">
         <div className="terminal-header-title">
           <div className="terminal-window-dots" title="Elite Cloud Execution Sandbox">
@@ -154,66 +186,76 @@ export default function ConsolePanel({
             <span className="dot dot-minimize" />
             <span className="dot dot-maximize" />
           </div>
-          <TerminalIcon size={14} className="terminal-header-icon" />
-          <span className="terminal-header-name">Elite Cloud Terminal</span>
+
           <span className="terminal-shell-tag">bash</span>
-          {isRunning ? (
-            <span className="live-pulse-badge">
-              <span className="pulse-dot"></span>
-              RUNNING
-            </span>
-          ) : lastStats ? (
-            <span className={`tab-badge ${isSuccess ? 'success' : 'error'}`}>
-              {isSuccess ? 'READY • 0' : `EXIT • ${lastStats.code || 1}`}
-            </span>
-          ) : (
-            <span className="tab-badge idle">STANDBY</span>
-          )}
+
+          {/* Live Execution HUD Capsule */}
+          <div className="terminal-hud-capsule">
+            {isRunning ? (
+              <span className="live-pulse-badge">
+                <span className="pulse-dot"></span>
+                RUNNING
+              </span>
+            ) : lastStats ? (
+              <span className={`tab-badge ${isSuccess ? 'success' : 'error'}`}>
+                {isSuccess ? 'READY • 0' : `EXIT • ${lastStats.code ?? 1}`}
+              </span>
+            ) : (
+              <span className="tab-badge idle">STANDBY</span>
+            )}
+
+            {lastStats && lastStats.executionTime !== undefined && (
+              <span className="hud-metric-pill" title="Execution Time">
+                <Clock size={11} />
+                <span>{lastStats.executionTime}ms</span>
+              </span>
+            )}
+          </div>
         </div>
 
+        {/* Console Action Buttons */}
         <div className="console-actions">
-          {/* Autonomous AI Auto-Fixer Button */}
           {hasAnyError && onOpenAiHealer && (
             <button
+              type="button"
               className="console-action-btn ai-heal-btn"
               onClick={onOpenAiHealer}
               title="Auto-Fix error with Autonomous AI Agent"
-              style={{
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(168, 85, 247, 0.25))',
-                border: '1px solid rgba(168, 85, 247, 0.5)',
-                color: '#c084fc',
-                fontWeight: '600'
-              }}
+              id="terminal-fix-with-ai-btn"
             >
-              <Sparkles size={13} className="text-amber-400 animate-pulse" />
+              <Sparkles size={12} className="text-amber-400 animate-pulse" />
               <span>Fix with AI</span>
             </button>
           )}
 
           {isRunning && (
             <button
+              type="button"
               className="console-action-btn stop-btn"
               onClick={onStopProcess}
               title="Stop running program (Ctrl + C)"
               id="stop-process-btn"
             >
-              <Square size={13} fill="currentColor" />
-              <span>Stop (Ctrl+C)</span>
+              <Square size={12} fill="currentColor" />
+              <span>Stop</span>
             </button>
           )}
 
           {terminalEntries.length > 0 && (
             <button
+              type="button"
               className="console-action-btn"
               onClick={handleCopyOutput}
               title="Copy Output"
+              id="copy-terminal-output-btn"
             >
-              {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
+              {copied ? <Check size={12} className="text-success" /> : <Copy size={12} />}
               <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
           )}
 
           <button
+            type="button"
             className={`console-action-btn ${showStdinDrawer ? 'active' : ''}`}
             onClick={() => setShowStdinDrawer(prev => !prev)}
             title="Custom Multi-line Stdin Input"
@@ -223,12 +265,13 @@ export default function ConsolePanel({
           </button>
 
           <button
+            type="button"
             className="console-action-btn"
             onClick={onClearConsole}
             title="Clear Terminal Output"
             id="clear-console-btn"
           >
-            <Trash2 size={13} />
+            <Trash2 size={12} />
             <span>Clear</span>
           </button>
         </div>
@@ -265,9 +308,9 @@ export default function ConsolePanel({
             </div>
             <p className="empty-title">Ready for Interactive Execution</p>
             <p className="empty-desc">
-              Write your code in the editor and click <kbd>Run Code</kbd> or press <kbd>Ctrl + Enter</kbd>.
+              Write code in the editor and click <kbd>Run Code</kbd> or press <kbd>Ctrl + Enter</kbd>.
               <br />
-              Supports live interactive inputs (<kbd>input()</kbd>, <kbd>cin</kbd>, <kbd>scanf</kbd>) with Autonomous AI Error Healing!
+              Supports interactive inputs (<kbd>input()</kbd>, <kbd>cin</kbd>, <kbd>scanf</kbd>) with 1-click line error jump!
             </p>
             <div
               className="console-capabilities-strip"
@@ -278,18 +321,17 @@ export default function ConsolePanel({
                 justifyContent: 'center',
                 gap: '6px',
                 marginTop: '14px',
-                maxWidth: '460px'
+                maxWidth: '480px'
               }}
             >
               {[
                 '116+ Languages',
-                'Live Co-Editing',
-                'X-Ray Trace & Output Diff',
-                'ISO Flowchart + PNG/SVG',
-                '<5ms SQL & JDBC',
-                '3D Memory & Recursion',
-                'CP Judge & TCS NQT Packs',
-                'Embed Widget (?embed=1)'
+                'Clickable Error Line Jump',
+                'Problems Diagnostics Panel',
+                'Monaco Sticky Scroll',
+                'JetBrains Mono',
+                'X-Ray Dry Run',
+                'ISO Flowchart'
               ].map((feat) => (
                 <span
                   key={feat}
@@ -334,59 +376,52 @@ export default function ConsolePanel({
               );
             }
             if (entry.type === 'stdout') {
-              return <span key={idx} className="stdout-text">{entry.text}</span>;
+              return <span key={idx} className="stdout-text">{stripAnsiCodes(entry.text)}</span>;
             }
             if (entry.type === 'stderr') {
-              return <span key={idx} className="stderr-text">{entry.text}</span>;
+              return renderStderrLineWithJump(entry.text, `stderr-${idx}`);
             }
             if (entry.type === 'system') {
-              return <span key={idx} className="system-text">{entry.text}</span>;
+              return <span key={idx} className="system-text">{stripAnsiCodes(entry.text)}</span>;
             }
             if (entry.type === 'stdin') {
               return <span key={idx} className="stdin-echo-text">{entry.text}</span>;
             }
-            return <span key={idx}>{entry.text}</span>;
+            return <span key={idx}>{stripAnsiCodes(entry.text)}</span>;
           })}
 
-          {/* Inline AI Healer Banner if an error occurred */}
-          {hasAnyError && onOpenAiHealer && (
-            <div className="terminal-ai-repair-banner" style={{
-              margin: '12px 0',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              background: 'rgba(99, 102, 241, 0.12)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '10px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={16} style={{ color: '#fbbf24' }} />
-                <span style={{ fontSize: '0.8rem', color: '#e0e7ff', fontWeight: 500 }}>
-                  Autonomous AI Agent diagnosed an execution exception.
+          {/* Inline AI Healer & Problems Banner if an error occurred */}
+          {hasAnyError && (
+            <div className="terminal-ai-repair-banner">
+              <div className="ai-banner-left">
+                <AlertCircle size={16} className="text-rose-400" />
+                <span className="ai-banner-text">
+                  Execution exception diagnosed in workspace.
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={onOpenAiHealer}
-                style={{
-                  padding: '5px 12px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  background: '#6366f1',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px'
-                }}
-              >
-                <Wrench size={12} />
-                <span>Auto-Fix with AI</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {onSwitchToProblems && (
+                  <button
+                    type="button"
+                    onClick={onSwitchToProblems}
+                    className="ai-banner-fix-btn"
+                    style={{ background: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38bdf8' }}
+                  >
+                    <Layers size={12} />
+                    <span>View Problems</span>
+                  </button>
+                )}
+                {onOpenAiHealer && (
+                  <button
+                    type="button"
+                    onClick={onOpenAiHealer}
+                    className="ai-banner-fix-btn"
+                  >
+                    <Wrench size={12} />
+                    <span>Auto-Fix with AI</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -395,7 +430,7 @@ export default function ConsolePanel({
             <span className="terminal-live-cursor">▎</span>
           )}
 
-          {/* Inline Interactive Input Line - Prompts the user right here on the prompt line */}
+          {/* Inline Interactive Input Line */}
           {awaitingPrompt && (
             <div className="terminal-inline-input-line">
               <span className="terminal-inline-prompt-label">
@@ -483,7 +518,7 @@ export default function ConsolePanel({
         </div>
       </div>
 
-      {/* Real-time Interactive IDLE Input Bar (Only visible during live process execution) */}
+      {/* Real-time Interactive IDLE Input Bar */}
       {isRunning && (
         <div 
           className="terminal-input-bar active-input-bar"
@@ -509,6 +544,7 @@ export default function ConsolePanel({
           />
 
           <button 
+            type="button"
             className="send-stdin-btn active"
             onClick={handleSend}
             title="Send input to running program (Enter)"

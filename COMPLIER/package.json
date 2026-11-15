@@ -1,21 +1,29 @@
 {
   "name": "complier",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
+  "description": "Elite IDE — Offline Multi-Language Compiler & IDE by Elite Web Kingdom",
+  "author": {
+    "name": "ELITE WEB KINGDOM",
+    "email": "contact@elitewebkingdom.com"
+  },
+  "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "server": "node server/server.js",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "desktop:pack": "electron-builder --config electron-builder.json --dir",
+    "desktop:dist": "electron-builder --config electron-builder.json"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@supabase/supabase-js": "^2.117.3",
     "canvas-confetti": "^1.9.4",
     "cors": "^2.8.6",
-    "express": "^5.2.1",
+    "express": "^4.21.2",
     "lucide-react": "^1.42.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -25,6 +33,8 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0",
     "oxlint": "^1.79.0",
     "vite": "^8.2.2"
   }
