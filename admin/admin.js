@@ -175,6 +175,9 @@ window.switchTab = function(tabId) {
   if (tabId === 'compiler-activity' || tabId === 'overview') {
     loadCompilerActivity();
   }
+  if (tabId === 'elite-ide-launch') {
+    if (typeof loadIdeLaunchStatus === 'function') loadIdeLaunchStatus();
+  }
   if (tabId === 'certificates' || tabId === 'overview') {
     if (typeof window.loadCertificates === 'function') {
       window.loadCertificates();
@@ -5499,6 +5502,157 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', setupAdminTableScrollers);
 } else {
   setupAdminTableScrollers();
+}
+
+// ============================================================================
+// ELITE IDE DESKTOP OFFICIAL LAUNCHPAD & MISSION CONTROL ENGINE
+// Master Passcode: 31012007
+// ============================================================================
+let currentIdeTargetMode = 'COMING_SOON';
+const IDE_MASTER_PASSCODE = '31012007';
+
+window.selectIdeTargetMode = function(mode) {
+  currentIdeTargetMode = mode;
+  const btnSoon = document.getElementById('btn-mode-coming-soon');
+  const btnLive = document.getElementById('btn-mode-official-live');
+  if (!btnSoon || !btnLive) return;
+
+  if (mode === 'COMING_SOON') {
+    btnSoon.style.background = 'rgba(245, 158, 11, 0.2)';
+    btnSoon.style.borderColor = '#f59e0b';
+    btnSoon.style.color = '#f59e0b';
+    btnLive.style.background = 'transparent';
+    btnLive.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+    btnLive.style.color = '#94a3b8';
+  } else {
+    btnLive.style.background = 'rgba(16, 185, 129, 0.2)';
+    btnLive.style.borderColor = '#10b981';
+    btnLive.style.color = '#10b981';
+    btnSoon.style.background = 'transparent';
+    btnSoon.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+    btnSoon.style.color = '#94a3b8';
+  }
+};
+
+window.loadIdeLaunchStatus = async function() {
+  try {
+    if (!supabaseClient) return;
+    const { data, error } = await supabaseClient
+      .from('compiler_telemetry')
+      .select('*')
+      .eq('session_id', 'ELITE_IDE_LAUNCH_STATUS')
+      .order('id', { ascending: false })
+      .limit(1);
+
+    if (error || !data || data.length === 0) return;
+    const item = data[0];
+    const isLive = item.system_name === 'OFFICIAL_LIVE';
+
+    const statusPill = document.getElementById('ide-live-status-pill');
+    const badge = document.getElementById('sidebar-ide-status-badge');
+    const summary = document.getElementById('ide-summary-status-txt');
+    const urlInput = document.getElementById('ide-download-url');
+
+    if (item.code_snippet && urlInput) {
+      urlInput.value = item.code_snippet;
+    }
+
+    if (isLive) {
+      if (statusPill) {
+        statusPill.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></span> CURRENT STATE: OFFICIAL LIVE (DOWNLOAD ACTIVE)';
+        statusPill.style.background = 'rgba(16, 185, 129, 0.15)';
+        statusPill.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+        statusPill.style.color = '#10b981';
+      }
+      if (badge) {
+        badge.textContent = 'LIVE';
+        badge.style.color = '#10b981';
+      }
+      if (summary) {
+        summary.textContent = 'OFFICIAL LIVE';
+        summary.style.color = '#10b981';
+      }
+      selectIdeTargetMode('OFFICIAL_LIVE');
+    } else {
+      if (statusPill) {
+        statusPill.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 10px #f59e0b;"></span> CURRENT STATE: COMING SOON';
+        statusPill.style.background = 'rgba(245, 158, 11, 0.15)';
+        statusPill.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        statusPill.style.color = '#f59e0b';
+      }
+      if (badge) {
+        badge.textContent = 'DRAFT';
+        badge.style.color = '#f59e0b';
+      }
+      if (summary) {
+        summary.textContent = 'COMING SOON';
+        summary.style.color = '#f59e0b';
+      }
+      selectIdeTargetMode('COMING_SOON');
+    }
+  } catch (err) {
+    console.error('Failed to load IDE Launch Status:', err);
+  }
+};
+
+window.executeIdeLaunchToggle = async function() {
+  const passcode = (document.getElementById('ide-launch-passcode')?.value || '').trim();
+  const feedback = document.getElementById('ide-launch-feedback');
+  const downloadUrl = (document.getElementById('ide-download-url')?.value || '').trim();
+
+  if (passcode !== IDE_MASTER_PASSCODE) {
+    if (feedback) {
+      feedback.style.color = '#ef4444';
+      feedback.textContent = '❌ Access Denied: Invalid Master Passcode (Must be 31012007).';
+    }
+    return;
+  }
+
+  if (feedback) {
+    feedback.style.color = '#00f2fe';
+    feedback.textContent = '⚡ Transmitting command to Supabase Master Cloud...';
+  }
+
+  try {
+    if (!supabaseClient) throw new Error('Supabase client offline.');
+
+    const newSystemName = currentIdeTargetMode === 'OFFICIAL_LIVE' ? 'OFFICIAL_LIVE' : 'DRAFT';
+    const newStatus = currentIdeTargetMode === 'OFFICIAL_LIVE' ? 'LIVE' : 'COMING_SOON';
+
+    const { data, error } = await supabaseClient
+      .from('compiler_telemetry')
+      .update({
+        system_name: newSystemName,
+        status: newStatus,
+        code_snippet: downloadUrl,
+        user_name: 'MASTER_ADMIN_31012007',
+        created_at: new Date().toISOString()
+      })
+      .eq('session_id', 'ELITE_IDE_LAUNCH_STATUS');
+
+    if (error) throw error;
+
+    if (feedback) {
+      feedback.style.color = '#10b981';
+      feedback.textContent = `✅ SUCCESS: Elite IDE Status updated to ${newStatus}! Website will sync instantly.`;
+    }
+
+    document.getElementById('ide-launch-passcode').value = '';
+    await loadIdeLaunchStatus();
+  } catch (err) {
+    console.error('Launch toggle failed:', err);
+    if (feedback) {
+      feedback.style.color = '#ef4444';
+      feedback.textContent = '❌ Error saving status: ' + err.message;
+    }
+  }
+};
+
+// Auto-load IDE launch control on admin boot
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    loadIdeLaunchStatus();
+  }, 1200);
 }
 
 

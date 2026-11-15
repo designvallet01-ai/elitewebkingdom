@@ -474,8 +474,7 @@
           <li><a href="#home" class="nav-link active">Home</a></li>
           <li><a href="#estimator" class="nav-link">Cost Calculator</a></li>
           <li><a href="#services" class="nav-link">Services</a></li>
-          <li><a href="https://drive.google.com/uc?export=download&id=19azCpl7fjqMc4IJ6RXmVyghei0KeFX6a" class="nav-link" title="Download Elite IDE for Windows (.exe)" target="_blank" rel="noopener noreferrer" style="color: #4F46E5; font-weight: 700;">Download IDE <span
-                style="font-size: 0.65rem; background: #EEF2FF; border: 1px solid #C7D2FE; color: #4F46E5; padding: 2px 6px; border-radius: 10px; font-weight: 700; margin-left: 4px;">.EXE</span></a></li>
+          <li><a href="#about" class="nav-link">Leadership</a></li>
           <li><a href="#portfolio" class="nav-link">Portfolio</a></li>
           <li><a href="/store/" class="nav-link">Products <span
                 style="font-size: 0.65rem; background: #EFF6FF; border: 1px solid #BFDBFE; color: #1D4ED8; padding: 2px 6px; border-radius: 10px; font-weight: 700; margin-left: 4px;">FREE</span></a>
@@ -483,6 +482,10 @@
           <li><a href="/compiler/" class="nav-link" title="Elite IDE - Professional Online Compiler & Developer Studio">Elite IDE <span
                 style="font-size: 0.65rem; background: #EEF2FF; border: 1px solid #C7D2FE; color: #4F46E5; padding: 2px 6px; border-radius: 10px; font-weight: 700; margin-left: 4px;">PRO</span></a>
           </li>
+          <li id="nav-item-ide-release"><a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" class="nav-link ide-official-nav-btn" title="Elite IDE Offline Studio for Windows (.exe)" style="color: #4F46E5; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+            <span>Elite IDE Offline</span>
+            <span id="nav-ide-badge" style="font-size: 0.65rem; background: #FEF3C7; border: 1px solid #FDE68A; color: #D97706; padding: 2px 6px; border-radius: 10px; font-weight: 800; animation: pulseBadge 2s infinite;">SOON</span>
+          </a></li>
           <li><a href="#process" class="nav-link">Process</a></li>
           <li><a href="#track" class="nav-link">Project Tracker</a></li>
           <li><a href="/verify-certificate.html" class="nav-link" title="Official Certificate Verification Portal">Verify Certificate <span
@@ -532,9 +535,10 @@
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </a>
-          <a href="https://drive.google.com/uc?export=download&id=19azCpl7fjqMc4IJ6RXmVyghei0KeFX6a" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="background: rgba(79, 70, 229, 0.1); border-color: rgba(79, 70, 229, 0.4); color: #4F46E5; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+          <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="hero-ide-download-btn" class="btn btn-secondary" style="background: rgba(79, 70, 229, 0.1); border-color: rgba(79, 70, 229, 0.4); color: #4F46E5; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Download Elite IDE (.exe)
+            <span id="hero-ide-btn-text">Download Elite IDE (.exe)</span>
+            <span id="hero-ide-badge" style="font-size: 0.65rem; background: #FEF3C7; border: 1px solid #FDE68A; color: #D97706; padding: 2px 6px; border-radius: 8px; font-weight: 800;">SOON</span>
           </a>
           <a href="https://wa.me/919985369590" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
             <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
@@ -1077,9 +1081,10 @@
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
             </a>
-            <a href="https://drive.google.com/uc?export=download&id=19azCpl7fjqMc4IJ6RXmVyghei0KeFX6a" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; border-color: #4F46E5; color: #4F46E5; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600;">
+            <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="card-ide-download-btn" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; border-color: #4F46E5; color: #4F46E5; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              Download for Windows (.exe)
+              <span id="card-ide-btn-text">Download for Windows (.exe)</span>
+              <span id="card-ide-badge" style="font-size: 0.65rem; background: #FEF3C7; border: 1px solid #FDE68A; color: #D97706; padding: 1px 5px; border-radius: 6px; font-weight: 800;">SOON</span>
             </a>
           </div>
         </div>
@@ -1704,6 +1709,51 @@
     </div>
   </footer>
   </div><!-- END GREEN ZONE -->
+
+  <!-- ELITE IDE COMING SOON / LAUNCHPAD MODAL -->
+  <div id="ide-coming-soon-modal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: linear-gradient(145deg, #0f172a, #0b0f19); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 24px; padding: 36px 32px; max-width: 520px; width: 100%; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(99, 102, 241, 0.25); position: relative; animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);">
+      <button onclick="closeIdeComingSoonModal()" style="position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.08); border: none; width: 34px; height: 34px; border-radius: 50%; color: #94a3b8; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+      
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+        <div style="width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #4F46E5, #06B6D4); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(79, 70, 229, 0.5);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg>
+        </div>
+        <div>
+          <span style="font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); padding: 3px 8px; border-radius: 6px;">OFFICIAL DESKTOP RELEASE</span>
+          <h3 style="font-size: 1.35rem; color: #fff; margin: 4px 0 0; font-family: var(--font-heading);">Elite IDE 2.0 (Offline Studio)</h3>
+        </div>
+      </div>
+
+      <p style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.6; margin-bottom: 20px;">
+        Visual Studio-Grade 100% Offline Multi-Language Developer Studio by <strong>ELITE WEB KINGDOM</strong>. Packed with built-in GCC, G++, Python 3.12, interactive terminals, and AI Error Healer.
+      </p>
+
+      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 16px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 0.85rem; color: #94a3b8;">Release Status:</span>
+          <span id="modal-ide-status-badge" style="font-size: 0.78rem; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 10px; border-radius: 9999px;">PRE-LAUNCH / COMING SOON</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+          <span style="color: #94a3b8;">Offline Compilers:</span>
+          <span style="color: #10b981; font-weight: 700;">Included (No Internet Needed)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-top: 8px;">
+          <span style="color: #94a3b8;">Installer Size:</span>
+          <span style="color: #fff; font-weight: 700;">233.9 MB (.exe)</span>
+        </div>
+      </div>
+
+      <div id="modal-ide-action-container">
+        <a href="/compiler/" class="btn btn-primary" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none; padding: 12px; font-weight: 700; border-radius: 12px;">
+          Launch Online Cloud IDE In Browser ⚡
+        </a>
+      </div>
+      <p style="text-align: center; color: #64748b; font-size: 0.75rem; margin-top: 14px; margin-bottom: 0;">
+        Official Public Release is staged by Admin. Will activate for direct installation soon!
+      </p>
+    </div>
+  </div>
 
   <!-- FLOATING ACTION BUTTONS -->
   <div class="floating-actions">

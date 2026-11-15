@@ -660,3 +660,134 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// ============================================================================
+// ELITE IDE DESKTOP OFFICIAL LAUNCH CONTROL & CLIENT RUNTIME
+// Syncs dynamically with Supabase Launch Control state (DRAFT vs OFFICIAL_LIVE)
+// ============================================================================
+let eliteIdeLaunchState = {
+  isLive: false,
+  downloadUrl: 'https://drive.google.com/uc?export=download&id=19azCpl7fjqMc4IJ6RXmVyghei0KeFX6a'
+};
+
+async function initEliteIdeLaunchSync() {
+  try {
+    const SUPABASE_URL = "https://jgvgqgbhzadxvcolgvly.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_5ToLoZzsP_B3FQoYBzTnEA_re1QwPPv";
+    
+    let client = null;
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
+    if (!client) return;
+
+    const { data, error } = await client
+      .from('compiler_telemetry')
+      .select('*')
+      .eq('session_id', 'ELITE_IDE_LAUNCH_STATUS')
+      .order('id', { ascending: false })
+      .limit(1);
+
+    if (error || !data || data.length === 0) return;
+
+    const record = data[0];
+    eliteIdeLaunchState.isLive = (record.system_name === 'OFFICIAL_LIVE');
+    if (record.code_snippet) {
+      eliteIdeLaunchState.downloadUrl = record.code_snippet;
+    }
+
+    applyEliteIdeUIState();
+  } catch (err) {
+    console.warn('Elite IDE Launch Sync failed:', err);
+  }
+}
+
+function applyEliteIdeUIState() {
+  const isLive = eliteIdeLaunchState.isLive;
+
+  // 1. Navbar Badge & Text
+  const navBadge = document.getElementById('nav-ide-badge');
+  if (navBadge) {
+    if (isLive) {
+      navBadge.textContent = 'DOWNLOAD';
+      navBadge.style.background = '#ECFDF5';
+      navBadge.style.borderColor = '#A7F3D0';
+      navBadge.style.color = '#059669';
+    } else {
+      navBadge.textContent = 'SOON';
+      navBadge.style.background = '#FEF3C7';
+      navBadge.style.borderColor = '#FDE68A';
+      navBadge.style.color = '#D97706';
+    }
+  }
+
+  // 2. Hero Section Badge & Text
+  const heroBadge = document.getElementById('hero-ide-badge');
+  const heroText = document.getElementById('hero-ide-btn-text');
+  if (heroBadge) {
+    if (isLive) {
+      heroBadge.textContent = 'V2.0 LIVE';
+      heroBadge.style.background = '#ECFDF5';
+      heroBadge.style.borderColor = '#A7F3D0';
+      heroBadge.style.color = '#059669';
+    } else {
+      heroBadge.textContent = 'SOON';
+      heroBadge.style.background = '#FEF3C7';
+      heroBadge.style.borderColor = '#FDE68A';
+      heroBadge.style.color = '#D97706';
+    }
+  }
+  if (heroText) {
+    heroText.textContent = isLive ? 'Download Elite IDE (.exe)' : 'Elite IDE Offline Studio';
+  }
+
+  // 3. Portfolio Card Badge & Text
+  const cardBadge = document.getElementById('card-ide-badge');
+  const cardText = document.getElementById('card-ide-btn-text');
+  if (cardBadge) {
+    if (isLive) {
+      cardBadge.textContent = '.EXE';
+      cardBadge.style.background = '#ECFDF5';
+      cardBadge.style.borderColor = '#A7F3D0';
+      cardBadge.style.color = '#059669';
+    } else {
+      cardBadge.textContent = 'SOON';
+      cardBadge.style.background = '#FEF3C7';
+      cardBadge.style.borderColor = '#FDE68A';
+      cardBadge.style.color = '#D97706';
+    }
+  }
+  if (cardText) {
+    cardText.textContent = isLive ? 'Download for Windows (.exe)' : 'Offline Studio (Windows)';
+  }
+}
+
+window.handleEliteIdeDownloadClick = function(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  if (eliteIdeLaunchState.isLive) {
+    // Official Live: Trigger 1-Click Direct Download immediately!
+    const dlLink = document.createElement('a');
+    dlLink.href = eliteIdeLaunchState.downloadUrl;
+    dlLink.target = '_blank';
+    dlLink.rel = 'noopener noreferrer';
+    dlLink.download = 'Elite-IDE-Setup-2.0.0.exe';
+    document.body.appendChild(dlLink);
+    dlLink.click();
+    document.body.removeChild(dlLink);
+  } else {
+    // Coming Soon Draft: Open Official Preview Modal
+    const modal = document.getElementById('ide-coming-soon-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+};
+
+window.closeIdeComingSoonModal = function() {
+  const modal = document.getElementById('ide-coming-soon-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  initEliteIdeLaunchSync();
+});
+
