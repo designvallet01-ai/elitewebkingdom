@@ -5596,17 +5596,8 @@ window.loadIdeLaunchStatus = async function() {
 };
 
 window.executeIdeLaunchToggle = async function() {
-  const passcode = (document.getElementById('ide-launch-passcode')?.value || '').trim();
   const feedback = document.getElementById('ide-launch-feedback');
   const downloadUrl = (document.getElementById('ide-download-url')?.value || '').trim();
-
-  if (passcode !== IDE_MASTER_PASSCODE) {
-    if (feedback) {
-      feedback.style.color = '#ef4444';
-      feedback.textContent = '❌ Access Denied: Invalid Master Passcode (Must be 31012007).';
-    }
-    return;
-  }
 
   if (feedback) {
     feedback.style.color = '#00f2fe';
@@ -5634,10 +5625,8 @@ window.executeIdeLaunchToggle = async function() {
 
     if (feedback) {
       feedback.style.color = '#10b981';
-      feedback.textContent = `✅ SUCCESS: Elite IDE Status updated to ${newStatus}! Website will sync instantly.`;
+      feedback.textContent = `✅ SUCCESS: Elite IDE Status updated to ${newStatus}! Website updated.`;
     }
-
-    document.getElementById('ide-launch-passcode').value = '';
     await loadIdeLaunchStatus();
   } catch (err) {
     console.error('Launch toggle failed:', err);
