@@ -1,108 +1,158 @@
 import React from 'react';
-import { 
-  FolderTree, 
-  FolderGit2, 
-  Sparkles, 
-  Search, 
-  Keyboard, 
-  Terminal
+import {
+  FolderTree,
+  Search,
+  FolderGit2,
+  Boxes,
+  Database,
+  Bug,
+  Settings,
+  User,
+  Sparkles,
+  Terminal,
+  ShieldCheck,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function ActivityBar({
-  isSidebarOpen,
+  isSidebarOpen = true,
   onToggleSidebar,
+  activeSidebarTab = 'explorer', // 'explorer' | 'search' | 'git' | 'extensions' | 'database' | 'debugger'
+  onSelectSidebarTab,
+  onOpenSearch,
   onOpenGit,
-  onOpenAiHealer,
-  onOpenCommandPalette,
-  onOpenShortcuts,
-  onOpenTerminal,
+  onOpenExtensions,
+  onOpenDatabase,
+  onOpenDebugger,
+  onOpenSettings,
+  onOpenProfile,
+  userProfile,
   hasError = false
 }) {
+  const handleItemClick = (tabKey, customAction) => {
+    if (activeSidebarTab === tabKey && isSidebarOpen) {
+      // Toggle sidebar closed if clicking same active tab
+      onToggleSidebar();
+    } else {
+      if (!isSidebarOpen) onToggleSidebar();
+      if (onSelectSidebarTab) onSelectSidebarTab(tabKey);
+      if (customAction) customAction();
+    }
+  };
+
   return (
-    <aside className="ide-activity-bar" aria-label="Activity Bar">
-      <div className="activity-bar-top">
-        {/* Explorer / File Tree */}
+    <aside className="elite-activity-bar" aria-label="Activity Bar">
+      {/* Top Main Navigation Icons */}
+      <div className="activity-bar-group top-group">
+        {/* 1. Explorer */}
         <button
           type="button"
-          className={`activity-icon-btn ${isSidebarOpen ? 'active' : ''}`}
-          onClick={onToggleSidebar}
-          title="Explorer (Ctrl + B)"
+          className={`activity-btn ${isSidebarOpen && activeSidebarTab === 'explorer' ? 'active' : ''}`}
+          onClick={() => handleItemClick('explorer')}
+          title="Explorer (Ctrl + Shift + E / Ctrl + B)"
+          aria-label="Explorer"
           id="activity-btn-explorer"
-          aria-label="Toggle File Explorer"
         >
           <FolderTree size={20} />
-          {isSidebarOpen && <span className="active-indicator" />}
+          {isSidebarOpen && activeSidebarTab === 'explorer' && <span className="active-pill" />}
         </button>
 
-        {/* Global Search / Command Palette */}
+        {/* 2. Search */}
         <button
           type="button"
-          className="activity-icon-btn"
-          onClick={onOpenCommandPalette}
-          title="Search & Command Palette (Ctrl + K)"
+          className={`activity-btn ${isSidebarOpen && activeSidebarTab === 'search' ? 'active' : ''}`}
+          onClick={() => handleItemClick('search', onOpenSearch)}
+          title="Search in Files (Ctrl + Shift + F / Ctrl + K)"
+          aria-label="Search"
           id="activity-btn-search"
-          aria-label="Command Palette"
         >
           <Search size={20} />
+          {isSidebarOpen && activeSidebarTab === 'search' && <span className="active-pill" />}
         </button>
 
-        {/* Source Control / Git */}
+        {/* 3. Source Control (Git) */}
         <button
           type="button"
-          className="activity-icon-btn"
-          onClick={onOpenGit}
-          title="Source Control (Ctrl + Shift + G)"
-          id="activity-btn-git"
+          className={`activity-btn ${isSidebarOpen && activeSidebarTab === 'git' ? 'active' : ''}`}
+          onClick={() => handleItemClick('git', onOpenGit)}
+          title="Source Control & GitHub (Ctrl + Shift + G)"
           aria-label="Source Control"
+          id="activity-btn-git"
         >
           <FolderGit2 size={20} />
+          {isSidebarOpen && activeSidebarTab === 'git' && <span className="active-pill" />}
         </button>
 
-        {/* Terminal Console */}
+        {/* 4. Extensions (116+ Language Matrix & Packages) */}
         <button
           type="button"
-          className="activity-icon-btn"
-          onClick={onOpenTerminal}
-          title="Terminal Console (Ctrl + `)"
-          id="activity-btn-terminal"
-          aria-label="Terminal Console"
+          className={`activity-btn ${isSidebarOpen && activeSidebarTab === 'extensions' ? 'active' : ''}`}
+          onClick={() => handleItemClick('extensions', onOpenExtensions)}
+          title="Language Extensions & 116+ Matrix (Ctrl + Shift + X)"
+          aria-label="Extensions"
+          id="activity-btn-extensions"
         >
-          <Terminal size={20} />
+          <Boxes size={20} />
+          {isSidebarOpen && activeSidebarTab === 'extensions' && <span className="active-pill" />}
         </button>
 
-        {/* AI Assistant / Code Doctor */}
+        {/* 5. Database & Memory Matrix */}
         <button
           type="button"
-          className={`activity-icon-btn ${hasError ? 'has-error' : ''}`}
-          onClick={onOpenAiHealer}
-          title="AI Assistant & Debugger"
-          id="activity-btn-ai"
-          aria-label="AI Diagnostics"
+          className={`activity-btn ${isSidebarOpen && activeSidebarTab === 'database' ? 'active' : ''}`}
+          onClick={() => handleItemClick('database', onOpenDatabase)}
+          title="Database & Memory Matrix (SQL, JDBC, 3D Arrays)"
+          aria-label="Database"
+          id="activity-btn-database"
         >
-          <Sparkles size={20} />
-          {hasError && <span className="activity-badge-dot" />}
+          <Database size={20} />
+          {isSidebarOpen && activeSidebarTab === 'database' && <span className="active-pill" />}
+        </button>
+
+        {/* 6. Debugger (AST Trace & One-Click Doctor) */}
+        <button
+          type="button"
+          className={`activity-btn ${isSidebarOpen && activeSidebarTab === 'debugger' ? 'active' : ''} ${hasError ? 'has-error' : ''}`}
+          onClick={() => handleItemClick('debugger', onOpenDebugger)}
+          title="Run & Debug (Ctrl + Shift + D)"
+          aria-label="Debugger"
+          id="activity-btn-debugger"
+        >
+          <Bug size={20} />
+          {hasError && <span className="error-dot" />}
+          {isSidebarOpen && activeSidebarTab === 'debugger' && <span className="active-pill" />}
         </button>
       </div>
 
-      <div className="activity-bar-bottom">
-        {/* Engine Status Indicator */}
-        <div 
-          className="activity-engine-indicator" 
-          title="Cloud Runtime Matrix: Active"
-        >
-          <span className="engine-pulse-core" />
-        </div>
-
-        {/* Keyboard Shortcuts & Settings */}
+      {/* Bottom Settings & User Profile Icons */}
+      <div className="activity-bar-group bottom-group">
+        {/* Settings */}
         <button
           type="button"
-          className="activity-icon-btn"
-          onClick={onOpenShortcuts}
-          title="Settings & Keyboard Shortcuts (Ctrl + /)"
-          id="activity-btn-shortcuts"
-          aria-label="Keyboard Shortcuts"
+          className="activity-btn"
+          onClick={onOpenSettings}
+          title="Settings & Keyboard Shortcuts (Ctrl + ,)"
+          aria-label="Settings"
+          id="activity-btn-settings"
         >
-          <Keyboard size={18} />
+          <Settings size={20} />
+        </button>
+
+        {/* Developer Account / User Profile */}
+        <button
+          type="button"
+          className="activity-btn profile-btn"
+          onClick={onOpenProfile}
+          title={userProfile?.name ? `Signed in as ${userProfile.name}` : 'Developer Account'}
+          aria-label="Developer Account"
+          id="activity-btn-profile"
+        >
+          <div className="activity-avatar">
+            <User size={18} />
+            {userProfile?.mobile && userProfile.mobile !== 'N/A' && (
+              <span className="verified-dot" title="Verified Profile" />
+            )}
+          </div>
         </button>
       </div>
     </aside>

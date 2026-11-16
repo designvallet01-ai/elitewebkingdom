@@ -3479,25 +3479,26 @@ window.filterCompilerRunsTable = function() {
       const cleanSearch = searchInput.trim().toLowerCase();
       const digitsSearch = cleanSearch.replace(/[^0-9]/g, '');
 
-      const mobileVal = (r.user_mobile || r.mobile || r.phone || r.user_phone || '').toLowerCase();
+      const mobileVal = String(r.user_mobile || r.mobile || r.phone || r.user_phone || '').toLowerCase();
       const mobileDigits = mobileVal.replace(/[^0-9]/g, '');
-      const collegeVal = (r.college_name || '').toLowerCase();
-      const systemVal = (r.system_name || '').toLowerCase();
+      const collegeVal = String(r.college_name || '').toLowerCase();
+      const systemVal = String(r.system_name || '').toLowerCase();
 
       const hay = [
-        r.user_name || '',
-        r.user_id || '',
-        r.language || '',
-        r.code_snippet || '',
-        r.device || '',
-        r.os || '',
-        r.browser || '',
-        r.ip || '',
+        r.user_name,
+        r.user_id,
+        r.language,
+        r.code_snippet,
+        r.device,
+        r.os,
+        r.browser,
+        r.ip,
         collegeVal,
         systemVal,
         mobileVal,
-        r.user_email || r.email || ''
-      ].join(' ').toLowerCase();
+        r.user_email,
+        r.email
+      ].filter(v => v != null).map(v => String(v).toLowerCase()).join(' ');
 
       const textMatches = hay.includes(cleanSearch);
       const mobileMatches = digitsSearch.length >= 3 && (
@@ -4031,9 +4032,9 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
 
   const addProfile = (p, isFresh = true) => {
     if (!p) return;
-    const cleanMobile = (p.mobile && p.mobile !== 'N/A') ? p.mobile.replace(/[^0-9]/g, '') : '';
-    const cleanEmail = (p.email && p.email !== 'N/A') ? p.email.toLowerCase().trim() : '';
-    const key = cleanMobile || cleanEmail || p.user_id;
+    const cleanMobile = (p.mobile != null && p.mobile !== 'N/A') ? String(p.mobile).replace(/[^0-9]/g, '') : '';
+    const cleanEmail = (p.email != null && p.email !== 'N/A') ? String(p.email).toLowerCase().trim() : '';
+    const key = cleanMobile || cleanEmail || String(p.user_id || '').trim();
     if (!key) return;
 
     if (!profileMap.has(key)) {
@@ -4046,16 +4047,16 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
           ...cur,
           ...p,
           created_at: cur.created_at || p.created_at,
-          runs_count: Math.max(cur.runs_count || 1, p.runs_count || 1)
+          runs_count: Math.max(Number(cur.runs_count) || 1, Number(p.runs_count) || 1)
         });
       } else {
         // Older/fallback data: only take earlier registration date or higher runs count
         if (p.created_at && (!cur.created_at || new Date(p.created_at) < new Date(cur.created_at))) {
           cur.created_at = p.created_at;
         }
-        cur.runs_count = Math.max(cur.runs_count || 1, p.runs_count || 1);
+        cur.runs_count = Math.max(Number(cur.runs_count) || 1, Number(p.runs_count) || 1);
         if ((!cur.name || cur.name === 'Developer') && p.name && p.name !== 'Developer') {
-          cur.name = p.name;
+          cur.name = String(p.name);
         }
       }
     }
@@ -4233,6 +4234,8 @@ function renderCompilerProfilesTable(profiles, filterSig = 'all') {
   const tbody = document.getElementById('compiler-profiles-tbody');
   if (!tbody) return;
 
+  tbody.innerHTML = '';
+
   const currentQuery = (document.getElementById('compiler-profiles-search')?.value || '').trim();
   const fromVal = document.getElementById('profiles-date-from')?.value || '';
   const toVal = document.getElementById('profiles-date-to')?.value || '';
@@ -4281,72 +4284,94 @@ function renderCompilerProfilesTable(profiles, filterSig = 'all') {
 
   let html = '';
   pageProfiles.forEach((p, idx) => {
-    const initials = (p.name || 'Dev').substring(0, 2).toUpperCase();
-    const bgGrad = avatarColors[idx % avatarColors.length];
-    const registeredDate = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently';
-    const lastActiveStr = p.last_active ? formatRunTime(p.last_active) : 'Active recently';
-    const cleanPhone = (p.mobile || '').replace(/[^0-9]/g, '');
+    try {
+      const nameStr = String(p.name || 'Developer').trim();
+      const initials = nameStr.substring(0, 2).toUpperCase() || 'DV';
+      const bgGrad = avatarColors[idx % avatarColors.length];
+      
+      let registeredDate = 'Recently';
+      if (p.created_at) {
+        try {
+          const d = new Date(p.created_at);
+          if (!isNaN(d.getTime())) {
+            registeredDate = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+          }
+        } catch (_) {}
+      }
 
-    html += `
-      <tr>
-        <td>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <div class="compiler-avatar" style="background: ${bgGrad}; width: 34px; height: 34px; font-size: 0.8rem;">
-              ${initials}
-            </div>
-            <div>
-              <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
-                ${escapeHtml(p.name || 'Anonymous Dev')}
-                <span style="font-size: 0.65rem; background: rgba(16,185,129,0.18); color: #34d399; padding: 1px 6px; border-radius: 4px; font-weight: 700;">VERIFIED</span>
+      const lastActiveStr = p.last_active ? formatRunTime(p.last_active) : 'Active recently';
+      const mobileRaw = (p.mobile != null && p.mobile !== 'N/A') ? String(p.mobile).trim() : '';
+      const cleanPhone = mobileRaw.replace(/[^0-9]/g, '');
+      const emailRaw = (p.email != null && p.email !== 'N/A') ? String(p.email).trim() : '';
+      const deviceRaw = p.device != null ? String(p.device).trim() : 'Desktop';
+      const osRaw = p.os != null ? String(p.os).trim() : 'OS';
+      const runsCount = Number(p.runs_count) || 1;
+      const userIdRaw = p.user_id != null ? String(p.user_id).trim() : '';
+      const filterArg = escapeHtml(userIdRaw || nameStr).replace(/'/g, "\\'");
+
+      html += `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="compiler-avatar" style="background: ${bgGrad}; width: 34px; height: 34px; font-size: 0.8rem;">
+                ${escapeHtml(initials)}
               </div>
-              <div style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono);">${escapeHtml(p.user_id || '')}</div>
+              <div>
+                <div style="font-weight: 700; color: #f8fafc; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                  ${escapeHtml(nameStr)}
+                  <span style="font-size: 0.65rem; background: rgba(16,185,129,0.18); color: #34d399; padding: 1px 6px; border-radius: 4px; font-weight: 700;">VERIFIED</span>
+                </div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono);">${escapeHtml(userIdRaw)}</div>
+              </div>
             </div>
-          </div>
-        </td>
-        <td>
-          ${p.mobile && p.mobile !== 'N/A' ? `
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <a href="tel:${escapeHtml(p.mobile)}" style="color: #38bdf8; font-weight: 600; text-decoration: none; font-size: 0.85rem;" title="Call developer">
-                📞 ${escapeHtml(p.mobile)}
-              </a>
-              ${cleanPhone.length >= 10 ? `
-                <a href="https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}" target="_blank" style="background: rgba(37, 211, 102, 0.15); color: #25d366; border: 1px solid rgba(37, 211, 102, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-decoration: none; font-weight: 700;" title="Chat on WhatsApp">
-                  WhatsApp
+          </td>
+          <td>
+            ${mobileRaw ? `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <a href="tel:${escapeHtml(mobileRaw)}" style="color: #38bdf8; font-weight: 600; text-decoration: none; font-size: 0.85rem;" title="Call developer">
+                  📞 ${escapeHtml(mobileRaw)}
                 </a>
-              ` : ''}
-            </div>
-          ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">--</span>'}
-        </td>
-        <td>
-          ${p.email && p.email !== 'N/A' ? `
-            <a href="mailto:${escapeHtml(p.email)}" style="color: #a5b4fc; text-decoration: none; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 4px;" title="Send Email">
-              ✉️ ${escapeHtml(p.email)}
-            </a>
-          ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">--</span>'}
-        </td>
-        <td>
-          <span class="device-badge ${(p.device || 'desktop').toLowerCase()}">
-            ${p.device === 'Mobile' ? '📱' : '💻'} ${escapeHtml(p.device || 'Desktop')} • ${escapeHtml(p.os || 'OS')}
-          </span>
-        </td>
-        <td>
-          <span style="font-weight: 700; color: #f59e0b; font-size: 0.88rem; background: rgba(245, 158, 11, 0.1); padding: 3px 8px; border-radius: 6px;">
-            ⚡ ${p.runs_count || 1} runs
-          </span>
-        </td>
-        <td style="font-size: 0.78rem; color: #10b981; font-family: var(--font-mono);">
-          ${lastActiveStr}
-        </td>
-        <td style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">
-          ${registeredDate}
-        </td>
-        <td>
-          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary);" onclick="filterRunsByProfile('${escapeHtml(p.user_id || p.name)}')">
-            View Runs →
-          </button>
-        </td>
-      </tr>
-    `;
+                ${cleanPhone.length >= 10 ? `
+                  <a href="https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}" target="_blank" style="background: rgba(37, 211, 102, 0.15); color: #25d366; border: 1px solid rgba(37, 211, 102, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; text-decoration: none; font-weight: 700;" title="Chat on WhatsApp">
+                    WhatsApp
+                  </a>
+                ` : ''}
+              </div>
+            ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">--</span>'}
+          </td>
+          <td>
+            ${emailRaw ? `
+              <a href="mailto:${escapeHtml(emailRaw)}" style="color: #a5b4fc; text-decoration: none; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 4px;" title="Send Email">
+                ✉️ ${escapeHtml(emailRaw)}
+              </a>
+            ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">--</span>'}
+          </td>
+          <td>
+            <span class="device-badge ${escapeHtml(deviceRaw.toLowerCase())}">
+              ${deviceRaw.toLowerCase() === 'mobile' ? '📱' : '💻'} ${escapeHtml(deviceRaw)} • ${escapeHtml(osRaw)}
+            </span>
+          </td>
+          <td>
+            <span style="font-weight: 700; color: #f59e0b; font-size: 0.88rem; background: rgba(245, 158, 11, 0.1); padding: 3px 8px; border-radius: 6px;">
+              ⚡ ${runsCount} runs
+            </span>
+          </td>
+          <td style="font-size: 0.78rem; color: #10b981; font-family: var(--font-mono);">
+            ${escapeHtml(lastActiveStr)}
+          </td>
+          <td style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">
+            ${escapeHtml(registeredDate)}
+          </td>
+          <td>
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary);" onclick="filterRunsByProfile('${filterArg}')">
+              View Runs →
+            </button>
+          </td>
+        </tr>
+      `;
+    } catch (rowErr) {
+      console.error('[Admin] Error rendering profile row:', rowErr, p);
+    }
   });
 
   tbody.innerHTML = html;
@@ -4405,6 +4430,7 @@ function filterCompilerProfilesTable() {
   const queryWords = query ? query.split(/\s+/).filter(Boolean) : [];
 
   const filtered = (window.allCompilerProfiles || []).filter(p => {
+    if (!p) return false;
     if (fromVal || toVal) {
       const pDate = p.created_at || p.last_active;
       if (!window.isDateInRange(pDate, fromVal, toVal)) return false;
@@ -4419,7 +4445,7 @@ function filterCompilerProfilesTable() {
         p.os,
         p.browser,
         p.ip
-      ].filter(Boolean).join(' ').toLowerCase();
+      ].filter(v => v != null).map(v => String(v).toLowerCase()).join(' ');
 
       const match = queryWords.every(w => hay.includes(w));
       if (!match) return false;
@@ -4459,16 +4485,16 @@ window.exportCompilerProfilesCSV = function() {
 
   const headers = ['User ID', 'Full Name', 'Mobile Number', 'Email ID', 'Device', 'OS', 'Browser', 'IP', 'Total Runs', 'Registered Date'];
   const rows = listToExport.map(p => [
-    `"${(p.user_id || '').replace(/"/g, '""')}"`,
-    `"${(p.name || '').replace(/"/g, '""')}"`,
-    `"${(p.mobile || '').replace(/"/g, '""')}"`,
-    `"${(p.email || '').replace(/"/g, '""')}"`,
-    `"${(p.device || '').replace(/"/g, '""')}"`,
-    `"${(p.os || '').replace(/"/g, '""')}"`,
-    `"${(p.browser || '').replace(/"/g, '""')}"`,
-    `"${(p.ip || '').replace(/"/g, '""')}"`,
-    p.runs_count || 1,
-    `"${(p.created_at || p.last_active || '').replace(/"/g, '""')}"`
+    `"${String(p.user_id || '').replace(/"/g, '""')}"`,
+    `"${String(p.name || '').replace(/"/g, '""')}"`,
+    `"${String(p.mobile || '').replace(/"/g, '""')}"`,
+    `"${String(p.email || '').replace(/"/g, '""')}"`,
+    `"${String(p.device || '').replace(/"/g, '""')}"`,
+    `"${String(p.os || '').replace(/"/g, '""')}"`,
+    `"${String(p.browser || '').replace(/"/g, '""')}"`,
+    `"${String(p.ip || '').replace(/"/g, '""')}"`,
+    Number(p.runs_count) || 1,
+    `"${String(p.created_at || p.last_active || '').replace(/"/g, '""')}"`
   ]);
 
   const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');

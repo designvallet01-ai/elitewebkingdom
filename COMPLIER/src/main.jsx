@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/sTierFeatures.css'
 import './styles/glossyTheme.css'
+import './styles/modernIdeTheme.css'
 import App from './App.jsx'
 
 // Comprehensive silencing for Monaco Editor's internal autocomplete & cancellation noise
