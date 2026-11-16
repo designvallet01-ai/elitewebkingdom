@@ -1,49 +1,33 @@
-import React, { useState, useMemo } from 'react';
-import {
-  Folder,
-  FolderOpen,
-  FileCode2,
-  FilePlus,
-  FolderPlus,
-  Trash2,
-  Edit3,
-  Search,
-  ChevronRight,
-  ChevronDown,
-  X,
-  Check,
-  RotateCcw,
+import React, { useState } from 'react';
+import { 
+  FolderTree, 
+  FileCode2, 
+  Plus, 
+  BookOpen, 
+  FileEdit, 
+  Trash2, 
+  X, 
+  Check, 
+  Edit3, 
+  Code,
   Sparkles,
   FileText
 } from 'lucide-react';
 
 export default function FileSidebar({
-  files = [],
+  files,
   activeFileId,
   onSelectFile,
   onCreateFile,
   onCloseFile,
   onRenameFile,
   onOpenTemplates,
-  isOpen = true,
+  isOpen,
   onToggleSidebar,
-  isMobile = false,
-  projectName = 'elite-project',
-  onProjectNameChange
+  isMobile = false
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [editingFileId, setEditingFileId] = useState(null);
   const [renameText, setRenameText] = useState('');
-  const [openFolders, setOpenFolders] = useState({ src: true, tests: false });
-
-  if (!isOpen) return null;
-
-  const toggleFolder = (folderName) => {
-    setOpenFolders(prev => ({
-      ...prev,
-      [folderName]: !prev[folderName]
-    }));
-  };
 
   const startRename = (file, e) => {
     e.stopPropagation();
@@ -66,179 +50,164 @@ export default function FileSidebar({
     }
   };
 
-  // Helper: File Icon and Color by Extension
-  const getFileBadge = (filename) => {
-    const ext = filename.split('.').pop().toLowerCase();
-    switch (ext) {
-      case 'py': return { label: 'PY', color: '#38bdf8' };
-      case 'cpp':
-      case 'cc': return { label: 'C++', color: '#f43f5e' };
-      case 'c': return { label: 'C', color: '#94a3b8' };
-      case 'java': return { label: 'JV', color: '#f59e0b' };
-      case 'js':
-      case 'jsx': return { label: 'JS', color: '#facc15' };
-      case 'ts':
-      case 'tsx': return { label: 'TS', color: '#60a5fa' };
-      case 'html': return { label: 'HT', color: '#fb923c' };
-      case 'css': return { label: 'CS', color: '#38bdf8' };
-      case 'sql': return { label: 'SQL', color: '#c084fc' };
-      case 'json': return { label: 'JSON', color: '#34d399' };
-      case 'rs': return { label: 'RS', color: '#f87171' };
-      case 'go': return { label: 'GO', color: '#2dd4bf' };
-      case 'md': return { label: 'MD', color: '#94a3b8' };
-      default: return { label: 'TXT', color: '#64748b' };
+  const getLanguageColor = (lang) => {
+    switch (lang) {
+      case 'python': return '#3572A5';
+      case 'cpp': return '#f34b7d';
+      case 'c': return '#555555';
+      case 'java': return '#b07219';
+      case 'javascript': return '#f1e05a';
+      case 'html': return '#e34c26';
+      default: return '#8b949e';
     }
   };
 
-  const filteredFiles = files.filter(f =>
-    !searchQuery || f.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const getLanguageBadge = (lang) => {
+    switch (lang) {
+      case 'python': return 'PY';
+      case 'cpp': return 'C++';
+      case 'c': return 'C';
+      case 'java': return 'JV';
+      case 'javascript': return 'JS';
+      case 'html': return 'HT';
+      default: return 'TXT';
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <aside className="elite-file-explorer" aria-label="Project Explorer">
-      {/* Explorer Top Header */}
-      <div className="explorer-header">
-        <div className="explorer-title">
-          <span>EXPLORER</span>
+    <aside className="workspace-sidebar">
+      {/* Sidebar Header */}
+      <div className="sidebar-header">
+        <div className="sidebar-title">
+          <FolderTree size={16} className="sidebar-folder-icon" />
+          <span>Workspace Files</span>
+          <span className="file-count-badge">{files.length}</span>
         </div>
-        <div className="explorer-header-actions">
+
+        <div className="sidebar-actions">
           <button
-            type="button"
-            className="explorer-action-btn"
+            className="sidebar-tool-btn"
             onClick={() => onCreateFile('file')}
-            title="New File"
+            title="New Code File"
+            id="sidebar-new-file-btn"
           >
-            <FilePlus size={14} />
+            <Plus size={15} />
           </button>
           <button
-            type="button"
-            className="explorer-action-btn"
-            onClick={() => {
-              const folderName = prompt('Enter folder name (e.g. components, utils):');
-              if (folderName) {
-                onCreateFile('file', `${folderName}/script.py`);
-              }
-            }}
-            title="New Folder"
-          >
-            <FolderPlus size={14} />
-          </button>
-          <button
-            type="button"
-            className="explorer-action-btn"
+            className="sidebar-tool-btn"
             onClick={onOpenTemplates}
-            title="Algorithm & DSA Starter Templates"
+            title="Algorithm & Template Library"
+            id="sidebar-templates-btn"
           >
-            <Sparkles size={14} />
+            <BookOpen size={15} />
           </button>
-        </div>
-      </div>
-
-      {/* Explorer Quick Search Filter */}
-      <div className="explorer-search-bar">
-        <Search size={13} className="text-slate-400" />
-        <input
-          type="text"
-          className="explorer-search-input font-mono"
-          placeholder="Filter files (e.g. main.py)..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        {searchQuery && (
-          <button type="button" onClick={() => setSearchQuery('')} className="explorer-search-clear">
-            <X size={12} />
-          </button>
-        )}
-      </div>
-
-      {/* Root Project Tree */}
-      <div className="explorer-tree-body">
-        {/* Project Root Folder */}
-        <div className="tree-project-root">
-          <div
-            className="tree-folder-row"
-            onClick={() => toggleFolder('root')}
-          >
-            {openFolders.root !== false ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            {openFolders.root !== false ? <FolderOpen size={15} className="folder-icon text-blue-400" /> : <Folder size={15} className="folder-icon text-blue-400" />}
-            <span className="font-semibold text-slate-200 text-xs tracking-wide uppercase">{projectName}</span>
-            <span className="tree-badge-count">{files.length}</span>
-          </div>
-
-          {openFolders.root !== false && (
-            <div className="tree-children-container">
-              {filteredFiles.length === 0 ? (
-                <div className="explorer-empty-files text-xs text-slate-500 italic p-3">
-                  {searchQuery ? `No files matching "${searchQuery}"` : 'No files in workspace'}
-                </div>
-              ) : (
-                filteredFiles.map((file) => {
-                  const badge = getFileBadge(file.name);
-                  const isEditing = editingFileId === file.id;
-                  const isActive = activeFileId === file.id;
-
-                  return (
-                    <div
-                      key={file.id}
-                      className={`tree-file-row ${isActive ? 'active' : ''}`}
-                      onClick={() => onSelectFile(file.id)}
-                      title={file.name}
-                    >
-                      <span
-                        className="file-type-pill font-mono"
-                        style={{ color: badge.color, borderColor: `${badge.color}40`, backgroundColor: `${badge.color}15` }}
-                      >
-                        {badge.label}
-                      </span>
-
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="tree-rename-input font-mono"
-                          value={renameText}
-                          onChange={(e) => setRenameText(e.target.value)}
-                          onKeyDown={(e) => handleKeyDown(file.id, e)}
-                          onBlur={() => submitRename(file.id)}
-                          autoFocus
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span className="tree-file-name font-mono truncate">{file.name}</span>
-                      )}
-
-                      {/* File Item Hover Actions */}
-                      <div className="tree-file-actions">
-                        {!isEditing && (
-                          <button
-                            type="button"
-                            className="tree-action-btn"
-                            onClick={(e) => startRename(file, e)}
-                            title="Rename File"
-                          >
-                            <Edit3 size={12} />
-                          </button>
-                        )}
-                        {files.length > 1 && (
-                          <button
-                            type="button"
-                            className="tree-action-btn delete-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onCloseFile(file.id);
-                            }}
-                            title="Delete File"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+          {isMobile && (
+            <button
+              className="sidebar-tool-btn close-drawer-btn"
+              onClick={onToggleSidebar}
+              title="Close Drawer"
+              id="sidebar-close-drawer-btn"
+            >
+              <X size={16} />
+            </button>
           )}
         </div>
+      </div>
+
+      {/* File List */}
+      <div className="sidebar-file-list">
+        {files.map((file) => {
+          const isActive = file.id === activeFileId;
+          const isEditing = editingFileId === file.id;
+
+          return (
+            <div
+              key={file.id}
+              className={`sidebar-file-item ${isActive ? 'active' : ''}`}
+              onClick={() => onSelectFile(file.id)}
+              onDoubleClick={(e) => startRename(file, e)}
+              title={`${file.name} (Double-click to rename)`}
+            >
+              <div className="file-item-left">
+                <span 
+                  className="file-type-pill" 
+                  style={{ backgroundColor: `${getLanguageColor(file.language)}22`, color: getLanguageColor(file.language), borderColor: `${getLanguageColor(file.language)}55` }}
+                >
+                  {getLanguageBadge(file.language)}
+                </span>
+
+                {isEditing ? (
+                  <div className="inline-rename-wrapper" onClick={e => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      className="inline-rename-input"
+                      value={renameText}
+                      onChange={e => setRenameText(e.target.value)}
+                      onKeyDown={e => handleKeyDown(file.id, e)}
+                      onBlur={() => submitRename(file.id)}
+                      autoFocus
+                    />
+                    <button className="rename-confirm-btn" onClick={() => submitRename(file.id)}>
+                      <Check size={12} />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="file-item-name">{file.name}</span>
+                )}
+              </div>
+
+              <div className="file-item-right">
+                {file.isModified && <span className="unsaved-dot" title="Unsaved changes" />}
+
+                {!isEditing && (
+                  <div className="file-hover-actions">
+                    <button
+                      className="file-action-icon"
+                      onClick={(e) => startRename(file, e)}
+                      title="Rename file"
+                    >
+                      <Edit3 size={12} />
+                    </button>
+                    {files.length > 1 && (
+                      <button
+                        className="file-action-icon danger"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCloseFile(file.id);
+                        }}
+                        title="Close file"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Quick Scratchpad & Algorithm CTA footer */}
+      <div className="sidebar-footer">
+        <button 
+          className="sidebar-quick-btn" 
+          onClick={() => onCreateFile('scratchpad')}
+          title="Create a quick scratchpad session"
+        >
+          <FileText size={13} />
+          <span>New Scratchpad</span>
+        </button>
+        <button 
+          className="sidebar-quick-btn algo" 
+          onClick={onOpenTemplates}
+          title="Browse Curated Data Structures & Algorithms"
+        >
+          <Sparkles size={13} />
+          <span>Templates Library</span>
+        </button>
       </div>
     </aside>
   );

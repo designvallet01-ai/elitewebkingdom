@@ -6,15 +6,13 @@ import {
   Check,
   Plus,
   X,
-  Code2,
-  WrapText,
-  Map,
-  Minus,
+  PanelLeftClose,
+  PanelLeft,
+  BookOpen,
   Sparkles,
-  ChevronRight,
-  Folder,
-  AlignLeft,
-  Wand2
+  Mic,
+  MicOff,
+  Wand2,
 } from 'lucide-react';
 import { getLanguageById } from '../services/languagesRegistry';
 
@@ -25,49 +23,313 @@ export default function EditorPanel({
   onCloseFile,
   onCreateFile,
   onOpenTemplates,
-  code = '',
+  isSidebarOpen,
+  onToggleSidebar,
+  code,
   onChange,
-  language = 'python',
-  theme = 'vs-dark',
-  fontSize = 14,
-  onChangeFontSize,
-  filename = 'main.py',
+  language,
+  theme,
+  fontSize,
+  filename,
   onMountEditor,
   isMobile = false,
   onCursorChange,
   remoteCursors = [],
   isLiveMode = false,
-  livePeersCount = 0,
-  onFormatCode
+  livePeersCount = 0
 }) {
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
+  const remoteDecorationsRef = useRef([]);
+  const dsaMenuRef = useRef(null);
   const [copied, setCopied] = useState(false);
-  const [showMinimap, setShowMinimap] = useState(!isMobile);
-  const [wordWrap, setWordWrap] = useState('on');
+  const [isListening, setIsListening] = useState(false);
+  const [showDsaSnippets, setShowDsaSnippets] = useState(false);
+  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
+  const recognitionRef = useRef(null);
 
-  // File type color and label badge
-  const getFileBadge = (name = '') => {
-    const ext = name.split('.').pop().toLowerCase();
-    switch (ext) {
-      case 'py': return { label: 'PY', color: '#38bdf8' };
-      case 'cpp':
-      case 'cc': return { label: 'C++', color: '#f43f5e' };
-      case 'c': return { label: 'C', color: '#94a3b8' };
-      case 'java': return { label: 'JV', color: '#f59e0b' };
-      case 'js':
-      case 'jsx': return { label: 'JS', color: '#facc15' };
-      case 'ts':
-      case 'tsx': return { label: 'TS', color: '#60a5fa' };
-      case 'html': return { label: 'HT', color: '#fb923c' };
-      case 'css': return { label: 'CS', color: '#38bdf8' };
-      case 'sql': return { label: 'SQL', color: '#c084fc' };
-      case 'json': return { label: 'JSON', color: '#34d399' };
-      case 'rs': return { label: 'RS', color: '#f87171' };
-      case 'go': return { label: 'GO', color: '#2dd4bf' };
-      default: return { label: 'TXT', color: '#64748b' };
+  const totalLines = (code || '').split('\n').length;
+
+  // Close DSA Arsenal dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dsaMenuRef.current && !dsaMenuRef.current.contains(e.target)) {
+        setShowDsaSnippets(false);
+      }
+    };
+    if (showDsaSnippets) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showDsaSnippets]);
+
+  // Insert snippet or text into Monaco editor at current cursor position
+  const insertTextAtCursor = (text) => {
+    if (editorRef.current) {
+      const editor = editorRef.current;
+      const selection = editor.getSelection();
+      editor.executeEdits('dsa-snippet', [
+        {
+          range: selection,
+          text: `\n${text}\n`,
+          forceMoveMarkers: true
+        }
+      ]);
+      editor.focus();
+    } else {
+      onChange(code ? `${code}\n${text}` : text);
     }
   };
+
+  // Convert spoken voice into programming syntax
+  const handleInsertSpokenText = (transcript) => {
+    let formatted = transcript;
+    const lower = transcript.toLowerCase();
+
+    if (lower.startsWith('print ') || lower.startsWith('console log ')) {
+      const msg = transcript.replace(/^(print|console\s+log)\s+/i, '');
+      formatted = language === 'cpp'
+        ? `std::cout << "${msg}" << std::endl;`
+        : language === 'javascript'
+          ? `console.log("${msg}");`
+          : `print("${msg}")`;
+    } else if (lower.startsWith('for loop') || lower.startsWith('for each')) {
+      formatted = language === 'cpp'
+        ? `for (int i = 0; i < 10; i++) {\n    // code\n}`
+        : `for i in range(10):\n    pass`;
+    } else if (lower.startsWith('while loop')) {
+      formatted = language === 'cpp'
+        ? `while (condition) {\n    // code\n}`
+        : `while condition:\n    pass`;
+    } else if (lower.startsWith('function ') || lower.startsWith('def ')) {
+      const fnName = lower.replace(/^(function|def)\s+/i, '').replace(/\s+/g, '_');
+      formatted = language === 'cpp'
+        ? `void ${fnName}() {\n    // body\n}`
+        : `def ${fnName}():\n    pass`;
+    }
+
+    insertTextAtCursor(formatted);
+  };
+
+  // Toggle Voice Coding
+  const handleToggleVoice = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice dictation is supported in modern Chrome & Edge browsers.');
+      return;
+    }
+
+    if (isListening) {
+      if (recognitionRef.current) recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[event.results.length - 1][0].transcript.trim();
+          handleInsertSpokenText(transcript);
+        };
+
+        recognition.onend = () => setIsListening(false);
+        recognition.onerror = () => setIsListening(false);
+
+        recognition.start();
+        setIsListening(true);
+      } catch (e) {
+        setIsListening(false);
+      }
+    }
+  };
+
+  const handleBeforeMount = (monaco) => {
+    try {
+      if (monaco?.editor?.defineTheme) {
+        monaco.editor.defineTheme('elite-glossy-obsidian', {
+          base: 'vs-dark',
+          inherit: true,
+          rules: [
+            { token: '', foreground: 'e2e8f0', background: '070b15' },
+            { token: 'comment', foreground: '64748b', fontStyle: 'italic' },
+            { token: 'keyword', foreground: '38bdf8', fontStyle: 'bold' },
+            { token: 'keyword.control', foreground: '60a5fa', fontStyle: 'bold' },
+            { token: 'storage', foreground: 'c084fc', fontStyle: 'bold' },
+            { token: 'type', foreground: '2dd4bf' },
+            { token: 'type.identifier', foreground: '2dd4bf' },
+            { token: 'string', foreground: '34d399' },
+            { token: 'number', foreground: 'fbbf24' },
+            { token: 'number.float', foreground: 'fbbf24' },
+            { token: 'operator', foreground: '7dd3fc' },
+            { token: 'delimiter', foreground: '94a3b8' },
+            { token: 'delimiter.bracket', foreground: 'cbd5e1' },
+            { token: 'identifier', foreground: 'f1f5f9' },
+            { token: 'function', foreground: 'c084fc' },
+            { token: 'variable', foreground: 'e2e8f0' },
+            { token: 'constant', foreground: 'f472b6' },
+            { token: 'tag', foreground: '38bdf8' },
+            { token: 'attribute.name', foreground: 'a78bfa' },
+            { token: 'attribute.value', foreground: '34d399' }
+          ],
+          colors: {
+            'editor.background': '#070b15',
+            'editor.foreground': '#e2e8f0',
+            'editorCursor.foreground': '#38bdf8',
+            'editor.lineHighlightBackground': '#0f1d3670',
+            'editor.lineHighlightBorder': '#38bdf822',
+            'editor.selectionBackground': '#0284c745',
+            'editor.inactiveSelectionBackground': '#1e293b80',
+            'editor.selectionHighlightBackground': '#38bdf824',
+            'editorLineNumber.foreground': '#475569',
+            'editorLineNumber.activeForeground': '#38bdf8',
+            'editorGutter.background': '#060a13',
+            'editorIndentGuide.background1': '#1e293b80',
+            'editorIndentGuide.activeBackground1': '#38bdf855',
+            'editorBracketMatch.background': '#38bdf826',
+            'editorBracketMatch.border': '#38bdf888',
+            'editorWidget.background': '#0b1222',
+            'editorWidget.border': '#38bdf844',
+            'editorSuggestWidget.background': '#0b1222',
+            'editorSuggestWidget.border': '#38bdf840',
+            'editorSuggestWidget.selectedBackground': '#0284c755',
+            'editorHoverWidget.background': '#0b1222',
+            'editorHoverWidget.border': '#38bdf840',
+            'scrollbarSlider.background': '#64748b35',
+            'scrollbarSlider.hoverBackground': '#38bdf855',
+            'scrollbarSlider.activeBackground': '#38bdf880',
+            'minimap.background': '#060a13'
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Monaco custom theme registration notice:', e);
+    }
+  };
+
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    monacoRef.current = monaco;
+    if (monaco && monaco.editor && typeof monaco.editor.setUnexpectedErrorHandler === 'function') {
+      monaco.editor.setUnexpectedErrorHandler((e) => {
+        const msg = e?.message || e?.name || String(e || '');
+        if (msg.includes('Canceled') || msg.includes('cancel')) {
+          return;
+        }
+      });
+    }
+
+    // Register Monarch syntax highlighter for MATLAB
+    try {
+      if (monaco && monaco.languages) {
+        const existingLangs = monaco.languages.getLanguages() || [];
+        if (!existingLangs.some(l => l.id === 'matlab')) {
+          monaco.languages.register({ id: 'matlab' });
+        }
+        monaco.languages.setMonarchTokensProvider('matlab', {
+          defaultToken: '',
+          tokenPostfix: '.matlab',
+          keywords: [
+            'break', 'case', 'catch', 'classdef', 'continue', 'else', 'elseif', 'end',
+            'for', 'function', 'global', 'if', 'otherwise', 'parfor', 'persistent',
+            'return', 'spmd', 'switch', 'try', 'while'
+          ],
+          builtins: [
+            'clc', 'clear', 'disp', 'fprintf', 'sprintf', 'num2str', 'str2num',
+            'zeros', 'ones', 'eye', 'rand', 'randn', 'linspace', 'logspace', 'diag',
+            'det', 'inv', 'eig', 'svd', 'rank', 'trace', 'norm', 'size', 'length',
+            'sum', 'prod', 'mean', 'median', 'std', 'var', 'min', 'max',
+            'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'exp', 'log', 'log10', 'sqrt', 'abs',
+            'plot', 'figure', 'title', 'xlabel', 'ylabel', 'legend', 'grid', 'hold', 'subplot'
+          ],
+          tokenizer: {
+            root: [
+              [/%.*$/, 'comment'],
+              [/".*?"/, 'string'],
+              [/'.*?'/, 'string'],
+              [/[a-zA-Z_]\w*/, {
+                cases: {
+                  '@keywords': 'keyword',
+                  '@builtins': 'type',
+                  '@default': 'identifier'
+                }
+              }],
+              [/\d*\.\d+([eE][\-+]?\d+)?/, 'number.float'],
+              [/\d+/, 'number'],
+              [/[;,]/, 'delimiter'],
+              [/[\[\]\(\)\{\}]/, 'delimiter.bracket']
+            ]
+          }
+        });
+      }
+    } catch (langErr) {
+      console.warn('Monaco matlab registration notice:', langErr);
+    }
+
+    if (onMountEditor) {
+      onMountEditor(editor, monaco);
+    }
+    // Track cursor line changes in real time for live flowchart synchronization
+    editor.onDidChangeCursorPosition((e) => {
+      if (e.position) {
+        setCursorPos({ line: e.position.lineNumber, col: e.position.column });
+        if (onCursorChange) {
+          onCursorChange(e.position.lineNumber, e.position.column);
+        }
+      }
+    });
+  };
+
+  const handleFormatDocument = () => {
+    if (editorRef.current) {
+      try {
+        editorRef.current.getAction('editor.action.formatDocument')?.run();
+      } catch (e) {
+        console.warn('Format document error:', e);
+      }
+    }
+  };
+
+  // Render live collaborator cursors & name tags inside Monaco
+  useEffect(() => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    const maxLine = Math.max(1, model.getLineCount());
+    const newDecorations = (remoteCursors || []).map((peer) => {
+      const line = Math.min(maxLine, Math.max(1, Number(peer.line) || 1));
+      const maxCol = Math.max(1, model.getLineMaxColumn(line));
+      const col = Math.min(maxCol, Math.max(1, Number(peer.col) || 1));
+      const colorIdx = (peer.colorIdx ?? 0) % 6;
+      const shortName = (peer.name || 'Peer').trim().split(/\s+/)[0].slice(0, 12);
+
+      return {
+        range: new monaco.Range(line, col, line, col),
+        options: {
+          className: `remote-collab-caret remote-collab-caret-${colorIdx}`,
+          after: {
+            content: ` ${shortName}`,
+            inlineClassName: `remote-collab-tag remote-collab-tag-${colorIdx}`
+          },
+          hoverMessage: { value: `**${peer.name || 'Collaborator'}** (Ln ${line}, Col ${col})` },
+          stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+        }
+      };
+    });
+
+    try {
+      remoteDecorationsRef.current = editor.deltaDecorations(
+        remoteDecorationsRef.current || [],
+        newDecorations
+      );
+    } catch { }
+  }, [remoteCursors, code]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(code);
@@ -75,231 +337,381 @@ export default function EditorPanel({
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const handleEditorDidMount = (editor, monaco) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-
-    // Track cursor position
-    editor.onDidChangeCursorPosition((e) => {
-      if (onCursorChange) {
-        onCursorChange(e.position.lineNumber, e.position.column);
-      }
-    });
-
-    if (onMountEditor) {
-      onMountEditor(editor, monaco);
-    }
-  };
-
-  // Map language to Monaco syntax identifier
-  const getMonacoLanguage = (lang = 'python') => {
-    const l = lang.toLowerCase();
-    if (l === 'cpp' || l === 'c++') return 'cpp';
-    if (l === 'c') return 'c';
-    if (l === 'python' || l === 'py') return 'python';
-    if (l === 'java' || l === 'jdbc') return 'java';
-    if (l === 'javascript' || l === 'js') return 'javascript';
-    if (l === 'typescript' || l === 'ts') return 'typescript';
-    if (l === 'html') return 'html';
-    if (l === 'css') return 'css';
-    if (l === 'sql') return 'sql';
-    if (l === 'json') return 'json';
-    if (l === 'rust' || l === 'rs') return 'rust';
-    if (l === 'go') return 'go';
-    if (l === 'markdown' || l === 'md') return 'markdown';
-    if (l === 'csharp' || l === 'cs') return 'csharp';
-    if (l === 'php') return 'php';
+  // Map language IDs to Monaco editor languages (115+ languages supported)
+  const getMonacoLang = (lang) => {
+    const matched = getLanguageById(lang);
+    if (matched && matched.monaco) return matched.monaco;
     return 'plaintext';
   };
 
-  return (
-    <div className="elite-editor-panel">
-      {/* 1. Multiple Editor Tabs Strip */}
-      <div className="editor-tab-strip" role="tablist">
-        <div className="editor-tabs-scroll" data-hscroll="true">
-          {files.map((file) => {
-            const badge = getFileBadge(file.name);
-            const isActive = file.id === activeFileId;
+  const getLanguageColor = (lang) => {
+    switch (lang) {
+      case 'python': return '#3572A5';
+      case 'cpp': return '#f34b7d';
+      case 'c': return '#555555';
+      case 'java': return '#b07219';
+      case 'javascript': return '#f1e05a';
+      case 'typescript': return '#3178c6';
+      case 'rust': return '#dea584';
+      case 'go': return '#00ADD8';
+      case 'csharp': return '#178600';
+      case 'php': return '#4F5D95';
+      case 'ruby': return '#701516';
+      case 'kotlin': return '#A97BFF';
+      case 'swift': return '#F05138';
+      case 'dart': return '#00B4AB';
+      case 'sql': return '#e38c00';
+      case 'jdbc': return '#f89820';
+      case 'r': return '#198CE7';
+      case 'bash': return '#89e051';
+      case 'scala': return '#c22d40';
+      case 'lua': return '#000080';
+      case 'haskell': return '#5e5086';
+      case 'perl': return '#0298c3';
+      case 'matlab':
+      case 'octave': return '#e16737';
+      case 'html': return '#e34c26';
+      default: return '#8b949e';
+    }
+  };
 
+  return (
+    <div className="editor-panel-container">
+      {/* Editor Multi-Tab Strip */}
+      <div className="editor-tab-strip-wrapper">
+        {/* Toggle Workspace Explorer Button */}
+        <button
+          className={`sidebar-toggle-btn ${isSidebarOpen ? 'active' : ''}`}
+          onClick={onToggleSidebar}
+          title={isSidebarOpen ? "Hide Workspace Files Sidebar" : "Show Workspace Files Sidebar"}
+          id="toggle-files-sidebar-btn"
+        >
+          {isSidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeft size={16} />}
+        </button>
+
+        {/* Scrollable Tabs */}
+        <div className="editor-tabs-container">
+          {files.map((file) => {
+            const isActive = file.id === activeFileId;
             return (
               <div
                 key={file.id}
-                className={`editor-tab-item ${isActive ? 'active' : ''}`}
-                onClick={() => onSelectFile(file.id)}
-                role="tab"
-                aria-selected={isActive}
-                title={file.name}
+                className={`editor-tab ${isActive ? 'active' : ''}`}
+                onClick={() => onSelectFile && onSelectFile(file.id)}
+                title={`${file.name} (${file.language})`}
               >
                 <span
-                  className="tab-lang-badge font-mono"
-                  style={{ color: badge.color }}
-                >
-                  {badge.label}
-                </span>
-                <span className="tab-file-title font-mono">{file.name}</span>
+                  className="tab-lang-bullet"
+                  style={{ backgroundColor: getLanguageColor(file.language) }}
+                />
+                <span className="tab-title">{file.name}</span>
 
-                {file.isModified && <span className="tab-modified-dot" title="Modified" />}
+                {file.isModified && (
+                  <span className="tab-unsaved-dot" title="Modified" />
+                )}
 
                 {files.length > 1 && (
                   <button
-                    type="button"
                     className="tab-close-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onCloseFile(file.id);
+                      if (onCloseFile) onCloseFile(file.id);
                     }}
                     title="Close tab"
                   >
-                    <X size={13} />
+                    <X size={12} />
                   </button>
                 )}
               </div>
             );
           })}
-        </div>
 
-        {/* Tab Strip Right Controls */}
-        <div className="editor-tab-strip-actions">
+          {/* New Tab Button */}
           <button
-            type="button"
-            className="tab-strip-btn"
-            onClick={() => onCreateFile('file')}
-            title="New File"
+            className="tab-add-btn"
+            onClick={() => onCreateFile && onCreateFile('file')}
+            title="Create New File Tab"
+            id="editor-new-tab-btn"
           >
             <Plus size={14} />
           </button>
         </div>
-      </div>
 
-      {/* 2. Breadcrumbs & Editor Toolbar */}
-      <div className="editor-breadcrumb-bar">
-        {/* Breadcrumb Path */}
-        <div className="breadcrumb-path font-mono">
-          <Folder size={13} className="text-blue-400" />
-          <span>workspace</span>
-          <ChevronRight size={12} className="text-slate-500" />
-          <span>src</span>
-          <ChevronRight size={12} className="text-slate-500" />
-          <span className="font-semibold text-slate-200">{filename}</span>
-          {isLiveMode && (
-            <span className="live-peer-chip font-mono text-xs">
-              ⚡ LIVE ({livePeersCount + 1} coders)
-            </span>
-          )}
-        </div>
-
-        {/* Toolbar Controls */}
-        <div className="editor-toolbar-controls">
-          {/* Format Code */}
-          {onFormatCode && (
-            <button
-              type="button"
-              className="editor-tool-action-btn"
-              onClick={onFormatCode}
-              title="Format Document (Shift + Alt + F)"
-            >
-              <AlignLeft size={13} />
-              <span className="hidden md:inline">Format</span>
-            </button>
-          )}
-
-          {/* Word Wrap Toggle */}
+        {/* Tab Strip Right Actions */}
+        <div className="tab-strip-actions">
+          {/* Voice Coding (Speech-to-Code) Button */}
           <button
-            type="button"
-            className={`editor-tool-action-btn ${wordWrap === 'on' ? 'active' : ''}`}
-            onClick={() => setWordWrap(prev => (prev === 'on' ? 'off' : 'on'))}
-            title="Toggle Word Wrap (Alt + Z)"
+            className={`tab-action-btn voice-dictation-btn ${isListening ? 'listening' : ''}`}
+            onClick={handleToggleVoice}
+            title={isListening ? "Listening... Speak programming instructions" : "Voice Coding: Dictate code with your microphone"}
+            id="editor-voice-dictation-btn"
           >
-            <WrapText size={13} />
+            {isListening ? <Mic size={14} className="text-rose animate-pulse" /> : <Mic size={14} />}
+            <span className="action-btn-text">{isListening ? 'Listening...' : 'Voice'}</span>
           </button>
 
-          {/* Minimap Toggle */}
-          <button
-            type="button"
-            className={`editor-tool-action-btn ${showMinimap ? 'active' : ''}`}
-            onClick={() => setShowMinimap(prev => !prev)}
-            title="Toggle Code Minimap"
-          >
-            <Map size={13} />
-          </button>
+          {/* DSA Snippet Arsenal */}
+          <div className="dropdown-wrapper" ref={dsaMenuRef} style={{ position: 'relative' }}>
+            <button
+              className={`tab-action-btn dsa-magic-btn ${showDsaSnippets ? 'active' : ''}`}
+              onClick={() => setShowDsaSnippets(prev => !prev)}
+              title="Insert Competitive Programming & DSA Templates"
+              id="editor-dsa-arsenal-btn"
+            >
+              <Wand2 size={14} className="text-amber" />
+              <span className="action-btn-text">DSA Arsenal</span>
+            </button>
 
-          {/* Font Size Adjuster */}
-          <div className="font-size-adjuster" title="Editor Font Size">
-            <button
-              type="button"
-              className="font-size-btn"
-              onClick={() => onChangeFontSize && onChangeFontSize(Math.max(11, fontSize - 1))}
-              disabled={fontSize <= 11}
-              title="Decrease Font Size"
-            >
-              <Minus size={11} />
-            </button>
-            <span className="font-size-val font-mono">{fontSize}px</span>
-            <button
-              type="button"
-              className="font-size-btn"
-              onClick={() => onChangeFontSize && onChangeFontSize(Math.min(24, fontSize + 1))}
-              disabled={fontSize >= 24}
-              title="Increase Font Size"
-            >
-              <Plus size={11} />
-            </button>
+            {showDsaSnippets && (
+              <div className="editor-dsa-menu" style={{ zIndex: 99999 }}>
+                <div className="dsa-menu-title">
+                  <span>⚡ 1-Click DSA Arsenal</span>
+                  <span style={{ fontSize: '0.62rem', color: '#38bdf8', textTransform: 'uppercase', background: 'rgba(56, 189, 248, 0.15)', padding: '1px 5px', borderRadius: '4px' }}>
+                    {language || 'code'}
+                  </span>
+                </div>
+
+                {/* Fast I/O */}
+                <button
+                  className="dsa-menu-item"
+                  onClick={() => {
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? 'std::ios_base::sync_with_stdio(false);\nstd::cin.tie(NULL);'
+                      : language === 'java'
+                        ? 'BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\nStringTokenizer st;'
+                        : language === 'javascript' || language === 'typescript'
+                          ? 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf-8").trim().split(/\\s+/);'
+                          : 'import sys\ninput = sys.stdin.readline';
+                    insertTextAtCursor(snip);
+                    setShowDsaSnippets(false);
+                  }}
+                >
+                  <span>⚡ Fast I/O Accelerator</span>
+                  <span className="dsa-item-tag">I/O</span>
+                </button>
+
+                {/* Binary Search */}
+                <button
+                  className="dsa-menu-item"
+                  onClick={() => {
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? `int binarySearch(const std::vector<int>& arr, int target) {\n    int low = 0, high = (int)arr.size() - 1;\n    while (low <= high) {\n        int mid = low + (high - low) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
+                      : language === 'java'
+                        ? `public static int binarySearch(int[] arr, int target) {\n    int low = 0, high = arr.length - 1;\n    while (low <= high) {\n        int mid = low + (high - low) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
+                        : language === 'javascript' || language === 'typescript'
+                          ? `function binarySearch(arr, target) {\n    let low = 0, high = arr.length - 1;\n    while (low <= high) {\n        const mid = Math.floor((low + high) / 2);\n        if (arr[mid] === target) return mid;\n        else if (arr[mid] < target) low = mid + 1;\n        else high = mid - 1;\n    }\n    return -1;\n}`
+                          : `def binary_search(arr, target):\n    low, high = 0, len(arr) - 1\n    while low <= high:\n        mid = (low + high) // 2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: low = mid + 1\n        else: high = mid - 1\n    return -1`;
+                    insertTextAtCursor(snip);
+                    setShowDsaSnippets(false);
+                  }}
+                >
+                  <span>🔍 Binary Search</span>
+                  <span className="dsa-item-tag">O(log N)</span>
+                </button>
+
+                {/* Kadane's Algorithm */}
+                <button
+                  className="dsa-menu-item"
+                  onClick={() => {
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? `int maxSubArray(const std::vector<int>& nums) {\n    int maxSoFar = nums[0], currMax = nums[0];\n    for (size_t i = 1; i < nums.size(); ++i) {\n        currMax = std::max(nums[i], currMax + nums[i]);\n        maxSoFar = std::max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
+                      : language === 'java'
+                        ? `public static int maxSubArray(int[] nums) {\n    int maxSoFar = nums[0], currMax = nums[0];\n    for (int i = 1; i < nums.length; i++) {\n        currMax = Math.max(nums[i], currMax + nums[i]);\n        maxSoFar = Math.max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
+                        : language === 'javascript' || language === 'typescript'
+                          ? `function maxSubArray(nums) {\n    let maxSoFar = nums[0], currMax = nums[0];\n    for (let i = 1; i < nums.length; i++) {\n        currMax = Math.max(nums[i], currMax + nums[i]);\n        maxSoFar = Math.max(maxSoFar, currMax);\n    }\n    return maxSoFar;\n}`
+                          : `def kadane_max_subarray(nums):\n    max_so_far = curr_max = nums[0]\n    for x in nums[1:]:\n        curr_max = max(x, curr_max + x)\n        max_so_far = max(max_so_far, curr_max)\n    return max_so_far`;
+                    insertTextAtCursor(snip);
+                    setShowDsaSnippets(false);
+                  }}
+                >
+                  <span>🧩 Kadane's Max Subarray</span>
+                  <span className="dsa-item-tag">O(N)</span>
+                </button>
+
+                {/* Sieve of Eratosthenes */}
+                <button
+                  className="dsa-menu-item"
+                  onClick={() => {
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? `std::vector<int> sieve(int n) {\n    std::vector<bool> isPrime(n + 1, true);\n    isPrime[0] = isPrime[1] = false;\n    for (int p = 2; p * p <= n; ++p) {\n        if (isPrime[p]) {\n            for (int i = p * p; i <= n; i += p) isPrime[i] = false;\n        }\n    }\n    std::vector<int> primes;\n    for (int p = 2; p <= n; ++p) if (isPrime[p]) primes.push_back(p);\n    return primes;\n}`
+                      : language === 'java'
+                        ? `public static java.util.List<Integer> sieve(int n) {\n    boolean[] isPrime = new boolean[n + 1];\n    java.util.Arrays.fill(isPrime, true);\n    isPrime[0] = isPrime[1] = false;\n    for (int p = 2; p * p <= n; p++) {\n        if (isPrime[p]) {\n            for (int i = p * p; i <= n; i += p) isPrime[i] = false;\n        }\n    }\n    java.util.List<Integer> primes = new java.util.ArrayList<>();\n    for (int p = 2; p <= n; p++) if (isPrime[p]) primes.add(p);\n    return primes;\n}`
+                        : `def sieve(n):\n    primes = [True] * (n + 1)\n    primes[0] = primes[1] = False\n    for p in range(2, int(n**0.5) + 1):\n        if primes[p]:\n            for i in range(p*p, n+1, p): primes[i] = False\n    return [p for p in range(2, n+1) if primes[p]]`;
+                    insertTextAtCursor(snip);
+                    setShowDsaSnippets(false);
+                  }}
+                >
+                  <span>🔢 Sieve of Eratosthenes</span>
+                  <span className="dsa-item-tag">Primes</span>
+                </button>
+
+                {/* BFS Traversal */}
+                <button
+                  className="dsa-menu-item"
+                  onClick={() => {
+                    const snip = (language === 'cpp' || language === 'c')
+                      ? `void bfs(int start, const std::vector<std::vector<int>>& adj) {\n    std::vector<bool> visited(adj.size(), false);\n    std::queue<int> q;\n    visited[start] = true;\n    q.push(start);\n    while (!q.empty()) {\n        int u = q.front(); q.pop();\n        for (int v : adj[u]) {\n            if (!visited[v]) {\n                visited[v] = true;\n                q.push(v);\n            }\n        }\n    }\n}`
+                      : language === 'java'
+                        ? `public static void bfs(int start, java.util.List<java.util.List<Integer>> adj) {\n    boolean[] visited = new boolean[adj.size()];\n    java.util.Queue<Integer> q = new java.util.LinkedList<>();\n    visited[start] = true;\n    q.offer(start);\n    while (!q.isEmpty()) {\n        int u = q.poll();\n        for (int v : adj.get(u)) {\n            if (!visited[v]) {\n                visited[v] = true;\n                q.offer(v);\n            }\n        }\n    }\n}`
+                        : `from collections import deque\ndef bfs(graph, start):\n    visited, queue = set([start]), deque([start])\n    while queue:\n        curr = queue.popleft()\n        for nxt in graph.get(curr, []):\n            if nxt not in visited:\n                visited.add(nxt)\n                queue.append(nxt)`;
+                    insertTextAtCursor(snip);
+                    setShowDsaSnippets(false);
+                  }}
+                >
+                  <span>🌲 BFS Traversal Template</span>
+                  <span className="dsa-item-tag">Graph</span>
+                </button>
+
+                <div className="dsa-menu-divider" />
+
+                {/* Open Full Algorithm Library Modal */}
+                {onOpenTemplates && (
+                  <button
+                    className="dsa-menu-item"
+                    onClick={() => {
+                      setShowDsaSnippets(false);
+                      onOpenTemplates();
+                    }}
+                    style={{ color: '#38bdf8', fontWeight: '600' }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <BookOpen size={14} />
+                      <span>Full DSA Library...</span>
+                    </span>
+                    <span className="dsa-item-tag" style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>50+</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Copy Code */}
           <button
-            type="button"
-            className="editor-tool-action-btn copy-btn"
+            className="tab-action-btn"
             onClick={handleCopyCode}
-            title="Copy Entire Code"
+            title="Copy Source Code"
+            id="editor-copy-btn"
           >
-            {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-            <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
+            {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+            <span className="action-btn-text">{copied ? 'Copied' : 'Copy'}</span>
           </button>
         </div>
       </div>
 
-      {/* 3. Monaco Editor Core Container */}
+      {/* VS Code Breadcrumb Path Bar */}
+      <div className="editor-breadcrumbs-bar">
+        <div className="breadcrumbs-path">
+          <span className="breadcrumb-segment">workspace</span>
+          <span className="breadcrumb-separator">/</span>
+          <span className="breadcrumb-file">
+            <FileCode2 size={13} style={{ color: getLanguageColor(language) }} />
+            <span>{filename || 'main'}</span>
+          </span>
+          <span className="breadcrumb-metrics">
+            <span className="breadcrumb-line-count">{totalLines} lines</span>
+            <span className="breadcrumb-sep">•</span>
+            <span className="breadcrumb-caret-pos">Ln {cursorPos.line}, Col {cursorPos.col}</span>
+          </span>
+        </div>
+        <div className="breadcrumbs-info" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            type="button"
+            className="breadcrumb-action-chip"
+            onClick={handleFormatDocument}
+            title="Format Document (Shift + Alt + F)"
+            id="breadcrumb-format-btn"
+          >
+            <Sparkles size={11} className="text-cyan-400" />
+            <span>Format</span>
+          </button>
+          {isLiveMode && (
+            <span className="breadcrumb-live-tag" title="Interactive Live Workspace Active">
+              <span className="live-sync-dot" />
+              <span>LIVE • {Math.max(1, livePeersCount)}</span>
+            </span>
+          )}
+          <span className="breadcrumb-engine-tag">{getLanguageById(language)?.name || language}</span>
+          <span className="breadcrumb-encoding-tag">UTF-8</span>
+        </div>
+      </div>
+
+      {/* Monaco Editor Container */}
       <div className="monaco-wrapper">
         <Editor
           height="100%"
-          language={getMonacoLanguage(language)}
+          language={getMonacoLang(language)}
+          theme={theme === 'vs-dark' ? 'elite-glossy-obsidian' : 'light'}
           value={code}
-          onChange={(val) => onChange && onChange(val || '')}
-          theme={theme === 'vs-dark' ? 'vs-dark' : 'light'}
+          onChange={(val) => onChange(val || '')}
+          beforeMount={handleBeforeMount}
           onMount={handleEditorDidMount}
           options={{
-            fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
-            fontSize: fontSize,
-            lineHeight: Math.round(fontSize * 1.55),
+            fontSize: isMobile ? 13 : (fontSize || 14),
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace",
             fontLigatures: true,
             tabSize: 4,
-            insertSpaces: true,
-            minimap: { enabled: showMinimap },
-            wordWrap: wordWrap,
-            lineNumbers: 'on',
-            lineNumbersMinChars: 3,
-            folding: true,
-            foldingHighlight: true,
-            matchBrackets: 'always',
-            autoClosingBrackets: 'always',
-            autoClosingQuotes: 'always',
-            renderWhitespace: 'selection',
+            minimap: {
+              enabled: !isMobile,
+              renderCharacters: false,
+              maxColumn: 80,
+              showSlider: 'mouseover'
+            },
             scrollBeyondLastLine: false,
             automaticLayout: true,
-            smoothScrolling: true,
+            wordWrap: 'on',
+            lineNumbers: 'on',
+            lineNumbersMinChars: isMobile ? 2 : 4,
+            renderWhitespace: 'selection',
             cursorBlinking: 'smooth',
-            cursorSmoothCaretAnimation: 'on',
+            cursorSmoothCaretAnimation: 'explicit',
+            smoothScrolling: true,
+            bracketPairColorization: {
+              enabled: true,
+              independentColorPoolPerBracketType: true
+            },
+            guides: {
+              bracketPairs: true,
+              indentation: true,
+              bracketPairsHorizontal: true,
+              highlightActiveBracketPair: true
+            },
+            stickyScroll: {
+              enabled: true,
+              maxLineCount: 5
+            },
+            quickSuggestions: {
+              other: 'on',
+              comments: false,
+              strings: true
+            },
+            suggest: {
+              preview: true,
+              showStatusBar: true,
+              snippetsPreventQuickSuggestions: false
+            },
+            acceptSuggestionOnEnter: 'on',
+            tabCompletion: 'on',
             formatOnPaste: true,
             formatOnType: true,
-            multiCursorModifier: 'alt',
-            quickSuggestions: { other: true, comments: false, strings: true },
-            suggestOnTriggerCharacters: true,
-            bracketPairColorization: { enabled: true }
+            renderLineHighlight: 'all',
+            renderLineHighlightOnlyWhenFocus: false,
+            overviewRulerBorder: false,
+            hideCursorInOverviewRuler: true,
+            padding: { top: isMobile ? 8 : 12, bottom: isMobile ? 36 : 14 },
+            hover: { enabled: !isMobile },
+            links: !isMobile,
+            dragAndDrop: !isMobile,
+            glyphMargin: !isMobile,
+            folding: !isMobile,
+            contextmenu: !isMobile,
+            scrollbar: {
+              verticalScrollbarSize: isMobile ? 4 : 10,
+              horizontalScrollbarSize: isMobile ? 4 : 10
+            }
           }}
           loading={
-            <div className="monaco-loading-spinner font-mono text-xs text-slate-400">
-              Initializing Monaco Editor Workspace...
+            <div className="editor-loading">
+              <div className="spinner" />
+              <span>Initializing Monaco Editor...</span>
             </div>
           }
         />

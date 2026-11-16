@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import EditorPanel from './components/EditorPanel';
-import BottomPanel from './components/BottomPanel';
-import RightAiPanel from './components/RightAiPanel';
 import ConsolePanel from './components/ConsolePanel';
 import ProblemsPanel, { parseDiagnostics } from './components/ProblemsPanel';
 import GraphicalView from './components/GraphicalView';
@@ -244,37 +242,14 @@ export default function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [terminalEntries, setTerminalEntries] = useState([]);
   const [lastStats, setLastStats] = useState(null);
-  const [theme, setTheme] = useState(() => {
-    try {
-      return localStorage.getItem('elite_ide_theme') || 'vs-dark';
-    } catch (e) {
-      return 'vs-dark';
-    }
-  });
+  const [theme] = useState('vs-dark');
 
-  const handleToggleTheme = useCallback(() => {
-    setTheme(prev => {
-      const next = prev === 'vs-dark' ? 'vs' : 'vs-dark';
-      try {
-        localStorage.setItem('elite_ide_theme', next);
-      } catch (e) {}
-      return next;
-    });
+  // Enforce permanent VS-Dark theme (Light mode completely removed)
+  useEffect(() => {
+    try {
+      localStorage.setItem('elite_ide_theme', 'vs-dark');
+    } catch (e) {}
   }, []);
-
-  const [projectName, setProjectName] = useState(() => {
-    try {
-      return localStorage.getItem('elite_ide_project_name') || 'elite-project';
-    } catch (e) {
-      return 'elite-project';
-    }
-  });
-
-  const [isBottomPanelOpen, setIsBottomPanelOpen] = useState(true);
-  const [isRightAiOpen, setIsRightAiOpen] = useState(false);
-  const [bottomPanelHeight, setBottomPanelHeight] = useState(260);
-  const [executionHistory, setExecutionHistory] = useState([]);
-  const [activeSidebarTab, setActiveSidebarTab] = useState('explorer');
 
   // Enforce profile registration gate on launch: keep open until validly registered (skipped only in ?embed=1 widget)
   useEffect(() => {
@@ -1702,18 +1677,6 @@ export default function App() {
 
       setTerminalEntries(entries);
       setLastStats(data);
-      setExecutionHistory(prev => [
-        {
-          id: `run-${Date.now()}`,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          language: lang,
-          status: data.code === 0 ? 'SUCCESS' : 'ERROR',
-          executionTime: `${realDuration}ms`,
-          memory: data.memory || 'Standard',
-          snippet: (codeToRun || '').slice(0, 80).replace(/\n/g, ' ')
-        },
-        ...prev.slice(0, 29)
-      ]);
 
       if (liveControllerRef.current) {
         liveControllerRef.current.broadcastRunOutput({
@@ -2373,12 +2336,6 @@ export default function App() {
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'B' || e.key === 'b')) {
         e.preventDefault();
         setIsSidebarOpen(prev => !prev);
-      } else if ((e.ctrlKey || e.metaKey) && (e.key === '`' || e.key === 'j' || e.key === 'J')) {
-        e.preventDefault();
-        setIsBottomPanelOpen(prev => !prev);
-      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault();
-        setIsRightAiOpen(prev => !prev);
       } else if ((e.ctrlKey || e.metaKey) && (e.key === 'K' || e.key === 'k')) {
         e.preventDefault();
         setIsCommandPaletteOpen(prev => !prev);
@@ -2512,42 +2469,62 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [detectedLangInfo, activeFile]);
 
+  const handleToggleTheme = useCallback(() => {
+    // Light mode completely removed - permanently locked to vs-dark
+    try {
+      localStorage.setItem('elite_ide_theme', 'vs-dark');
+    } catch (e) {}
+  }, []);
+
   return (
-    <div className={`ide-root ${theme === 'vs' ? 'elite-light-mode' : 'elite-dark-mode'} ${isMobile ? 'is-mobile-device' : ''} ${isCollegeMode ? 'college-mode-active' : ''}`}>
+    <div className={`ide-root ${theme} ${isMobile ? 'is-mobile-device' : ''} ${isResizingSplit ? 'is-resizing-split' : ''} ${isEmbedMode ? 'embed-widget-mode' : ''}`}>
+      {/* Ambient Liquid-Glass Aura Layer */}
+      <div className="ide-ambient-aura" aria-hidden="true" />
+
       {/* Top Professional IDE Header */}
       <Navbar
-        projectName={projectName}
-        onProjectNameChange={(name) => {
-          setProjectName(name);
-          try { localStorage.setItem('elite_ide_project_name', name); } catch (e) {}
-        }}
         detectedLangInfo={detectedLangInfo}
         onRun={handleRun}
         isRunning={isRunning}
-        onStop={handleStopProcess}
+        onClearCode={handleClearCode}
         onFormatCode={handleFormatCode}
         theme={theme}
         onToggleTheme={handleToggleTheme}
         fontSize={fontSize}
         onChangeFontSize={setFontSize}
+        code={activeFile.code}
+        activeFileName={activeFile.name}
         userProfile={userProfile}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
-        selectedLanguage={manualLanguage}
-        onSelectLanguage={handleLanguageChange}
-        onOpenLanguageModal={() => setIsLanguageModalOpen(true)}
-        onOpenShareCode={() => setIsShareModalOpen(true)}
-        onOpenSettings={() => setIsCommandPaletteOpen(true)}
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        onOpenAiExplainer={() => setIsRightAiOpen(true)}
-        onOpenDebugger={() => setIsBottomPanelOpen(true)}
+        onCreateFile={handleCreateFile}
+        onOpenTemplates={() => setIsAlgorithmModalOpen(true)}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
-        isBottomPanelOpen={isBottomPanelOpen}
-        onToggleBottomPanel={() => setIsBottomPanelOpen(prev => !prev)}
-        isRightAiOpen={isRightAiOpen}
-        onToggleRightAi={() => setIsRightAiOpen(prev => !prev)}
-        isModified={files.some(f => f.isModified)}
+        selectedLanguage={manualLanguage}
+        onSelectLanguage={handleLanguageChange}
         isMobile={isMobile}
+        isCollegeMode={isCollegeMode}
+        onOpenCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'setup' })}
+        onExitCollegeMode={() => setCollegeModalState({ isOpen: true, mode: 'unlock' })}
+        onOpenAiExplainer={() => setIsAiModalOpen(true)}
+        onOpenLabReport={() => setIsLabReportModalOpen(true)}
+        onOpenTranspiler={() => setIsTranspilerModalOpen(true)}
+        onChangeRightPaneView={(view) => setRightPaneView(view)}
+        onOpenShareCode={() => setIsShareModalOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenGitControl={() => setIsGitModalOpen(true)}
+        onOpenLanguageModal={() => setIsLanguageModalOpen(true)}
+        onOpenUniversalJudge={() => setIsUniversalJudgeOpen(true)}
+        onOpenSpeedArena={() => setIsSpeedArenaOpen(true)}
+        onOpenLeaderboards={() => setIsLeaderboardBadgesOpen(true)}
+        onOpenFullStackWorkspace={() => setIsFullStackWorkspaceOpen(true)}
+        onOpenEphemeralTerminal={() => setIsEphemeralTerminalOpen(true)}
+        onOpenComplexityVisualizer={() => setIsComplexityVisualizerOpen(true)}
+        onOpenServerlessDeploy={() => setIsServerlessDeployOpen(true)}
+        onOpenSmartProctoring={() => setIsSmartProctoringOpen(true)}
+        onOpenBatchGrading={() => setIsBatchGradingOpen(true)}
+        isLiveMode={Boolean(liveRoomId)}
+        livePeersCount={livePeers.length}
       />
 
       {/* College Exam Active Banner (Desktop Only) */}
@@ -2588,23 +2565,26 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Workspace Layout */}
-      <main className="elite-workspace-layout">
-        {/* Left Activity Bar */}
-        {!isEmbedMode && (
+      {/* Main Workspace: Split Pane on Desktop, Tabbed Switcher on Mobile */}
+      <main className="ide-workspace">
+        {/* Desktop VS Code-Grade Activity Bar (Hidden in Embed Widget mode) */}
+        {!isMobile && !isEmbedMode && (
           <ActivityBar
             isSidebarOpen={isSidebarOpen}
             onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
-            activeSidebarTab={activeSidebarTab}
-            onSelectSidebarTab={setActiveSidebarTab}
-            onOpenSearch={() => setIsCommandPaletteOpen(true)}
             onOpenGit={() => setIsGitModalOpen(true)}
-            onOpenExtensions={() => setIsLanguageModalOpen(true)}
-            onOpenDatabase={() => setRightPaneView('memory')}
-            onOpenDebugger={() => setIsBottomPanelOpen(true)}
-            onOpenSettings={() => setIsCommandPaletteOpen(true)}
-            onOpenProfile={() => setIsProfileModalOpen(true)}
-            userProfile={userProfile}
+            onOpenAiHealer={() => {
+              const currentCode = activeFile ? activeFile.code : '';
+              const currentLang = activeFile ? activeFile.language : manualLanguage;
+              const stderrText = terminalEntries.filter(e => e.type === 'stderr').map(e => e.text).join('\n') || (lastStats ? lastStats.stderr : '');
+              const stdoutText = terminalEntries.filter(e => e.type === 'stdout').map(e => e.text).join('\n');
+              const diagnosis = diagnoseAndHealError(currentCode, currentLang, stderrText, stdoutText, lastStats);
+              setAiHealingData(diagnosis);
+              setIsAiHealerModalOpen(true);
+            }}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+            onOpenShortcuts={() => setIsCommandPaletteOpen(true)}
+            onOpenTerminal={() => setRightPaneView('console')}
             hasError={lastStats && (lastStats.code !== 0 || lastStats.status === 'RUNTIME_ERROR' || lastStats.status === 'COMPILE_ERROR')}
           />
         )}
