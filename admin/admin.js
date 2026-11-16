@@ -4217,7 +4217,7 @@ window.loadCompilerProfiles = async function(isManualRefresh = false) {
   } catch (e) {}
 
   if (countBadge) countBadge.textContent = window.allCompilerProfiles.length;
-  renderCompilerProfilesTable(window.allCompilerProfiles);
+  filterCompilerProfilesTable();
   updateCompilerKpiCounters();
 
   if (isManualRefresh) {
@@ -4233,13 +4233,31 @@ function renderCompilerProfilesTable(profiles, filterSig = 'all') {
   const tbody = document.getElementById('compiler-profiles-tbody');
   if (!tbody) return;
 
+  const currentQuery = (document.getElementById('compiler-profiles-search')?.value || '').trim();
+  const fromVal = document.getElementById('profiles-date-from')?.value || '';
+  const toVal = document.getElementById('profiles-date-to')?.value || '';
+  const hasActiveFilter = Boolean(currentQuery || fromVal || toVal);
+
   if (!profiles || profiles.length === 0) {
     window.adminTablePager?.clearBar('compiler-profiles-tbody');
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
-          <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--text-bright);">No Registered Developer Profiles Yet</div>
-          <div style="font-size: 0.85rem;">When users save their Name, Mobile Number and Email ID in <a href="/compiler/" target="_blank" style="color: #10b981; text-decoration: underline;">Elite IDE</a>, their verified profile will appear here instantly!</div>
+        <td colspan="8" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+          <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; color: var(--text-bright);">
+            ${hasActiveFilter ? `🔍 No developer profiles found matching "${escapeHtml(currentQuery || 'selected date filter')}"` : 'No Registered Developer Profiles Yet'}
+          </div>
+          <div style="font-size: 0.85rem; max-width: 520px; margin: 0 auto; color: var(--text-muted); line-height: 1.5;">
+            ${hasActiveFilter 
+              ? 'Try adjusting your search query (Name, Mobile, Email, Device, User ID) or resetting the date filter.' 
+              : 'When users save their Name, Mobile Number and Email ID in <a href="/compiler/" target="_blank" style="color: #10b981; text-decoration: underline;">Elite IDE</a>, their verified profile will appear here instantly!'}
+          </div>
+          ${hasActiveFilter ? `
+            <div style="margin-top: 16px;">
+              <button type="button" class="btn btn-secondary" onclick="clearProfilesSearchAndFilter()" style="font-size: 0.8rem; padding: 6px 16px; border-color: rgba(255,255,255,0.2);">
+                ✕ Clear Search & Filters
+              </button>
+            </div>
+          ` : ''}
         </td>
       </tr>
     `;
@@ -4247,7 +4265,7 @@ function renderCompilerProfilesTable(profiles, filterSig = 'all') {
   }
 
   const pageProfiles = window.adminTablePager
-    ? window.adminTablePager.paginate('compilerProfiles', profiles, 'compiler-profiles-tbody', () => window.renderCompilerProfilesTablePage?.(), filterSig)
+    ? window.adminTablePager.paginate('compilerProfiles', profiles, 'compiler-profiles-tbody', window.filterCompilerProfilesTable, filterSig)
     : profiles;
 
   window._lastPagedProfilesSource = profiles;
@@ -4348,6 +4366,12 @@ window.onProfilesDateInputChange = function() {
   window.filterCompilerProfilesTable();
 };
 
+window.clearProfilesSearch = function() {
+  const searchInput = document.getElementById('compiler-profiles-search');
+  if (searchInput) searchInput.value = '';
+  window.filterCompilerProfilesTable();
+};
+
 window.clearProfilesDateFilter = function() {
   const fromEl = document.getElementById('profiles-date-from');
   const toEl = document.getElementById('profiles-date-to');
@@ -4358,19 +4382,47 @@ window.clearProfilesDateFilter = function() {
   window.filterCompilerProfilesTable();
 };
 
-window.filterCompilerProfilesTable = function() {
-  const query = (document.getElementById('compiler-profiles-search')?.value || '').toLowerCase();
+window.clearProfilesSearchAndFilter = function() {
+  const searchInput = document.getElementById('compiler-profiles-search');
+  const fromEl = document.getElementById('profiles-date-from');
+  const toEl = document.getElementById('profiles-date-to');
+  const select = document.getElementById('profiles-time-filter');
+  if (searchInput) searchInput.value = '';
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  if (select) select.value = 'all';
+  window.filterCompilerProfilesTable();
+};
+
+function filterCompilerProfilesTable() {
+  const query = (document.getElementById('compiler-profiles-search')?.value || '').toLowerCase().trim();
   const fromVal = document.getElementById('profiles-date-from')?.value || '';
   const toVal = document.getElementById('profiles-date-to')?.value || '';
+
+  const clearBtn = document.getElementById('compiler-profiles-search-clear');
+  if (clearBtn) clearBtn.style.display = query ? 'inline-flex' : 'none';
+
+  const queryWords = query ? query.split(/\s+/).filter(Boolean) : [];
 
   const filtered = (window.allCompilerProfiles || []).filter(p => {
     if (fromVal || toVal) {
       const pDate = p.created_at || p.last_active;
       if (!window.isDateInRange(pDate, fromVal, toVal)) return false;
     }
-    if (query) {
-      const hay = [p.name, p.mobile, p.email, p.user_id, p.device, p.os].join(' ').toLowerCase();
-      if (!hay.includes(query)) return false;
+    if (queryWords.length > 0) {
+      const hay = [
+        p.name,
+        p.mobile,
+        p.email,
+        p.user_id,
+        p.device,
+        p.os,
+        p.browser,
+        p.ip
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      const match = queryWords.every(w => hay.includes(w));
+      if (!match) return false;
     }
     return true;
   });
@@ -4379,10 +4431,17 @@ window.filterCompilerProfilesTable = function() {
   const summaryEl = document.getElementById('profiles-filter-summary');
   if (summaryEl) {
     const totalAll = (window.allCompilerProfiles || []).length;
-    summaryEl.textContent = `Showing ${filtered.length} of ${totalAll} profiles`;
+    if (query || fromVal || toVal) {
+      summaryEl.textContent = `Showing ${filtered.length} of ${totalAll} profiles`;
+      summaryEl.style.display = 'inline-block';
+    } else {
+      summaryEl.textContent = `Total: ${totalAll} profiles`;
+      summaryEl.style.display = 'inline-block';
+    }
   }
   renderCompilerProfilesTable(filtered, `${query}|${fromVal}|${toVal}`);
-};
+}
+window.filterCompilerProfilesTable = filterCompilerProfilesTable;
 
 window.exportCompilerProfilesCSV = function() {
   const listToExport = (window.lastFilteredCompilerProfiles && window.lastFilteredCompilerProfiles.length > 0)
@@ -5345,7 +5404,9 @@ window.copyCertDirectLink = function(certId) {
 // ADMIN TABLES: 20-PER-PAGE PAGINATION + DUAL-AXIS TOUCH/WHEEL SCROLLER
 // ==========================================================================
 window.renderCompilerProfilesTablePage = function() {
-  if (Array.isArray(window._lastPagedProfilesSource)) {
+  if (typeof window.filterCompilerProfilesTable === 'function') {
+    window.filterCompilerProfilesTable();
+  } else if (Array.isArray(window._lastPagedProfilesSource)) {
     renderCompilerProfilesTable(window._lastPagedProfilesSource, window._lastPagedProfilesSig || 'all');
   } else {
     renderCompilerProfilesTable(window.allCompilerProfiles || [], 'all');
