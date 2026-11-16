@@ -1,0 +1,1023 @@
+/* ==========================================================================
+   ELITE IDE — VS CODE PREMIUM STYLE UPGRADE
+   Clean, professional, minimal — inspired by VS Code's refined dark aesthetic
+   Author: Antigravity UI Enhancement
+   ========================================================================== */
+
+/* ──────────────────────────────────────────────────────────────
+   1. DESIGN TOKENS — VS Code Premium Palette
+   ────────────────────────────────────────────────────────────── */
+:root {
+  /* Core backgrounds — slightly warmer dark, deeper than pure black */
+  --vsc-bg-base:        #1e1e1e;
+  --vsc-bg-elevated:    #252526;
+  --vsc-bg-active:      #2d2d2d;
+  --vsc-bg-hover:       #2a2d2e;
+  --vsc-bg-navbar:      #181818;
+  --vsc-bg-sidebar:     #1e1e1e;
+  --vsc-bg-terminal:    #1a1a1a;
+
+  /* Borders */
+  --vsc-border:         rgba(255,255,255,0.08);
+  --vsc-border-focus:   #0078d4;
+  --vsc-border-subtle:  rgba(255,255,255,0.05);
+
+  /* Text */
+  --vsc-text-bright:    #cccccc;
+  --vsc-text-muted:     #858585;
+  --vsc-text-dim:       #6e6e6e;
+  --vsc-text-white:     #ffffff;
+
+  /* VS Code accent blue */
+  --vsc-blue:           #0078d4;
+  --vsc-blue-hover:     #1a86d8;
+  --vsc-blue-soft:      rgba(0,120,212,0.15);
+  --vsc-blue-border:    rgba(0,120,212,0.45);
+
+  /* Green for Run button */
+  --vsc-green:          #3fb950;
+  --vsc-green-hover:    #57c46a;
+  --vsc-green-glow:     rgba(63,185,80,0.35);
+  --vsc-green-border:   rgba(63,185,80,0.5);
+
+  /* Status colors */
+  --vsc-warning:        #cca700;
+  --vsc-error:          #f14c4c;
+  --vsc-success:        #3fb950;
+
+  /* Accent teal (tab active indicator) */
+  --vsc-teal:           #0097fb;
+  --vsc-teal-soft:      rgba(0,151,251,0.12);
+
+  /* Shadows */
+  --vsc-shadow-sm:      0 1px 3px rgba(0,0,0,0.5);
+  --vsc-shadow-md:      0 4px 12px rgba(0,0,0,0.6);
+  --vsc-shadow-lg:      0 8px 28px rgba(0,0,0,0.75);
+  --vsc-shadow-xl:      0 16px 48px rgba(0,0,0,0.85);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   2. IDE ROOT — Clean dark canvas (remove heavy ambient glows)
+   ────────────────────────────────────────────────────────────── */
+.ide-root {
+  background: #1e1e1e !important;
+  /* Remove the heavy radial gradient aura */
+}
+
+/* Suppress heavy ambient aura blobs */
+.ide-ambient-aura::before,
+.ide-ambient-aura::after {
+  display: none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   3. NAVBAR — VS Code title bar style
+   ────────────────────────────────────────────────────────────── */
+.ide-navbar {
+  background: #181818 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.5) !important;
+  height: 46px !important;
+}
+
+/* Remove rainbow underline glow */
+.ide-navbar::after {
+  display: none !important;
+}
+
+/* Brand */
+.brand-title {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: #cccccc !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.1px !important;
+}
+
+.brand-logo-img {
+  width: 30px !important;
+  height: 30px !important;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: 0.9;
+}
+
+.brand-badge {
+  font-size: 0.6rem !important;
+  font-weight: 700 !important;
+  background: rgba(0,120,212,0.18) !important;
+  border: 1px solid rgba(0,120,212,0.35) !important;
+  color: #4fc3f7 !important;
+  box-shadow: none !important;
+  border-radius: 3px !important;
+  letter-spacing: 0.5px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   4. MENUBAR — VS Code–style flat menu triggers
+   ────────────────────────────────────────────────────────────── */
+.ide-menubar {
+  gap: 0 !important;
+  margin-left: 0.4rem !important;
+}
+
+.menubar-trigger {
+  font-size: 0.78rem !important;
+  font-weight: 400 !important;
+  color: #cccccc !important;
+  padding: 3px 8px !important;
+  border-radius: 3px !important;
+  letter-spacing: 0.1px;
+  transition: background 0.1s ease !important;
+}
+
+.menubar-trigger:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.menubar-trigger.active {
+  background: rgba(0,120,212,0.25) !important;
+  color: #4fc3f7 !important;
+  border-color: rgba(0,120,212,0.3) !important;
+  box-shadow: none !important;
+}
+
+/* Flyout menus — VS Code popup style */
+.menubar-flyout-menu {
+  background: #252526 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.75) !important;
+  padding: 4px !important;
+}
+
+.flyout-item {
+  font-size: 0.8rem !important;
+  font-weight: 400 !important;
+  color: #cccccc !important;
+  padding: 5px 10px !important;
+  border-radius: 3px !important;
+  transition: background 0.08s ease !important;
+}
+
+.flyout-item:hover {
+  background: rgba(0,120,212,0.6) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.flyout-divider {
+  background: rgba(255,255,255,0.08) !important;
+  margin: 3px 4px !important;
+}
+
+.flyout-kbd {
+  font-size: 0.65rem !important;
+  color: #858585 !important;
+  background: rgba(255,255,255,0.06) !important;
+  border-radius: 2px !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   5. RUN BUTTON — Premium VS Code-inspired green pill
+   ────────────────────────────────────────────────────────────── */
+.run-button {
+  position: relative !important;
+  overflow: hidden !important;
+  background: #3fb950 !important;
+  border: 1px solid rgba(63,185,80,0.5) !important;
+  color: #ffffff !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px !important;
+  padding: 5px 16px 5px 13px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4), 0 0 0 0px rgba(63,185,80,0) !important;
+  transition: all 0.18s cubic-bezier(0.16,1,0.3,1) !important;
+}
+
+/* Subtle top sheen */
+.run-button::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; right: 0 !important;
+  height: 50% !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.14) 0%, transparent 100%) !important;
+  border-radius: 20px 20px 0 0 !important;
+  pointer-events: none !important;
+}
+
+/* Shimmer on hover */
+.run-button::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important; left: -110% !important;
+  width: 60% !important; height: 100% !important;
+  background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.22) 50%, transparent 80%) !important;
+  transform: skewX(-18deg) !important;
+  transition: left 0.5s cubic-bezier(0.16,1,0.3,1) !important;
+  pointer-events: none !important;
+}
+
+.run-button:hover:not(:disabled)::after {
+  left: 150% !important;
+}
+
+.run-button:hover:not(:disabled) {
+  background: #57c46a !important;
+  box-shadow: 0 2px 10px rgba(63,185,80,0.5), 0 0 0 2px rgba(63,185,80,0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.run-button:active:not(:disabled) {
+  transform: translateY(0.5px) scale(0.98) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
+}
+
+.run-button.running {
+  background: #d4a017 !important;
+  border-color: rgba(212,160,23,0.55) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4), 0 0 12px rgba(212,160,23,0.3) !important;
+}
+
+.kbd-shortcut {
+  background: rgba(0,0,0,0.25) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  color: rgba(255,255,255,0.65) !important;
+  font-size: 0.6rem !important;
+  border-radius: 3px !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   6. LANGUAGE HUB — Refined capsule
+   ────────────────────────────────────────────────────────────── */
+.nav-lang-unified-hub {
+  background: rgba(37,37,38,0.9) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-radius: 20px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+  padding: 2px 5px 2px 10px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.nav-lang-unified-hub:hover {
+  border-color: rgba(0,120,212,0.45) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 8px rgba(0,120,212,0.12) !important;
+}
+
+.nav-lang-zap {
+  color: #4fc3f7 !important;
+  animation: none !important; /* remove pulse, more professional */
+}
+
+.nav-lang-select {
+  color: #9cdcfe !important; /* VS Code blue-tinted variable color */
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+}
+
+.nav-lang-badge {
+  background: rgba(0,120,212,0.15) !important;
+  border: 1px solid rgba(0,120,212,0.3) !important;
+  color: #4fc3f7 !important;
+  box-shadow: none !important;
+}
+
+.nav-matrix-btn {
+  background: rgba(0,120,212,0.12) !important;
+  border: 1px solid rgba(0,120,212,0.3) !important;
+  color: #4fc3f7 !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+  font-size: 0.72rem !important;
+}
+
+.nav-matrix-btn:hover {
+  background: rgba(0,120,212,0.25) !important;
+  border-color: rgba(0,120,212,0.6) !important;
+  color: #fff !important;
+  box-shadow: 0 0 8px rgba(0,120,212,0.25) !important;
+}
+
+.nav-matrix-btn .matrix-globe-icon {
+  color: #4fc3f7 !important;
+  animation: none !important; /* stop spinning globe — cleaner */
+}
+
+/* ──────────────────────────────────────────────────────────────
+   7. NAV ACTION BUTTONS & PROFILE CHIP
+   ────────────────────────────────────────────────────────────── */
+.nav-actions-group {
+  background: rgba(42,45,46,0.7) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.nav-action-btn {
+  color: #858585 !important;
+  border-radius: 4px !important;
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.nav-action-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: transparent !important;
+  color: #cccccc !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+#git-control-button:hover      { color: #f48fb1 !important; }
+#ai-doctor-button:hover        { color: #ce9178 !important; }
+#share-code-button:hover       { color: #9cdcfe !important; }
+#command-palette-button:hover  { color: #dcdcaa !important; }
+
+.nav-profile-chip {
+  background: rgba(0,120,212,0.1) !important;
+  border: 1px solid rgba(0,120,212,0.3) !important;
+  color: #9cdcfe !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+  font-size: 0.75rem !important;
+  height: 26px !important;
+  padding: 0 9px !important;
+}
+
+.nav-profile-chip:hover {
+  background: rgba(0,120,212,0.2) !important;
+  border-color: rgba(0,120,212,0.5) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.nav-profile-chip.is-registered {
+  background: rgba(63,185,80,0.1) !important;
+  border-color: rgba(63,185,80,0.3) !important;
+  color: #89d185 !important;
+  box-shadow: none !important;
+}
+
+.nav-profile-chip.is-registered:hover {
+  background: rgba(63,185,80,0.18) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   8. ACTIVITY BAR — Tight VS Code–style icon rail
+   ────────────────────────────────────────────────────────────── */
+.ide-activity-bar {
+  background: #1e1e1e !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-right: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 0 !important;
+  margin-right: 0 !important;
+  box-shadow: none !important;
+}
+
+.activity-icon-btn {
+  border-radius: 5px !important;
+  color: #858585 !important;
+  border: 1px solid transparent !important;
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.activity-icon-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: transparent !important;
+  color: #cccccc !important;
+  box-shadow: none !important;
+}
+
+.activity-icon-btn.active {
+  background: rgba(0,120,212,0.15) !important;
+  border-color: rgba(0,120,212,0.35) !important;
+  color: #4fc3f7 !important;
+  box-shadow: none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   9. SIDEBAR — VS Code Explorer sidebar
+   ────────────────────────────────────────────────────────────── */
+.workspace-sidebar {
+  background: #1e1e1e !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-right: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 0 !important;
+  margin-right: 0 !important;
+  box-shadow: none !important;
+}
+
+.sidebar-header {
+  background: #252526 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  box-shadow: none !important;
+}
+
+.sidebar-title {
+  font-size: 0.7rem !important;
+  color: #bbbbbb !important;
+  letter-spacing: 0.8px !important;
+}
+
+.sidebar-tool-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: transparent !important;
+  color: #cccccc !important;
+}
+
+.sidebar-file-item {
+  border-radius: 3px !important;
+  padding: 4px 8px !important;
+  font-size: 0.8rem !important;
+}
+
+.sidebar-file-item:hover {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: transparent !important;
+}
+
+.sidebar-file-item.active {
+  background: rgba(0,120,212,0.2) !important;
+  border-color: rgba(0,120,212,0.35) !important;
+  box-shadow: none !important;
+}
+
+.sidebar-footer {
+  background: #1e1e1e !important;
+  border-top: 1px solid rgba(255,255,255,0.07) !important;
+}
+
+.sidebar-quick-btn {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  font-size: 0.75rem !important;
+}
+
+.sidebar-quick-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+}
+
+.sidebar-quick-btn.algo {
+  background: rgba(197,117,221,0.1) !important;
+  border-color: rgba(197,117,221,0.25) !important;
+  box-shadow: none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   10. WORKSPACE LAYOUT — Remove card borders, clean split
+   ────────────────────────────────────────────────────────────── */
+.ide-workspace {
+  background: #1e1e1e !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+.ide-panes-container {
+  gap: 0 !important;
+}
+
+.ide-editor-section,
+.ide-terminal-section {
+  background: #1e1e1e !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Editor/Terminal separator */
+.ide-editor-section {
+  border-right: 1px solid rgba(255,255,255,0.07) !important;
+}
+
+/* Split resizer — subtle handle */
+.ide-split-resizer {
+  width: 5px !important;
+  background: transparent !important;
+  cursor: col-resize !important;
+}
+
+.ide-split-resizer-pill {
+  width: 2px !important;
+  height: 32px !important;
+  background: rgba(255,255,255,0.15) !important;
+  box-shadow: none !important;
+  border-radius: 2px !important;
+}
+
+.ide-split-resizer:hover .ide-split-resizer-pill,
+.ide-split-resizer.dragging .ide-split-resizer-pill {
+  width: 2px !important;
+  height: 56px !important;
+  background: rgba(0,120,212,0.8) !important;
+  box-shadow: 0 0 6px rgba(0,120,212,0.5) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   11. EDITOR PANEL — Tabs & breadcrumbs
+   ────────────────────────────────────────────────────────────── */
+.editor-tab-strip-wrapper {
+  background: #252526 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  box-shadow: none !important;
+}
+
+.editor-tab {
+  background: transparent !important;
+  border-radius: 0 !important;
+  margin-top: 0 !important;
+  height: 100% !important;
+  border-right: 1px solid rgba(255,255,255,0.07) !important;
+  font-size: 0.8rem !important;
+  color: #858585 !important;
+  transition: background 0.1s ease !important;
+}
+
+.editor-tab:hover {
+  background: rgba(255,255,255,0.06) !important;
+  color: #cccccc !important;
+}
+
+.editor-tab.active {
+  background: #1e1e1e !important;
+  color: #cccccc !important;
+  border-top: 1px solid #0078d4 !important;
+  border-left: 1px solid rgba(255,255,255,0.07) !important;
+  border-right: 1px solid rgba(255,255,255,0.07) !important;
+  box-shadow: none !important;
+}
+
+.editor-breadcrumbs-bar {
+  background: #1e1e1e !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  font-size: 0.75rem !important;
+}
+
+.breadcrumb-engine-tag {
+  background: rgba(0,120,212,0.12) !important;
+  border: 1px solid rgba(0,120,212,0.25) !important;
+  box-shadow: none !important;
+  color: #4fc3f7 !important;
+  font-size: 0.68rem !important;
+}
+
+.tab-strip-actions {
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+
+.tab-action-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  color: #cccccc !important;
+}
+
+/* Monaco suggestion widgets */
+.monaco-editor .suggest-widget,
+.monaco-editor .monaco-hover,
+.monaco-editor .parameter-hints-widget,
+.monaco-editor .find-widget {
+  background: #252526 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.7) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   12. RIGHT PANE — View switcher tabs & terminal
+   ────────────────────────────────────────────────────────────── */
+.view-mode-bar {
+  background: #252526 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  box-shadow: none !important;
+  padding: 0 0.5rem !important;
+  gap: 2px !important;
+}
+
+.view-mode-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+  color: #858585 !important;
+  font-size: 0.75rem !important;
+  padding: 4px 10px !important;
+  gap: 0.3rem !important;
+  transition: background 0.1s ease, color 0.1s ease !important;
+}
+
+.view-mode-btn:hover {
+  background: rgba(255,255,255,0.08) !important;
+  border-color: transparent !important;
+  color: #cccccc !important;
+}
+
+.view-mode-btn.active {
+  background: rgba(0,120,212,0.15) !important;
+  border-color: rgba(0,120,212,0.3) !important;
+  color: #9cdcfe !important;
+  box-shadow: none !important;
+}
+
+.view-mode-action-btn {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  color: #858585 !important;
+  font-size: 0.72rem !important;
+}
+
+.view-mode-action-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  color: #cccccc !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   13. CONSOLE / TERMINAL PANEL
+   ────────────────────────────────────────────────────────────── */
+.console-panel-container {
+  background: transparent !important;
+}
+
+.console-header {
+  background: #252526 !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  box-shadow: none !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 0.65rem !important;
+}
+
+.terminal-window-dots .dot {
+  box-shadow: none !important;
+}
+
+.console-action-btn {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  color: #858585 !important;
+  font-size: 0.73rem !important;
+}
+
+.console-action-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: #cccccc !important;
+}
+
+.console-body {
+  background: #1a1a1a !important; /* slightly darker, terminal feel */
+}
+
+/* Terminal command row */
+.terminal-cmd-row {
+  background: rgba(63,185,80,0.07) !important;
+  border-radius: 3px !important;
+  padding: 4px 10px !important;
+  border-left: 2px solid rgba(63,185,80,0.6) !important;
+  box-shadow: none !important;
+}
+
+/* Active stdin input bar */
+.terminal-input-bar.active-input-bar {
+  background: #252526 !important;
+  border-top: 1px solid rgba(0,120,212,0.35) !important;
+  box-shadow: none !important;
+}
+
+.send-stdin-btn.active {
+  background: #0078d4 !important;
+  border: 1px solid rgba(0,120,212,0.6) !important;
+  box-shadow: none !important;
+}
+
+.console-footer {
+  background: #252526 !important;
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* Empty state emblem */
+.console-empty-emblem {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 10px !important;
+  background: rgba(0,120,212,0.12) !important;
+  border: 1px solid rgba(0,120,212,0.25) !important;
+  box-shadow: none !important;
+}
+
+.console-empty-emblem .empty-icon {
+  color: #4fc3f7 !important;
+  filter: none !important;
+}
+
+.empty-desc kbd {
+  background: #252526 !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   14. STATUS BAR — VS Code bottom status bar
+   ────────────────────────────────────────────────────────────── */
+.ide-status-bar {
+  background: #0078d4 !important; /* VS Code signature blue status bar */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-top: none !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
+}
+
+.status-bar-item {
+  color: rgba(255,255,255,0.85) !important;
+  font-size: 0.72rem !important;
+}
+
+.status-bar-item:hover {
+  background: rgba(255,255,255,0.15) !important;
+  color: #ffffff !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   15. MODALS — Clean professional dark modals
+   ────────────────────────────────────────────────────────────── */
+.lang-matrix-overlay,
+.s-tier-modal-overlay,
+.modal-backdrop,
+.modal-overlay,
+.install-modal-backdrop,
+.college-modal-overlay,
+.ai-modal-overlay,
+.ai-healer-overlay,
+.report-modal-overlay,
+.git-modal-overlay,
+.transpiler-modal-backdrop,
+.college-portal-fullscreen-backdrop {
+  background: rgba(0,0,0,0.65) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+.lang-matrix-modal,
+.s-tier-modal-container,
+.algorithm-modal-card,
+.command-palette-modal,
+.install-modal-card,
+.college-modal-card,
+.ai-modal-container,
+.ai-healer-container,
+.user-profile-modal-card,
+.share-code-modal,
+.modal-box,
+.git-modal-container,
+.transpiler-modal-card,
+.report-modal-card,
+.college-portal-fullscreen-card,
+.nav-unified-dropdown {
+  background: #252526 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.05) !important;
+  border-radius: 6px !important;
+}
+
+.lang-matrix-header,
+.s-tier-modal-header,
+.algo-modal-header,
+.install-modal-header,
+.college-modal-header,
+.ai-modal-header,
+.ai-healer-header,
+.git-modal-header,
+.transpiler-header,
+.share-code-modal .modal-header {
+  background: #2d2d2d !important;
+  border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: none !important;
+}
+
+.lang-matrix-input,
+.algo-search-input,
+.oj-url-input,
+.git-input-box,
+.transpiler-select,
+.college-input {
+  background: #3c3c3c !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+  color: #cccccc !important;
+}
+
+.lang-matrix-input:focus,
+.algo-search-input:focus,
+.oj-url-input:focus,
+.git-input-box:focus,
+.college-input:focus {
+  border-color: #0078d4 !important;
+  box-shadow: 0 0 0 1px rgba(0,120,212,0.4) !important;
+}
+
+/* Modal cards */
+.lang-matrix-card,
+.algo-item-card,
+.comp-card,
+.badge-card,
+.tier-card {
+  background: #2d2d2d !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  box-shadow: none !important;
+  border-radius: 5px !important;
+}
+
+.lang-matrix-card:hover,
+.algo-item-card:hover,
+.badge-card:hover,
+.tier-card:hover {
+  border-color: rgba(0,120,212,0.45) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+}
+
+.lang-matrix-card.active {
+  background: rgba(0,120,212,0.12) !important;
+  border-color: rgba(0,120,212,0.5) !important;
+  box-shadow: none !important;
+}
+
+.lang-matrix-cat-pill.active {
+  background: #0078d4 !important;
+  border-color: #0078d4 !important;
+  box-shadow: none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   16. MOBILE UI — Clean mobile layout
+   ────────────────────────────────────────────────────────────── */
+.mobile-nav-run-btn {
+  background: #3fb950 !important;
+  border: 1px solid rgba(63,185,80,0.4) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4) !important;
+  font-size: 0.75rem !important;
+  padding: 5px 12px !important;
+}
+
+.mobile-nav-run-btn:active {
+  transform: scale(0.96) !important;
+}
+
+.mobile-nav-run-btn.running {
+  background: #d4a017 !important;
+  border-color: rgba(212,160,23,0.4) !important;
+  box-shadow: none !important;
+}
+
+.mobile-nav-lang-pill {
+  background: rgba(37,37,38,0.9) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+
+.mobile-nav-profile-btn {
+  background: rgba(0,120,212,0.12) !important;
+  border: 1px solid rgba(0,120,212,0.25) !important;
+  color: #4fc3f7 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+}
+
+.mobile-nav-profile-btn.is-registered {
+  background: rgba(63,185,80,0.12) !important;
+  border-color: rgba(63,185,80,0.3) !important;
+  color: #89d185 !important;
+}
+
+.mobile-live-collab-pill,
+.nav-live-collab-pill {
+  background: rgba(63,185,80,0.12) !important;
+  border: 1px solid rgba(63,185,80,0.35) !important;
+  color: #89d185 !important;
+  box-shadow: none !important;
+  border-radius: 20px !important;
+  font-size: 0.72rem !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   17. MISCELLANEOUS UI POLISH
+   ────────────────────────────────────────────────────────────── */
+
+/* Scrollbars — slim, VS Code style */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100,100,100,0.4) !important;
+  border-radius: 2px !important;
+  border: none !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150,150,150,0.5) !important;
+}
+
+/* Problems panel indicator */
+.problems-count-badge {
+  background: rgba(241,76,76,0.15) !important;
+  border: 1px solid rgba(241,76,76,0.35) !important;
+  color: #f1424c !important;
+}
+
+/* College exam banner */
+.college-exam-banner {
+  background: rgba(212,160,23,0.1) !important;
+  border-bottom: 1px solid rgba(212,160,23,0.3) !important;
+}
+
+/* Algo/DSA category tabs */
+.algo-category-tabs .cat-pill.active {
+  background: #0078d4 !important;
+  border-color: #0078d4 !important;
+}
+
+/* Nav divider */
+.nav-divider {
+  background: rgba(255,255,255,0.1) !important;
+  width: 1px !important;
+  height: 18px !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   18. SUBTLE ANIMATIONS REDUCTION — Professional feel
+   ────────────────────────────────────────────────────────────── */
+/* Reduce excessive animations for a more professional look */
+@media (prefers-reduced-motion: no-preference) {
+  .run-button,
+  .nav-action-btn,
+  .flyout-item,
+  .menubar-trigger,
+  .lang-matrix-card,
+  .editor-tab,
+  .view-mode-btn,
+  .sidebar-file-item {
+    transition-duration: 0.12s !important;
+  }
+}
+
+/* Spinner for running state */
+@keyframes vscRunSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Live collab pulse dot */
+.live-sync-dot {
+  box-shadow: 0 0 6px #3fb950 !important;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   19. FOCUS RINGS — Accessibility
+   ────────────────────────────────────────────────────────────── */
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 1px solid #0078d4 !important;
+  outline-offset: 2px !important;
+}
