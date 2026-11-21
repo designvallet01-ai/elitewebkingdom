@@ -738,7 +738,7 @@ function applyEliteIdeUIState() {
     }
   }
   if (heroText) {
-    heroText.textContent = isLive ? 'Download Elite IDE (.exe)' : 'Elite IDE Offline Studio';
+    heroText.textContent = isLive ? 'Download Elite IDE' : 'Elite IDE Offline Studio';
   }
 
   // 3. Portfolio Card Badge & Text
@@ -746,7 +746,7 @@ function applyEliteIdeUIState() {
   const cardText = document.getElementById('card-ide-btn-text');
   if (cardBadge) {
     if (isLive) {
-      cardBadge.textContent = '.EXE';
+      cardBadge.textContent = 'LIVE';
       cardBadge.style.background = '#ECFDF5';
       cardBadge.style.borderColor = '#A7F3D0';
       cardBadge.style.color = '#059669';
@@ -758,7 +758,7 @@ function applyEliteIdeUIState() {
     }
   }
   if (cardText) {
-    cardText.textContent = isLive ? 'Download for Windows (.exe)' : 'Offline Studio (Windows)';
+    cardText.textContent = isLive ? 'Download Desktop Studio' : 'Elite IDE Offline Studio';
   }
 }
 
@@ -766,12 +766,21 @@ window.handleEliteIdeDownloadClick = function(e) {
   if (e && e.preventDefault) e.preventDefault();
 
   if (eliteIdeLaunchState.isLive && eliteIdeLaunchState.downloadUrl) {
-    // Official Live: Trigger 1-Click Direct Download immediately!
+    // Official Live: Trigger 1-Click Direct Download for any configured package/link
     const dlLink = document.createElement('a');
     dlLink.href = eliteIdeLaunchState.downloadUrl;
     dlLink.target = '_blank';
     dlLink.rel = 'noopener noreferrer';
-    dlLink.download = 'Elite-IDE-Setup-2.0.0.exe';
+    
+    // Only set explicit download attribute if the URL ends with a recognizable file extension
+    try {
+      const cleanUrl = eliteIdeLaunchState.downloadUrl.split('?')[0];
+      const matchExt = cleanUrl.match(/\.(exe|dmg|zip|tar\.gz|pkg|appImage)$/i);
+      if (matchExt) {
+        dlLink.download = `Elite-IDE-Installer${matchExt[0]}`;
+      }
+    } catch {}
+
     document.body.appendChild(dlLink);
     dlLink.click();
     document.body.removeChild(dlLink);

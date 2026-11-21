@@ -5698,7 +5698,7 @@ window.executeIdeLaunchToggle = async function() {
   if (currentIdeTargetMode === 'OFFICIAL_LIVE' && !downloadUrl) {
     if (feedback) {
       feedback.style.color = '#f59e0b';
-      feedback.textContent = '⚠️ Notice: Please enter a valid Direct Download URL (.exe) before publishing Official Live!';
+      feedback.textContent = '⚠️ Notice: Please enter a valid Direct Download URL before publishing Official Live!';
     }
     return;
   }
