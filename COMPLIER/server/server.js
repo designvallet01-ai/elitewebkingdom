@@ -233,6 +233,31 @@ app.post('/api/run', async (req, res) => {
           status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
           runner: 'GNU C++ (MinGW-w64 Offline Native)'
         });
+      } else if (process.platform === 'darwin' || process.platform === 'linux') {
+        const outBin = path.join(tempDir, 'main.out');
+        const compilerCmd = process.platform === 'darwin' ? 'clang++' : 'g++';
+        const compileRes = await runCommand(compilerCmd, ['-O2', '-Wall', srcFile, '-o', outBin], '', 45000, tempDir);
+        if (compileRes.code !== 0) {
+          return res.json({
+            stdout: '',
+            stderr: compileRes.stderr || compileRes.stdout,
+            code: compileRes.code,
+            executionTime: compileRes.executionTime,
+            status: 'COMPILE_ERROR',
+            runner: `${compilerCmd} (macOS / Linux Native)`
+          });
+        }
+
+        const runRes = await runCommand(outBin, [], stdin, 30000, tempDir);
+        return res.json({
+          stdout: runRes.stdout,
+          stderr: runRes.stderr,
+          code: runRes.code,
+          executionTime: compileRes.executionTime + runRes.executionTime,
+          compileTime: compileRes.executionTime,
+          status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
+          runner: `${compilerCmd} (macOS / Linux Native)`
+        });
       } else {
         const wslSrc = toWslPath(srcFile);
         const wslOut = `${wslSrc}.out`;
@@ -293,6 +318,31 @@ app.post('/api/run', async (req, res) => {
           status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
           runner: isTcc ? 'Tiny C Compiler (Portable TCC 64 Native)' : 'GNU C (MinGW-w64 GCC Native)'
         });
+      } else if (process.platform === 'darwin' || process.platform === 'linux') {
+        const outBin = path.join(tempDir, 'main.out');
+        const compilerCmd = process.platform === 'darwin' ? 'clang' : 'gcc';
+        const compileRes = await runCommand(compilerCmd, ['-O2', '-Wall', srcFile, '-o', outBin], '', 45000, tempDir);
+        if (compileRes.code !== 0) {
+          return res.json({
+            stdout: '',
+            stderr: compileRes.stderr || compileRes.stdout,
+            code: compileRes.code,
+            executionTime: compileRes.executionTime,
+            status: 'COMPILE_ERROR',
+            runner: `${compilerCmd} (macOS / Linux Native)`
+          });
+        }
+
+        const runRes = await runCommand(outBin, [], stdin, 30000, tempDir);
+        return res.json({
+          stdout: runRes.stdout,
+          stderr: runRes.stderr,
+          code: runRes.code,
+          executionTime: compileRes.executionTime + runRes.executionTime,
+          compileTime: compileRes.executionTime,
+          status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
+          runner: `${compilerCmd} (macOS / Linux Native)`
+        });
       } else {
         const wslSrc = toWslPath(srcFile);
         const wslOut = `${wslSrc}.out`;
@@ -326,11 +376,11 @@ app.post('/api/run', async (req, res) => {
     if (langConfig.runner === 'native-python') {
       const scriptPath = path.join(tempDir, 'main.py');
       fs.writeFileSync(scriptPath, code, 'utf-8');
-      const pyCmd = PORTABLE_PYTHON || 'python';
+      const pyCmd = PORTABLE_PYTHON || (process.platform === 'darwin' ? 'python3' : 'python');
       const result = await runCommand(pyCmd, ['-u', scriptPath], stdin, 30000, tempDir);
       return res.json({
         ...result,
-        runner: PORTABLE_PYTHON ? 'Python 3.12 (Embedded Portable CPython)' : 'Python 3.11 (Native CPython)'
+        runner: PORTABLE_PYTHON ? 'Python 3.12 (Embedded Portable CPython)' : (process.platform === 'darwin' ? 'Python 3 (macOS Native)' : 'Python 3.11 (Native CPython)')
       });
     }
 
@@ -512,8 +562,8 @@ wss.on('connection', (ws) => {
         if (language === 'python') {
           const scriptPath = path.join(tempDir, 'main.py');
           fs.writeFileSync(scriptPath, code, 'utf-8');
-          const pyBin = PORTABLE_PYTHON || 'python';
-          const runnerName = PORTABLE_PYTHON ? 'Python 3.12 (Embedded Portable CPython)' : 'Python 3.11 (Native CPython)';
+          const pyBin = PORTABLE_PYTHON || (process.platform === 'darwin' ? 'python3' : 'python');
+          const runnerName = PORTABLE_PYTHON ? 'Python 3.12 (Embedded Portable CPython)' : (process.platform === 'darwin' ? 'Python 3 (macOS Native)' : 'Python 3.11 (Native CPython)');
 
           ws.send(JSON.stringify({
             type: 'system',
@@ -601,6 +651,39 @@ wss.on('connection', (ws) => {
             child = spawn(exeOut, [], { cwd: tempDir, shell: false, env: process.env });
             setupChildHandlers(child, ws, cleanup, startTime, 'GNU C++ (Portable MinGW-w64 Native)');
             return;
+          } else if (process.platform === 'darwin' || process.platform === 'linux') {
+            const outBin = path.join(tempDir, 'main.out');
+            const compilerCmd = process.platform === 'darwin' ? 'clang++' : 'g++';
+            ws.send(JSON.stringify({
+              type: 'system',
+              data: `[Elite IDE Terminal] Compiling C++ with ${compilerCmd} (macOS / Linux Native)...\r\n`
+            }));
+
+            const compileRes = await runCommand(compilerCmd, ['-O2', '-Wall', srcFile, '-o', outBin], '', 45000, tempDir);
+            if (compileRes.code !== 0) {
+              ws.send(JSON.stringify({
+                type: 'stderr',
+                data: compileRes.stderr || compileRes.stdout
+              }));
+              ws.send(JSON.stringify({
+                type: 'exit',
+                code: compileRes.code,
+                status: 'COMPILE_ERROR',
+                executionTime: compileRes.executionTime,
+                runner: `${compilerCmd} (macOS / Linux Native)`
+              }));
+              cleanup();
+              return;
+            }
+
+            ws.send(JSON.stringify({
+              type: 'system',
+              data: `[Elite IDE Terminal] Compilation successful! Running program...\r\n`
+            }));
+
+            child = spawn(outBin, [], { cwd: tempDir, shell: false, env: process.env });
+            setupChildHandlers(child, ws, cleanup, startTime, `${compilerCmd} (macOS / Linux Native)`);
+            return;
           } else {
             const wslSrc = toWslPath(srcFile);
             const wslOut = `${wslSrc}.out`;
@@ -678,6 +761,39 @@ wss.on('connection', (ws) => {
 
             child = spawn(exeOut, [], { cwd: tempDir, shell: false, env: process.env });
             setupChildHandlers(child, ws, cleanup, startTime, `${compilerName} Native`);
+            return;
+          } else if (process.platform === 'darwin' || process.platform === 'linux') {
+            const outBin = path.join(tempDir, 'main.out');
+            const compilerCmd = process.platform === 'darwin' ? 'clang' : 'gcc';
+            ws.send(JSON.stringify({
+              type: 'system',
+              data: `[Elite IDE Terminal] Compiling C with ${compilerCmd} (macOS / Linux Native)...\r\n`
+            }));
+
+            const compileRes = await runCommand(compilerCmd, ['-O2', '-Wall', srcFile, '-o', outBin], '', 45000, tempDir);
+            if (compileRes.code !== 0) {
+              ws.send(JSON.stringify({
+                type: 'stderr',
+                data: compileRes.stderr || compileRes.stdout
+              }));
+              ws.send(JSON.stringify({
+                type: 'exit',
+                code: compileRes.code,
+                status: 'COMPILE_ERROR',
+                executionTime: compileRes.executionTime,
+                runner: `${compilerCmd} (macOS / Linux Native)`
+              }));
+              cleanup();
+              return;
+            }
+
+            ws.send(JSON.stringify({
+              type: 'system',
+              data: `[Elite IDE Terminal] Compilation successful! Running program...\r\n`
+            }));
+
+            child = spawn(outBin, [], { cwd: tempDir, shell: false, env: process.env });
+            setupChildHandlers(child, ws, cleanup, startTime, `${compilerCmd} (macOS / Linux Native)`);
             return;
           } else {
             const wslSrc = toWslPath(srcFile);

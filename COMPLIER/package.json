@@ -16,7 +16,9 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "desktop:pack": "electron-builder --config electron-builder.json --dir",
-    "desktop:dist": "electron-builder --config electron-builder.json"
+    "desktop:dist": "electron-builder --config electron-builder.json",
+    "desktop:dist:win": "electron-builder --config electron-builder.json --win --x64",
+    "desktop:dist:mac": "electron-builder --config electron-builder.json --mac"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

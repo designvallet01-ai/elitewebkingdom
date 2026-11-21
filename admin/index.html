@@ -1123,8 +1123,8 @@
 
               <div class="form-group" style="margin-bottom: 18px;">
                 <label style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 8px; display: block;">Master Passcode (Required):</label>
-                <input type="password" id="ide-launch-passcode" class="form-control" placeholder="Enter passcode 31012007" style="width: 100%; letter-spacing: 3px; font-size: 1rem; font-family: var(--font-mono); background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(99, 102, 241, 0.4);">
-                <span style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px; display: block;">🔒 Security Code: <code>31012007</code> required to confirm launch status change.</span>
+                <input type="password" id="ide-launch-passcode" class="form-control" placeholder="Enter Master Passcode" style="width: 100%; letter-spacing: 3px; font-size: 1rem; font-family: var(--font-mono); background: rgba(2, 6, 23, 0.7); border: 1px solid rgba(99, 102, 241, 0.4);">
+                <span style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px; display: block;">🔒 Master Security Code required to confirm launch status change.</span>
               </div>
 
               <div class="form-group" style="margin-bottom: 24px;">
@@ -1152,24 +1152,24 @@
               
               <div class="form-group" style="margin-bottom: 16px;">
                 <label style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: block;">Production Direct Download URL (.exe):</label>
-                <input type="text" id="ide-download-url" class="form-control" value="https://drive.google.com/uc?export=download&id=19azCpl7fjqMc4IJ6RXmVyghei0KeFX6a" style="width: 100%; font-size: 0.85rem; font-family: var(--font-mono);">
+                <input type="text" id="ide-download-url" class="form-control" value="" placeholder="Enter production direct download URL (.exe)..." style="width: 100%; font-size: 0.85rem; font-family: var(--font-mono);">
                 <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Live link served to users when Official Launch is active.</span>
               </div>
 
               <div style="background: rgba(2, 6, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-top: 20px;">
                 <h4 style="font-size: 0.85rem; color: #818cf8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Release Metadata Summary</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;">
-                  <div><span style="color: var(--text-muted);">Version:</span> <strong style="color: #fff;">v2.0.0</strong></div>
-                  <div><span style="color: var(--text-muted);">Publisher:</span> <strong style="color: #fff;">ELITE WEB KINGDOM</strong></div>
-                  <div><span style="color: var(--text-muted);">Payload Size:</span> <strong style="color: #fff;">233.9 MB</strong></div>
-                  <div><span style="color: var(--text-muted);">Architecture:</span> <strong style="color: #fff;">Windows x64 Native</strong></div>
-                  <div><span style="color: var(--text-muted);">Compilers:</span> <strong style="color: #10b981;">100% Offline (GCC, G++, Py)</strong></div>
-                  <div><span style="color: var(--text-muted);">Status Mode:</span> <strong id="ide-summary-status-txt" style="color: #f59e0b;">COMING SOON</strong></div>
+                  <div><span style="color: var(--text-muted);">Version:</span> <strong id="ide-summary-version" style="color: #fff;">--</strong></div>
+                  <div><span style="color: var(--text-muted);">Publisher:</span> <strong id="ide-summary-publisher" style="color: #fff;">--</strong></div>
+                  <div><span style="color: var(--text-muted);">Payload Size:</span> <strong id="ide-summary-payload" style="color: #fff;">--</strong></div>
+                  <div><span style="color: var(--text-muted);">Architecture:</span> <strong id="ide-summary-arch" style="color: #fff;">--</strong></div>
+                  <div><span style="color: var(--text-muted);">Compilers:</span> <strong id="ide-summary-compilers" style="color: #10b981;">--</strong></div>
+                  <div><span style="color: var(--text-muted);">Status Mode:</span> <strong id="ide-summary-status-txt" style="color: #f59e0b;">NOT CONFIGURED</strong></div>
                 </div>
               </div>
 
               <div style="margin-top: 20px; padding: 14px; background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; font-size: 0.8rem; color: #c7d2fe; line-height: 1.5;">
-                ℹ️ <strong>Behavior Note:</strong> When in <em>COMING SOON</em>, website buttons show an animated "Elite IDE Offline Studio — Coming Soon" spotlight modal with feature previews. When in <em>OFFICIAL LIVE</em>, clicking the button instantly downloads the 233MB standalone executable!
+                ℹ️ <strong>Behavior Note:</strong> When in <em>COMING SOON</em>, website buttons show an animated "Elite IDE Offline Studio — Coming Soon" spotlight modal with feature previews. When in <em>OFFICIAL LIVE</em>, clicking the button downloads the published standalone executable!
               </div>
             </div>
           </div>

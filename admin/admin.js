@@ -5640,8 +5640,8 @@ window.loadIdeLaunchStatus = async function() {
     const summary = document.getElementById('ide-summary-status-txt');
     const urlInput = document.getElementById('ide-download-url');
 
-    if (item.code_snippet && urlInput) {
-      urlInput.value = item.code_snippet;
+    if (urlInput) {
+      urlInput.value = item.code_snippet || '';
     }
 
     if (isLive) {
@@ -5690,7 +5690,15 @@ window.executeIdeLaunchToggle = async function() {
   if (passcode !== IDE_MASTER_PASSCODE) {
     if (feedback) {
       feedback.style.color = '#ef4444';
-      feedback.textContent = '❌ Access Denied: Incorrect Master Passcode. Enter 31012007 to authorize launch.';
+      feedback.textContent = '❌ Access Denied: Incorrect Master Passcode.';
+    }
+    return;
+  }
+
+  if (currentIdeTargetMode === 'OFFICIAL_LIVE' && !downloadUrl) {
+    if (feedback) {
+      feedback.style.color = '#f59e0b';
+      feedback.textContent = '⚠️ Notice: Please enter a valid Direct Download URL (.exe) before publishing Official Live!';
     }
     return;
   }

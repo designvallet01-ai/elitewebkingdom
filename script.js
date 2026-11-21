@@ -666,7 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 let eliteIdeLaunchState = {
   isLive: false,
-  downloadUrl: 'https://drive.google.com/uc?export=download&id=19azCpl7fjqMc4IJ6RXmVyghei0KeFX6a'
+  downloadUrl: ''
 };
 
 async function initEliteIdeLaunchSync() {
@@ -765,7 +765,7 @@ function applyEliteIdeUIState() {
 window.handleEliteIdeDownloadClick = function(e) {
   if (e && e.preventDefault) e.preventDefault();
 
-  if (eliteIdeLaunchState.isLive) {
+  if (eliteIdeLaunchState.isLive && eliteIdeLaunchState.downloadUrl) {
     // Official Live: Trigger 1-Click Direct Download immediately!
     const dlLink = document.createElement('a');
     dlLink.href = eliteIdeLaunchState.downloadUrl;

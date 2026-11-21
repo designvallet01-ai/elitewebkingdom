@@ -31,10 +31,23 @@ export default function ShareCodeModal({
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
 
+  // Detect if running inside Electron desktop (offline) app
+  const isDesktopApp = !!(window.eliteDesktop?.isDesktop) ||
+    (typeof window !== 'undefined' && window.location.protocol === 'http:' &&
+     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'));
+
+  // Always use production URL for shareable links (works from both offline & online)
+  const PRODUCTION_BASE = 'https://www.elitewebkingdom.in/compiler/';
+
   useEffect(() => {
     if (!isOpen) return;
     try {
-      const url = new URL(window.location.origin + window.location.pathname);
+      // If offline/desktop app → always generate online-friendly share link
+      const baseOrigin = isDesktopApp
+        ? PRODUCTION_BASE
+        : (window.location.origin + window.location.pathname);
+
+      const url = new URL(baseOrigin);
       if (isLiveMode && liveRoomId) {
         url.searchParams.set('live', liveRoomId);
       }
@@ -48,7 +61,9 @@ export default function ShareCodeModal({
       }
       setShareUrl(url.toString());
     } catch (err) {
-      const fallbackUrl = new URL(window.location.origin + window.location.pathname);
+      const fallbackUrl = new URL(
+        isDesktopApp ? PRODUCTION_BASE : (window.location.origin + window.location.pathname)
+      );
       if (isLiveMode && liveRoomId) {
         fallbackUrl.searchParams.set('live', liveRoomId);
       }
@@ -120,6 +135,29 @@ export default function ShareCodeModal({
         </div>
 
         <div className="modal-body" style={{ padding: '18px 22px' }}>
+
+          {/* Offline → Online Share Banner */}
+          {isDesktopApp && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(234, 179, 8, 0.1)',
+              border: '1px solid rgba(234, 179, 8, 0.35)',
+              borderRadius: '8px',
+              padding: '8px 13px',
+              marginBottom: '14px',
+              fontSize: '0.78rem',
+              color: '#fde68a'
+            }}>
+              <span style={{ fontSize: '1rem' }}>🔗</span>
+              <span>
+                <strong>Offline Studio:</strong> Share link automatically opens at{' '}
+                <strong style={{ color: '#38bdf8' }}>elitewebkingdom.in</strong> so anyone can run your code online!
+              </span>
+            </div>
+          )}
+
           {/* Interactive Live Workspace Toggle Card */}
           <div className={`live-share-toggle-card ${isLiveMode ? 'active' : ''}`}>
             <div className="live-toggle-left">
