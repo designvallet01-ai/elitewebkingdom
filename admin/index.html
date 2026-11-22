@@ -1148,28 +1148,52 @@
 
             <!-- Right Card: Release Specs & Download URL Config -->
             <div class="admin-card glass-card" style="padding: 28px;">
-              <h3 style="font-size: 1.15rem; color: var(--text-bright); margin-bottom: 16px;">Package & CDN Payload Settings</h3>
+              <h3 style="font-size: 1.15rem; color: var(--text-bright); margin-bottom: 16px;">Package &amp; Multi-Platform CDN Payload Settings</h3>
               
-              <div class="form-group" style="margin-bottom: 16px;">
-                <label style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: block;">Production Direct Download URL:</label>
-                <input type="text" id="ide-download-url" class="form-control" value="" placeholder="Enter direct download link (Drive, CDN, any file)..." style="width: 100%; font-size: 0.85rem; font-family: var(--font-mono);">
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; display: block;">Live link served to users when Official Launch is active (supports any file type or link).</span>
+              <!-- Mac Intel -->
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>💻</span> Mac (Intel Core - x64) Download URL:
+                </label>
+                <input type="text" id="ide-download-mac-intel" class="form-control" value="https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing" placeholder="Enter Mac Intel DMG Google Drive / CDN link..." style="width: 100%; font-size: 0.82rem; font-family: var(--font-mono);">
+                <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px; display: block;">For Intel Macs (Core i3/i5/i7/i9/Xeon) — Elite-IDE-Offline-v2-Mac-x64.dmg</span>
               </div>
 
-              <div style="background: rgba(2, 6, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-top: 20px;">
+              <!-- Mac Apple Silicon -->
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>🍎</span> Mac (Apple Silicon - M Series) Download URL:
+                </label>
+                <input type="text" id="ide-download-mac-silicon" class="form-control" value="https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing" placeholder="Enter Mac Apple Silicon DMG Google Drive / CDN link..." style="width: 100%; font-size: 0.82rem; font-family: var(--font-mono);">
+                <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px; display: block;">For Apple Silicon Macs (M1/M2/M3/M4) — Elite-IDE-Offline-v2-Mac-arm64.dmg</span>
+              </div>
+
+              <!-- Windows -->
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label style="font-size: 0.82rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                  <span>🪟</span> Windows (64-bit) Download URL:
+                </label>
+                <input type="text" id="ide-download-windows" class="form-control" value="https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5" placeholder="Enter Windows setup / portable executable link..." style="width: 100%; font-size: 0.82rem; font-family: var(--font-mono);">
+                <span style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px; display: block;">For Windows 10/11 64-bit — Elite-IDE-Offline-v2-Portable.exe / Setup.exe</span>
+              </div>
+
+              <!-- Fallback/Legacy input -->
+              <input type="hidden" id="ide-download-url" value="">
+
+              <div style="background: rgba(2, 6, 23, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-top: 18px;">
                 <h4 style="font-size: 0.85rem; color: #818cf8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Release Metadata Summary</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;">
-                  <div><span style="color: var(--text-muted);">Version:</span> <strong id="ide-summary-version" style="color: #fff;">--</strong></div>
-                  <div><span style="color: var(--text-muted);">Publisher:</span> <strong id="ide-summary-publisher" style="color: #fff;">--</strong></div>
-                  <div><span style="color: var(--text-muted);">Payload Size:</span> <strong id="ide-summary-payload" style="color: #fff;">--</strong></div>
-                  <div><span style="color: var(--text-muted);">Architecture:</span> <strong id="ide-summary-arch" style="color: #fff;">--</strong></div>
-                  <div><span style="color: var(--text-muted);">Compilers:</span> <strong id="ide-summary-compilers" style="color: #10b981;">--</strong></div>
+                  <div><span style="color: var(--text-muted);">Version:</span> <strong id="ide-summary-version" style="color: #fff;">v2.0.0 Stable</strong></div>
+                  <div><span style="color: var(--text-muted);">Publisher:</span> <strong id="ide-summary-publisher" style="color: #fff;">Elite Web Kingdom</strong></div>
+                  <div><span style="color: var(--text-muted);">Payload Size:</span> <strong id="ide-summary-payload" style="color: #fff;">130MB - 173MB</strong></div>
+                  <div><span style="color: var(--text-muted);">Architecture:</span> <strong id="ide-summary-arch" style="color: #fff;">Mac (Intel &amp; M-Chip) + Win</strong></div>
+                  <div><span style="color: var(--text-muted);">Compilers:</span> <strong id="ide-summary-compilers" style="color: #10b981;">GCC / Clang / Python / Node</strong></div>
                   <div><span style="color: var(--text-muted);">Status Mode:</span> <strong id="ide-summary-status-txt" style="color: #f59e0b;">NOT CONFIGURED</strong></div>
                 </div>
               </div>
 
-              <div style="margin-top: 20px; padding: 14px; background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; font-size: 0.8rem; color: #c7d2fe; line-height: 1.5;">
-                ℹ️ <strong>Behavior Note:</strong> When in <em>COMING SOON</em>, website buttons show an animated "Elite IDE Offline Studio — Coming Soon" spotlight modal with feature previews. When in <em>OFFICIAL LIVE</em>, clicking the button downloads the published standalone executable!
+              <div style="margin-top: 18px; padding: 14px; background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; font-size: 0.8rem; color: #c7d2fe; line-height: 1.5;">
+                ℹ️ <strong>Behavior Note:</strong> When <em>OFFICIAL LIVE</em> is published, users can pick their exact OS &amp; chip architecture (Intel Core vs Apple Silicon M1/M2/M3/M4 or Windows) with a single click, completely eliminating "not supported" architecture errors!
               </div>
             </div>
           </div>

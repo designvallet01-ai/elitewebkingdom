@@ -6,3 +6,4 @@ COMPLIER/bin
 COMPLIER/build
 *.log
 
+.DS_Store

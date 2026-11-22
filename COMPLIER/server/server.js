@@ -23,6 +23,29 @@ const __filename = fileURLToPath(import.meta.url);
 const serverDir = path.dirname(__filename);
 const resourcesDir = process.env.RESOURCES_PATH;
 
+const isWin = process.platform === 'win32';
+const isMac = process.platform === 'darwin';
+
+// Ensure proper PATH on macOS so all native developer tools (clang, python3, node, javac) are found
+if (isMac) {
+  const standardMacPaths = [
+    '/usr/local/bin',
+    '/opt/homebrew/bin',
+    '/opt/homebrew/sbin',
+    '/usr/bin',
+    '/bin',
+    '/usr/sbin',
+    '/sbin'
+  ];
+  const curPaths = (process.env.PATH || '').split(path.delimiter);
+  for (const p of standardMacPaths) {
+    if (fs.existsSync(p) && !curPaths.includes(p)) {
+      curPaths.unshift(p);
+    }
+  }
+  process.env.PATH = curPaths.join(path.delimiter);
+}
+
 const binCandidates = [
   process.env.PORTABLE_BIN_DIR,
   resourcesDir ? path.join(resourcesDir, 'bin') : null,
@@ -37,24 +60,27 @@ function findPortableBinary(relPaths) {
     if (!fs.existsSync(binDir)) continue;
     for (const rel of relPaths) {
       const full = path.join(binDir, rel);
-      if (fs.existsSync(full)) return full;
+      if (fs.existsSync(full)) {
+        if (full.endsWith('.exe') && !isWin) continue;
+        return full;
+      }
     }
   }
   return null;
 }
 
-const PORTABLE_PYTHON = findPortableBinary(['python/python.exe', 'python/python']);
-const PORTABLE_GPP = findPortableBinary(['mingw64/bin/g++.exe', 'gcc/bin/g++.exe']);
-const PORTABLE_GCC = findPortableBinary(['mingw64/bin/gcc.exe', 'gcc/bin/gcc.exe', 'tcc64/tcc/tcc.exe', 'tcc/tcc.exe']);
+const PORTABLE_PYTHON = isWin ? findPortableBinary(['python/python.exe', 'python/python']) : null;
+const PORTABLE_GPP = isWin ? findPortableBinary(['mingw64/bin/g++.exe', 'gcc/bin/g++.exe']) : null;
+const PORTABLE_GCC = isWin ? findPortableBinary(['mingw64/bin/gcc.exe', 'gcc/bin/gcc.exe', 'tcc64/tcc/tcc.exe', 'tcc/tcc.exe']) : null;
 
-// Ensure MinGW and Python paths are prepended to PATH so toolchains resolve internal tools (as, ld, etc.)
-if (PORTABLE_GPP) {
+// Ensure MinGW and Python paths are prepended to PATH on Windows so toolchains resolve internal tools
+if (isWin && PORTABLE_GPP) {
   const mingwBin = path.dirname(PORTABLE_GPP);
   if (!process.env.PATH.includes(mingwBin)) {
     process.env.PATH = `${mingwBin}${path.delimiter}${process.env.PATH}`;
   }
 }
-if (PORTABLE_PYTHON) {
+if (isWin && PORTABLE_PYTHON) {
   const pyDir = path.dirname(PORTABLE_PYTHON);
   if (!process.env.PATH.includes(pyDir)) {
     process.env.PATH = `${pyDir}${path.delimiter}${process.env.PATH}`;
@@ -62,18 +88,37 @@ if (PORTABLE_PYTHON) {
 }
 
 console.log('⚡ [Elite IDE Offline Engine] Portable Compilers Detection:');
-console.log('   - Python 3.12:', PORTABLE_PYTHON ? `[Active] ${PORTABLE_PYTHON}` : '[System Fallback]');
-console.log('   - G++ C++:', PORTABLE_GPP ? `[Active] ${PORTABLE_GPP}` : '[WSL Fallback]');
-console.log('   - GCC C:', PORTABLE_GCC ? `[Active] ${PORTABLE_GCC}` : '[WSL Fallback]');
+console.log('   - Platform:', process.platform, `(${process.arch})`);
+console.log('   - Python 3:', PORTABLE_PYTHON ? `[Portable] ${PORTABLE_PYTHON}` : (isMac ? '[macOS Native python3]' : '[System Fallback]'));
+console.log('   - G++ / Clang++ C++:', PORTABLE_GPP ? `[Portable] ${PORTABLE_GPP}` : (isMac ? '[macOS Native clang++]' : '[WSL/System Fallback]'));
+console.log('   - GCC / Clang C:', PORTABLE_GCC ? `[Portable] ${PORTABLE_GCC}` : (isMac ? '[macOS Native clang]' : '[WSL/System Fallback]'));
+
+function resolveLanguage(lang) {
+  if (!lang) return 'python';
+  const l = String(lang).toLowerCase().trim();
+  if (l === 'py' || l.startsWith('python')) return 'python';
+  if (l === 'cpp' || l === 'c++' || l.startsWith('cpp') || l.startsWith('c++')) return 'cpp';
+  if (l === 'c' || l.startsWith('c-')) return 'c';
+  if (l === 'js' || l.startsWith('node') || l.startsWith('javascript')) return 'javascript';
+  if (l === 'ts' || l.startsWith('typescript')) return 'typescript';
+  if (l === 'java' || l.startsWith('java')) return 'java';
+  if (l === 'jdbc') return 'jdbc';
+  if (l === 'm' || l === 'matlab' || l === 'octave') return 'matlab';
+  if (l === 'html' || l === 'htm') return 'html';
+  if (l === 'sh' || l === 'bash') return 'bash';
+  return l;
+}
 
 // Supported languages configuration with real local compilers
 const LANGUAGES = [
-  { id: 'cpp', name: 'C++ (G++ 13.3)', version: '13.3.0', runner: 'native-gpp', extension: 'cpp', monaco: 'cpp' },
-  { id: 'c', name: 'C (GCC 13.3)', version: '13.3.0', runner: 'native-gcc', extension: 'c', monaco: 'c' },
-  { id: 'python', name: 'Python 3', version: '3.11', runner: 'native-python', extension: 'py', monaco: 'python' },
+  { id: 'cpp', name: 'C++ (Clang++ / G++)', version: 'Native', runner: 'native-gpp', extension: 'cpp', monaco: 'cpp' },
+  { id: 'c', name: 'C (Clang / GCC)', version: 'Native', runner: 'native-gcc', extension: 'c', monaco: 'c' },
+  { id: 'python', name: 'Python 3', version: '3.12 / 3.9', runner: 'native-python', extension: 'py', monaco: 'python' },
   { id: 'java', name: 'Java (OpenJDK 17)', version: '17.0.10', runner: 'native-java', extension: 'java', monaco: 'java' },
   { id: 'jdbc', name: 'Java (JDBC Database)', version: 'JDK 17 + JDBC 4.3', runner: 'jdbc-runner', extension: 'java', monaco: 'java' },
   { id: 'javascript', name: 'JavaScript (Node.js)', version: '24.13', runner: 'native-node', extension: 'js', monaco: 'javascript' },
+  { id: 'typescript', name: 'TypeScript (Node.js)', version: 'Native Strip-Types', runner: 'native-ts', extension: 'ts', monaco: 'typescript' },
+  { id: 'bash', name: 'Bash / Shell', version: 'POSIX', runner: 'native-bash', extension: 'sh', monaco: 'shell' },
   { id: 'matlab', name: 'MATLAB (Matrix Laboratory)', version: 'R2024b / 5.1', runner: 'matlab-runner', extension: 'm', monaco: 'matlab' },
   { id: 'octave', name: 'GNU Octave / MATLAB (5.1)', version: '5.1.0', runner: 'matlab-runner', extension: 'm', monaco: 'matlab' },
   { id: 'html', name: 'HTML / CSS / JS', version: 'HTML5', runner: 'client-sandbox', extension: 'html', monaco: 'html' }
@@ -196,20 +241,30 @@ app.post('/api/run', async (req, res) => {
     return res.status(400).json({ error: 'No code provided' });
   }
 
-  const langConfig = LANGUAGES.find(l => l.id === language);
-  if (!langConfig) {
-    return res.status(400).json({ error: `Language "${language}" not supported` });
-  }
+  const normLang = resolveLanguage(language);
+  const langConfig = LANGUAGES.find(l => l.id === normLang) || LANGUAGES.find(l => l.id === language) || {
+    id: normLang,
+    runner: normLang === 'python' ? 'native-python' :
+            normLang === 'cpp' ? 'native-gpp' :
+            normLang === 'c' ? 'native-gcc' :
+            normLang === 'javascript' ? 'native-node' :
+            normLang === 'typescript' ? 'native-ts' :
+            normLang === 'bash' ? 'native-bash' :
+            normLang === 'java' ? 'native-java' :
+            normLang === 'jdbc' ? 'jdbc-runner' :
+            normLang === 'matlab' ? 'matlab-runner' :
+            normLang === 'html' ? 'client-sandbox' : 'native-node'
+  };
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ide_compile_'));
 
   try {
-    // 1. C++ (Portable MinGW-w64 G++ Native or WSL Fallback)
-    if (langConfig.runner === 'native-gpp') {
+    // 1. C++ (Portable MinGW-w64 G++ Native or macOS Clang++ / Linux G++)
+    if (langConfig.runner === 'native-gpp' || normLang === 'cpp') {
       const srcFile = path.join(tempDir, 'main.cpp');
       fs.writeFileSync(srcFile, code, 'utf-8');
 
-      if (PORTABLE_GPP) {
+      if (isWin && PORTABLE_GPP) {
         const exeOut = path.join(tempDir, 'main.exe');
         const compileRes = await runCommand(PORTABLE_GPP, ['-O2', '-Wall', srcFile, '-o', exeOut], '', 45000, tempDir);
         if (compileRes.code !== 0) {
@@ -244,9 +299,11 @@ app.post('/api/run', async (req, res) => {
             code: compileRes.code,
             executionTime: compileRes.executionTime,
             status: 'COMPILE_ERROR',
-            runner: `${compilerCmd} (macOS / Linux Native)`
+            runner: `${compilerCmd} (macOS Native)`
           });
         }
+
+        try { fs.chmodSync(outBin, 0o755); } catch (e) {}
 
         const runRes = await runCommand(outBin, [], stdin, 30000, tempDir);
         return res.json({
@@ -256,7 +313,7 @@ app.post('/api/run', async (req, res) => {
           executionTime: compileRes.executionTime + runRes.executionTime,
           compileTime: compileRes.executionTime,
           status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
-          runner: `${compilerCmd} (macOS / Linux Native)`
+          runner: `${compilerCmd} (macOS Native)`
         });
       } else {
         const wslSrc = toWslPath(srcFile);
@@ -287,12 +344,12 @@ app.post('/api/run', async (req, res) => {
       }
     }
 
-    // 2. C (Portable MinGW-w64 GCC / TCC Native or WSL Fallback)
-    if (langConfig.runner === 'native-gcc') {
+    // 2. C (Portable MinGW-w64 GCC / TCC Native or macOS Clang / Linux GCC)
+    if (langConfig.runner === 'native-gcc' || normLang === 'c') {
       const srcFile = path.join(tempDir, 'main.c');
       fs.writeFileSync(srcFile, code, 'utf-8');
 
-      if (PORTABLE_GCC) {
+      if (isWin && PORTABLE_GCC) {
         const exeOut = path.join(tempDir, 'main.exe');
         const isTcc = PORTABLE_GCC.toLowerCase().includes('tcc');
         const compileArgs = isTcc ? [srcFile, '-o', exeOut] : ['-O2', '-Wall', srcFile, '-o', exeOut];
@@ -329,9 +386,11 @@ app.post('/api/run', async (req, res) => {
             code: compileRes.code,
             executionTime: compileRes.executionTime,
             status: 'COMPILE_ERROR',
-            runner: `${compilerCmd} (macOS / Linux Native)`
+            runner: `${compilerCmd} (macOS Native)`
           });
         }
+
+        try { fs.chmodSync(outBin, 0o755); } catch (e) {}
 
         const runRes = await runCommand(outBin, [], stdin, 30000, tempDir);
         return res.json({
@@ -341,7 +400,7 @@ app.post('/api/run', async (req, res) => {
           executionTime: compileRes.executionTime + runRes.executionTime,
           compileTime: compileRes.executionTime,
           status: runRes.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
-          runner: `${compilerCmd} (macOS / Linux Native)`
+          runner: `${compilerCmd} (macOS Native)`
         });
       } else {
         const wslSrc = toWslPath(srcFile);
@@ -372,31 +431,54 @@ app.post('/api/run', async (req, res) => {
       }
     }
 
-    // 3. Python 3 (Portable Embeddable Python or Native Local)
-    if (langConfig.runner === 'native-python') {
+    // 3. Python 3 (Portable Embeddable Python or macOS/Linux Native Local)
+    if (langConfig.runner === 'native-python' || normLang === 'python') {
       const scriptPath = path.join(tempDir, 'main.py');
       fs.writeFileSync(scriptPath, code, 'utf-8');
-      const pyCmd = PORTABLE_PYTHON || (process.platform === 'darwin' ? 'python3' : 'python');
+      const pyCmd = (isWin && PORTABLE_PYTHON) ? PORTABLE_PYTHON : (process.platform === 'darwin' ? 'python3' : (PORTABLE_PYTHON || 'python3' || 'python'));
       const result = await runCommand(pyCmd, ['-u', scriptPath], stdin, 30000, tempDir);
       return res.json({
         ...result,
-        runner: PORTABLE_PYTHON ? 'Python 3.12 (Embedded Portable CPython)' : (process.platform === 'darwin' ? 'Python 3 (macOS Native)' : 'Python 3.11 (Native CPython)')
+        runner: (isWin && PORTABLE_PYTHON) ? 'Python 3.12 (Embedded Portable CPython)' : (process.platform === 'darwin' ? 'Python 3 (macOS Native)' : 'Python 3 (Native CPython)')
       });
     }
 
-    // 4. JavaScript (Node.js 24 Native Local)
-    if (langConfig.runner === 'native-node') {
+    // 4. JavaScript (Node.js Native Local)
+    if (langConfig.runner === 'native-node' || normLang === 'javascript') {
       const scriptPath = path.join(tempDir, 'main.js');
       fs.writeFileSync(scriptPath, code, 'utf-8');
       const result = await runCommand('node', [scriptPath], stdin, 30000, tempDir);
       return res.json({
         ...result,
-        runner: 'Node.js 24 (V8 Engine)'
+        runner: 'Node.js (V8 Engine Offline Native)'
       });
     }
 
-    // 5. Java (Microsoft OpenJDK 17 Native)
-    if (langConfig.runner === 'native-java') {
+    // 4.5 TypeScript (Node.js 22+ Native Local)
+    if (langConfig.runner === 'native-ts' || normLang === 'typescript') {
+      const scriptPath = path.join(tempDir, 'main.ts');
+      fs.writeFileSync(scriptPath, code, 'utf-8');
+      const result = await runCommand('node', [scriptPath], stdin, 30000, tempDir);
+      return res.json({
+        ...result,
+        runner: 'TypeScript (Node.js Offline Native)'
+      });
+    }
+
+    // 4.6 Bash / Shell Native Local
+    if (langConfig.runner === 'native-bash' || normLang === 'bash') {
+      const scriptPath = path.join(tempDir, 'script.sh');
+      fs.writeFileSync(scriptPath, code, 'utf-8');
+      try { fs.chmodSync(scriptPath, 0o755); } catch (e) {}
+      const result = await runCommand('/bin/bash', [scriptPath], stdin, 30000, tempDir);
+      return res.json({
+        ...result,
+        runner: 'Bash Shell (Offline Native)'
+      });
+    }
+
+    // 5. Java (OpenJDK Native)
+    if (langConfig.runner === 'native-java' || normLang === 'java') {
       const classMatch = code.match(/(?:public\s+)?class\s+([A-Za-z0-9_]+)/);
       const className = classMatch ? classMatch[1] : 'Main';
       const javaCode = classMatch ? code : `public class Main {\n  public static void main(String[] args) {\n${code}\n  }\n}`;
@@ -406,13 +488,17 @@ app.post('/api/run', async (req, res) => {
 
       const compileResult = await runCommand('javac', ['-nowarn', javaFile], '', 45000, tempDir);
       if (compileResult.code !== 0) {
+        const errorText = compileResult.stderr || compileResult.stdout;
+        const isMissingJre = errorText.includes('Unable to locate a Java Runtime') || errorText.includes('No Java runtime');
         return res.json({
           stdout: '',
-          stderr: compileResult.stderr || compileResult.stdout,
+          stderr: isMissingJre 
+            ? `[Java Not Found on Mac]: macOS Java Runtime is not installed.\nTo run Java offline, please install OpenJDK: visit https://adoptium.net or run 'brew install openjdk@17'\n\n${errorText}`
+            : errorText,
           code: compileResult.code,
           executionTime: compileResult.executionTime,
           status: 'COMPILE_ERROR',
-          runner: 'Microsoft OpenJDK 17'
+          runner: 'Java Compiler (javac)'
         });
       }
 
@@ -424,7 +510,7 @@ app.post('/api/run', async (req, res) => {
         executionTime: compileResult.executionTime + runResult.executionTime,
         compileTime: compileResult.executionTime,
         status: runResult.code === 0 ? 'SUCCESS' : 'RUNTIME_ERROR',
-        runner: 'Microsoft OpenJDK 17 HotSpot'
+        runner: 'OpenJDK HotSpot (Offline Native)'
       });
     }
 
@@ -555,15 +641,16 @@ wss.on('connection', (ws) => {
         cleanup();
         startTime = Date.now();
         const { language, code } = msg;
+        const resolvedLang = resolveLanguage(language);
 
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ide_terminal_'));
 
         // 1. Python (Portable CPython or Native Local with -u for fully unbuffered interactive stdio)
-        if (language === 'python') {
+        if (resolvedLang === 'python') {
           const scriptPath = path.join(tempDir, 'main.py');
           fs.writeFileSync(scriptPath, code, 'utf-8');
-          const pyBin = PORTABLE_PYTHON || (process.platform === 'darwin' ? 'python3' : 'python');
-          const runnerName = PORTABLE_PYTHON ? 'Python 3.12 (Embedded Portable CPython)' : (process.platform === 'darwin' ? 'Python 3 (macOS Native)' : 'Python 3.11 (Native CPython)');
+          const pyBin = (isWin && PORTABLE_PYTHON) ? PORTABLE_PYTHON : (process.platform === 'darwin' ? 'python3' : (PORTABLE_PYTHON || 'python3' || 'python'));
+          const runnerName = (isWin && PORTABLE_PYTHON) ? 'Python 3.12 (Embedded Portable CPython)' : (process.platform === 'darwin' ? 'Python 3 (macOS Native)' : 'Python 3 (Native CPython)');
 
           ws.send(JSON.stringify({
             type: 'system',
@@ -576,22 +663,37 @@ wss.on('connection', (ws) => {
         }
 
         // 2. JavaScript (Node.js)
-        if (language === 'javascript') {
+        if (resolvedLang === 'javascript') {
           const scriptPath = path.join(tempDir, 'main.js');
           fs.writeFileSync(scriptPath, code, 'utf-8');
 
           ws.send(JSON.stringify({
             type: 'system',
-            data: `[Elite IDE Terminal] Launching Node.js v24 (Interactive Mode)\r\n`
+            data: `[Elite IDE Terminal] Launching Node.js (Interactive Mode)\r\n`
           }));
 
           child = spawn('node', [scriptPath], { cwd: tempDir, shell: false, env: process.env });
-          setupChildHandlers(child, ws, cleanup, startTime, 'Node.js 24 (V8 Engine)');
+          setupChildHandlers(child, ws, cleanup, startTime, 'Node.js (V8 Engine Offline)');
+          return;
+        }
+
+        // 2.5 TypeScript (Node.js 22+)
+        if (resolvedLang === 'typescript') {
+          const scriptPath = path.join(tempDir, 'main.ts');
+          fs.writeFileSync(scriptPath, code, 'utf-8');
+
+          ws.send(JSON.stringify({
+            type: 'system',
+            data: `[Elite IDE Terminal] Launching TypeScript with Node.js (Interactive Mode)\r\n`
+          }));
+
+          child = spawn('node', [scriptPath], { cwd: tempDir, shell: false, env: process.env });
+          setupChildHandlers(child, ws, cleanup, startTime, 'TypeScript (Node.js Offline)');
           return;
         }
 
         // 3. MATLAB / GNU Octave
-        if (language === 'matlab' || language === 'octave') {
+        if (resolvedLang === 'matlab' || resolvedLang === 'octave') {
           ws.send(JSON.stringify({
             type: 'system',
             data: `[Elite IDE Terminal] Launching MATLAB / GNU Octave Virtual Engine...\r\n`
@@ -614,12 +716,12 @@ wss.on('connection', (ws) => {
           return;
         }
 
-        // 4. C++ (Portable MinGW-w64 G++ or WSL Fallback)
-        if (language === 'cpp') {
+        // 4. C++ (Portable MinGW-w64 G++ or macOS Clang++ / Linux G++)
+        if (resolvedLang === 'cpp') {
           const srcFile = path.join(tempDir, 'main.cpp');
           fs.writeFileSync(srcFile, code, 'utf-8');
 
-          if (PORTABLE_GPP) {
+          if (isWin && PORTABLE_GPP) {
             const exeOut = path.join(tempDir, 'main.exe');
             ws.send(JSON.stringify({
               type: 'system',
@@ -656,7 +758,7 @@ wss.on('connection', (ws) => {
             const compilerCmd = process.platform === 'darwin' ? 'clang++' : 'g++';
             ws.send(JSON.stringify({
               type: 'system',
-              data: `[Elite IDE Terminal] Compiling C++ with ${compilerCmd} (macOS / Linux Native)...\r\n`
+              data: `[Elite IDE Terminal] Compiling C++ with ${compilerCmd} (macOS Native)...\r\n`
             }));
 
             const compileRes = await runCommand(compilerCmd, ['-O2', '-Wall', srcFile, '-o', outBin], '', 45000, tempDir);
@@ -670,11 +772,13 @@ wss.on('connection', (ws) => {
                 code: compileRes.code,
                 status: 'COMPILE_ERROR',
                 executionTime: compileRes.executionTime,
-                runner: `${compilerCmd} (macOS / Linux Native)`
+                runner: `${compilerCmd} (macOS Native)`
               }));
               cleanup();
               return;
             }
+
+            try { fs.chmodSync(outBin, 0o755); } catch (e) {}
 
             ws.send(JSON.stringify({
               type: 'system',
@@ -682,7 +786,7 @@ wss.on('connection', (ws) => {
             }));
 
             child = spawn(outBin, [], { cwd: tempDir, shell: false, env: process.env });
-            setupChildHandlers(child, ws, cleanup, startTime, `${compilerCmd} (macOS / Linux Native)`);
+            setupChildHandlers(child, ws, cleanup, startTime, `${compilerCmd} (macOS Native)`);
             return;
           } else {
             const wslSrc = toWslPath(srcFile);
@@ -721,12 +825,12 @@ wss.on('connection', (ws) => {
           }
         }
 
-        // 5. C (Portable MinGW-w64 GCC / TCC 64 or WSL Fallback)
-        if (language === 'c') {
+        // 5. C (Portable MinGW-w64 GCC / TCC 64 or macOS Clang / Linux GCC)
+        if (resolvedLang === 'c') {
           const srcFile = path.join(tempDir, 'main.c');
           fs.writeFileSync(srcFile, code, 'utf-8');
 
-          if (PORTABLE_GCC) {
+          if (isWin && PORTABLE_GCC) {
             const exeOut = path.join(tempDir, 'main.exe');
             const isTcc = PORTABLE_GCC.toLowerCase().includes('tcc');
             const compilerName = isTcc ? 'Tiny C Compiler (Portable TCC 64)' : 'GNU C (Portable MinGW-w64 GCC)';
@@ -767,7 +871,7 @@ wss.on('connection', (ws) => {
             const compilerCmd = process.platform === 'darwin' ? 'clang' : 'gcc';
             ws.send(JSON.stringify({
               type: 'system',
-              data: `[Elite IDE Terminal] Compiling C with ${compilerCmd} (macOS / Linux Native)...\r\n`
+              data: `[Elite IDE Terminal] Compiling C with ${compilerCmd} (macOS Native)...\r\n`
             }));
 
             const compileRes = await runCommand(compilerCmd, ['-O2', '-Wall', srcFile, '-o', outBin], '', 45000, tempDir);
@@ -781,11 +885,13 @@ wss.on('connection', (ws) => {
                 code: compileRes.code,
                 status: 'COMPILE_ERROR',
                 executionTime: compileRes.executionTime,
-                runner: `${compilerCmd} (macOS / Linux Native)`
+                runner: `${compilerCmd} (macOS Native)`
               }));
               cleanup();
               return;
             }
+
+            try { fs.chmodSync(outBin, 0o755); } catch (e) {}
 
             ws.send(JSON.stringify({
               type: 'system',
@@ -793,7 +899,7 @@ wss.on('connection', (ws) => {
             }));
 
             child = spawn(outBin, [], { cwd: tempDir, shell: false, env: process.env });
-            setupChildHandlers(child, ws, cleanup, startTime, `${compilerCmd} (macOS / Linux Native)`);
+            setupChildHandlers(child, ws, cleanup, startTime, `${compilerCmd} (macOS Native)`);
             return;
           } else {
             const wslSrc = toWslPath(srcFile);
@@ -832,8 +938,8 @@ wss.on('connection', (ws) => {
           }
         }
 
-        // 5. Java (Microsoft OpenJDK 17)
-        if (language === 'java') {
+        // 6. Java (OpenJDK Native)
+        if (resolvedLang === 'java') {
           const classMatch = code.match(/public\s+class\s+([A-Za-z0-9_]+)/);
           const className = classMatch ? classMatch[1] : 'Main';
           const javaCode = classMatch ? code : `public class Main {\n  public static void main(String[] args) {\n${code}\n  }\n}`;
@@ -843,21 +949,25 @@ wss.on('connection', (ws) => {
 
           ws.send(JSON.stringify({
             type: 'system',
-            data: `[Elite IDE Terminal] Compiling Java (${className}) with OpenJDK 17...\r\n`
+            data: `[Elite IDE Terminal] Compiling Java (${className}) with javac...\r\n`
           }));
 
           const compileResult = await runCommand('javac', ['-nowarn', javaFile], '', 45000, tempDir);
           if (compileResult.code !== 0) {
+            const errorText = compileResult.stderr || compileResult.stdout;
+            const isMissingJre = errorText.includes('Unable to locate a Java Runtime') || errorText.includes('No Java runtime');
             ws.send(JSON.stringify({
               type: 'stderr',
-              data: compileResult.stderr || compileResult.stdout
+              data: isMissingJre
+                ? `[Java Not Found on Mac]: macOS Java Runtime is not installed.\nTo run Java offline, please install OpenJDK: visit https://adoptium.net or run 'brew install openjdk@17'\r\n`
+                : errorText
             }));
             ws.send(JSON.stringify({
               type: 'exit',
               code: compileResult.code,
               status: 'COMPILE_ERROR',
               executionTime: compileResult.executionTime,
-              runner: 'Microsoft OpenJDK 17'
+              runner: 'Java Compiler (javac)'
             }));
             cleanup();
             return;
@@ -868,8 +978,8 @@ wss.on('connection', (ws) => {
             data: `[Elite IDE Terminal] Compilation successful! Launching JVM...\r\n`
           }));
 
-          child = spawn('java', ['-cp', '.', className], { cwd: tempDir, shell: false });
-          setupChildHandlers(child, ws, cleanup, startTime, 'Microsoft OpenJDK 17');
+          child = spawn('java', ['-cp', '.', className], { cwd: tempDir, shell: false, env: process.env });
+          setupChildHandlers(child, ws, cleanup, startTime, 'OpenJDK HotSpot');
           return;
         }
 
@@ -971,6 +1081,14 @@ server.on('error', (err) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`[ELITE IDE COMPILER & TERMINAL SERVER] running on http://localhost:${PORT}`);
-});
+try {
+  server.listen(PORT, '127.0.0.1', () => {
+    console.log(`[ELITE IDE COMPILER & TERMINAL SERVER] running on http://127.0.0.1:${PORT}`);
+  });
+} catch (err) {
+  if (err.code === 'EADDRINUSE') {
+    console.warn(`[ELITE IDE] Port ${PORT} already active. Reusing running server.`);
+  } else {
+    console.error('[ELITE IDE Server Error]:', err);
+  }
+}

@@ -665,8 +665,13 @@ document.addEventListener('DOMContentLoaded', () => {
 // Syncs dynamically with Supabase Launch Control state (DRAFT vs OFFICIAL_LIVE)
 // ============================================================================
 let eliteIdeLaunchState = {
-  isLive: false,
-  downloadUrl: ''
+  isLive: true,
+  downloadUrl: 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing',
+  downloads: {
+    macIntel: 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing',
+    macSilicon: 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing',
+    windows: 'https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5'
+  }
 };
 
 async function initEliteIdeLaunchSync() {
@@ -694,6 +699,16 @@ async function initEliteIdeLaunchSync() {
     eliteIdeLaunchState.isLive = (record.system_name === 'OFFICIAL_LIVE');
     if (record.code_snippet) {
       eliteIdeLaunchState.downloadUrl = record.code_snippet;
+      if (record.code_snippet.trim().startsWith('{')) {
+        try {
+          const cfg = JSON.parse(record.code_snippet);
+          if (cfg.macIntel) eliteIdeLaunchState.downloads.macIntel = cfg.macIntel;
+          if (cfg.macSilicon) eliteIdeLaunchState.downloads.macSilicon = cfg.macSilicon;
+          if (cfg.windows) eliteIdeLaunchState.downloads.windows = cfg.windows;
+        } catch (e) {}
+      } else {
+        eliteIdeLaunchState.downloads.windows = record.code_snippet;
+      }
     }
 
     applyEliteIdeUIState();
@@ -760,34 +775,93 @@ function applyEliteIdeUIState() {
   if (cardText) {
     cardText.textContent = isLive ? 'Download Desktop Studio' : 'Elite IDE Offline Studio';
   }
+
+  // 4. Modal Badge
+  const modalBadge = document.getElementById('modal-ide-status-badge');
+  if (modalBadge) {
+    if (isLive) {
+      modalBadge.textContent = 'OFFICIAL DESKTOP RELEASE';
+      modalBadge.style.color = '#10b981';
+      modalBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+      modalBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+    } else {
+      modalBadge.textContent = 'PRE-LAUNCH / COMING SOON';
+      modalBadge.style.color = '#f59e0b';
+      modalBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+      modalBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+    }
+  }
+}
+
+function detectClientEnvironment() {
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const platform = (navigator.platform || '').toLowerCase();
+  const isMac = platform.includes('mac') || ua.includes('macintosh') || ua.includes('mac os');
+  const isWindows = platform.includes('win') || ua.includes('windows');
+
+  if (isMac) {
+    return { os: 'mac', text: 'Detected System: macOS', hint: 'Select Apple Silicon or Intel Core below' };
+  } else if (isWindows) {
+    return { os: 'windows', text: 'Detected System: Windows (64-bit)', hint: 'Windows 10 / 11' };
+  }
+  return { os: 'other', text: 'Detected System: Desktop', hint: 'Select your preferred platform' };
 }
 
 window.handleEliteIdeDownloadClick = function(e) {
   if (e && e.preventDefault) e.preventDefault();
 
-  if (eliteIdeLaunchState.isLive && eliteIdeLaunchState.downloadUrl) {
-    // Official Live: Trigger 1-Click Direct Download for any configured package/link
-    const dlLink = document.createElement('a');
-    dlLink.href = eliteIdeLaunchState.downloadUrl;
-    dlLink.target = '_blank';
-    dlLink.rel = 'noopener noreferrer';
+  const modal = document.getElementById('ide-coming-soon-modal');
+  if (modal) {
+    modal.style.display = 'flex';
     
-    // Only set explicit download attribute if the URL ends with a recognizable file extension
-    try {
-      const cleanUrl = eliteIdeLaunchState.downloadUrl.split('?')[0];
-      const matchExt = cleanUrl.match(/\.(exe|dmg|zip|tar\.gz|pkg|appImage)$/i);
-      if (matchExt) {
-        dlLink.download = `Elite-IDE-Installer${matchExt[0]}`;
-      }
-    } catch {}
+    // Highlight detected system
+    const env = detectClientEnvironment();
+    const bannerText = document.getElementById('ide-detected-system-text');
+    if (bannerText) {
+      bannerText.innerHTML = `<strong>${env.text}</strong> — ${env.hint}`;
+    }
 
-    document.body.appendChild(dlLink);
-    dlLink.click();
-    document.body.removeChild(dlLink);
+    const macSiliconCard = document.getElementById('card-dl-mac-silicon');
+    const macIntelCard = document.getElementById('card-dl-mac-intel');
+    const winCard = document.getElementById('card-dl-windows');
+
+    if (env.os === 'mac') {
+      if (macSiliconCard) {
+        macSiliconCard.style.boxShadow = '0 0 16px rgba(16, 185, 129, 0.25)';
+        macSiliconCard.style.borderColor = 'rgba(16, 185, 129, 0.5)';
+      }
+      if (macIntelCard) {
+        macIntelCard.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+      }
+    } else if (env.os === 'windows') {
+      if (winCard) {
+        winCard.style.boxShadow = '0 0 16px rgba(99, 102, 241, 0.25)';
+        winCard.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+      }
+    }
+  }
+};
+
+window.triggerIdeDownload = function(target) {
+  let url = '';
+  if (target === 'macIntel') {
+    url = eliteIdeLaunchState.downloads.macIntel || 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing';
+  } else if (target === 'macSilicon') {
+    url = eliteIdeLaunchState.downloads.macSilicon || 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing';
+  } else if (target === 'windows') {
+    url = eliteIdeLaunchState.downloads.windows || 'https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5';
   } else {
-    // Coming Soon Draft: Open Official Preview Modal
-    const modal = document.getElementById('ide-coming-soon-modal');
-    if (modal) modal.style.display = 'flex';
+    url = eliteIdeLaunchState.downloadUrl || eliteIdeLaunchState.downloads.macSilicon;
+  }
+
+  if (url) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 };
 

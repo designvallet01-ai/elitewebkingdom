@@ -5640,9 +5640,45 @@ window.loadIdeLaunchStatus = async function() {
     const summary = document.getElementById('ide-summary-status-txt');
     const urlInput = document.getElementById('ide-download-url');
 
-    if (urlInput) {
-      urlInput.value = item.code_snippet || '';
+    let parsedUrls = {
+      macIntel: 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing',
+      macSilicon: 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing',
+      windows: 'https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5'
+    };
+
+    if (item.code_snippet) {
+      if (item.code_snippet.trim().startsWith('{')) {
+        try {
+          const cfg = JSON.parse(item.code_snippet);
+          if (cfg.macIntel) parsedUrls.macIntel = cfg.macIntel;
+          if (cfg.macSilicon) parsedUrls.macSilicon = cfg.macSilicon;
+          if (cfg.windows) parsedUrls.windows = cfg.windows;
+        } catch (e) {}
+      } else {
+        parsedUrls.windows = item.code_snippet;
+      }
     }
+
+    if (urlInput) urlInput.value = item.code_snippet || '';
+    const intelInput = document.getElementById('ide-download-mac-intel');
+    const siliconInput = document.getElementById('ide-download-mac-silicon');
+    const winInput = document.getElementById('ide-download-windows');
+    if (intelInput) intelInput.value = parsedUrls.macIntel;
+    if (siliconInput) siliconInput.value = parsedUrls.macSilicon;
+    if (winInput) winInput.value = parsedUrls.windows;
+
+    // Update metadata summary
+    const summaryVersion = document.getElementById('ide-summary-version');
+    const summaryPublisher = document.getElementById('ide-summary-publisher');
+    const summaryPayload = document.getElementById('ide-summary-payload');
+    const summaryArch = document.getElementById('ide-summary-arch');
+    const summaryCompilers = document.getElementById('ide-summary-compilers');
+
+    if (summaryVersion) summaryVersion.textContent = 'v2.0.0 Stable';
+    if (summaryPublisher) summaryPublisher.textContent = 'Elite Web Kingdom';
+    if (summaryPayload) summaryPayload.textContent = '130MB - 173MB';
+    if (summaryArch) summaryArch.textContent = 'Mac (Intel & M-Chip) + Win';
+    if (summaryCompilers) summaryCompilers.textContent = 'GCC / Clang / Py 3.12 / Node';
 
     if (isLive) {
       if (statusPill) {
@@ -5685,7 +5721,10 @@ window.loadIdeLaunchStatus = async function() {
 window.executeIdeLaunchToggle = async function() {
   const passcode = (document.getElementById('ide-launch-passcode')?.value || '').trim();
   const feedback = document.getElementById('ide-launch-feedback');
-  const downloadUrl = (document.getElementById('ide-download-url')?.value || '').trim();
+
+  const macIntel = (document.getElementById('ide-download-mac-intel')?.value || '').trim() || 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing';
+  const macSilicon = (document.getElementById('ide-download-mac-silicon')?.value || '').trim() || 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing';
+  const windows = (document.getElementById('ide-download-windows')?.value || '').trim() || 'https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5';
 
   if (passcode !== IDE_MASTER_PASSCODE) {
     if (feedback) {
@@ -5695,10 +5734,10 @@ window.executeIdeLaunchToggle = async function() {
     return;
   }
 
-  if (currentIdeTargetMode === 'OFFICIAL_LIVE' && !downloadUrl) {
+  if (currentIdeTargetMode === 'OFFICIAL_LIVE' && (!macIntel || !macSilicon)) {
     if (feedback) {
       feedback.style.color = '#f59e0b';
-      feedback.textContent = '⚠️ Notice: Please enter a valid Direct Download URL before publishing Official Live!';
+      feedback.textContent = '⚠️ Notice: Please enter valid Mac Intel and Apple Silicon download links before publishing!';
     }
     return;
   }
@@ -5714,6 +5753,14 @@ window.executeIdeLaunchToggle = async function() {
     const newSystemName = currentIdeTargetMode === 'OFFICIAL_LIVE' ? 'OFFICIAL_LIVE' : 'DRAFT';
     const newStatus = currentIdeTargetMode === 'OFFICIAL_LIVE' ? 'LIVE' : 'COMING_SOON';
 
+    const payloadObj = {
+      macIntel,
+      macSilicon,
+      windows,
+      primary: macSilicon
+    };
+    const payloadStr = JSON.stringify(payloadObj);
+
     // Insert new state as latest version (Supabase telemetry policy allows public insert)
     const { data, error } = await supabaseClient
       .from('compiler_telemetry')
@@ -5721,10 +5768,11 @@ window.executeIdeLaunchToggle = async function() {
         session_id: 'ELITE_IDE_LAUNCH_STATUS',
         user_id: 'SYSTEM_ADMIN_LAUNCH_CONTROL',
         user_name: 'MASTER_ADMIN_31012007',
+        college_name: 'Web IDE',
         language: 'desktop_release',
         system_name: newSystemName,
         status: newStatus,
-        code_snippet: downloadUrl,
+        code_snippet: payloadStr,
         created_at: new Date().toISOString()
       }])
       .select();
@@ -5733,7 +5781,7 @@ window.executeIdeLaunchToggle = async function() {
 
     if (feedback) {
       feedback.style.color = '#10b981';
-      feedback.textContent = `🚀 SUCCESS: Elite IDE Official Status is now ${newStatus}! Website updated.`;
+      feedback.textContent = `🚀 SUCCESS: Elite IDE Official Status is now ${newStatus}! Multi-Platform downloads live.`;
     }
 
     const passInput = document.getElementById('ide-launch-passcode');

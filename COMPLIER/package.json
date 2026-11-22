@@ -15,6 +15,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
+    "desktop": "electron electron/main.cjs",
     "desktop:pack": "electron-builder --config electron-builder.json --dir",
     "desktop:dist": "electron-builder --config electron-builder.json",
     "desktop:dist:win": "electron-builder --config electron-builder.json --win --x64",

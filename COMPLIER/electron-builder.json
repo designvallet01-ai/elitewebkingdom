@@ -14,20 +14,20 @@
     "public/**/*",
     "../compiler/**/*"
   ],
-  "extraResources": [
-    {
-      "from": "bin",
-      "to": "bin",
-      "filter": ["**/*"]
-    },
-    {
-      "from": "../compiler",
-      "to": "compiler",
-      "filter": ["**/*"]
-    }
-  ],
   "win": {
     "icon": "build/icon.ico",
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../compiler",
+        "to": "compiler",
+        "filter": ["**/*"]
+      }
+    ],
     "target": [
       {
         "target": "portable",
@@ -42,6 +42,13 @@
   "mac": {
     "icon": "build/icon.png",
     "category": "public.app-category.developer-tools",
+    "extraResources": [
+      {
+        "from": "../compiler",
+        "to": "compiler",
+        "filter": ["**/*"]
+      }
+    ],
     "target": [
       {
         "target": "dmg",
@@ -57,7 +64,7 @@
     "identity": null
   },
   "dmg": {
-    "artifactName": "Elite-IDE-Offline-v2-Mac.dmg",
+    "artifactName": "Elite-IDE-Offline-v2-Mac-${arch}.dmg",
     "title": "Elite IDE Installer",
     "window": {
       "width": 540,
