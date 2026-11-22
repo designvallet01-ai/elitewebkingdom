@@ -10,9 +10,9 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
 
 // Map of language identifiers to fast stable Wandbox compilers
 const WANDBOX_COMPILER_MAP = {
-  python: 'cpython-3.12.7',
-  py: 'cpython-3.12.7',
-  python3: 'cpython-3.12.7',
+  python: 'cpython-3.12.16',
+  py: 'cpython-3.12.16',
+  python3: 'cpython-3.12.16',
   python2: 'cpython-2.7.18',
   cpp: 'gcc-13.2.0',
   'c++': 'gcc-13.2.0',
@@ -24,22 +24,22 @@ const WANDBOX_COMPILER_MAP = {
   js: 'nodejs-20.17.0',
   typescript: 'typescript-5.6.2',
   ts: 'typescript-5.6.2',
-  rust: 'rust-1.82.0',
-  rs: 'rust-1.82.0',
-  go: 'go-1.23.2',
-  golang: 'go-1.23.2',
+  rust: 'rust-1.100.0',
+  rs: 'rust-1.100.0',
+  go: 'go-1.27.4',
+  golang: 'go-1.27.4',
   csharp: 'dotnetcore-8.0.402',
   cs: 'dotnetcore-8.0.402',
-  php: 'php-8.3.11',
-  ruby: 'ruby-3.3.5',
-  rb: 'ruby-3.3.5',
+  php: 'php-8.3.12',
+  ruby: 'ruby-4.0.2',
+  rb: 'ruby-4.0.2',
   bash: 'bash',
   sh: 'bash',
-  swift: 'swift-5.10.1',
-  kotlin: 'kotlin-2.0.20',
-  kt: 'kotlin-2.0.20',
-  perl: 'perl-5.40.0',
-  pl: 'perl-5.40.0',
+  swift: 'swift-6.0.1',
+  kotlin: 'openjdk-jdk-22+36',
+  kt: 'openjdk-jdk-22+36',
+  perl: 'perl-5.44.0',
+  pl: 'perl-5.44.0',
   lua: 'lua-5.4.7',
   haskell: 'ghc-9.10.1',
   hs: 'ghc-9.10.1',
@@ -47,9 +47,11 @@ const WANDBOX_COMPILER_MAP = {
   elixir: 'elixir-1.17.3',
   erlang: 'erlang-27.1',
   d: 'dmd-2.109.1',
-  nim: 'nim-2.0.8',
+  nim: 'nim-2.4.2',
   pascal: 'fpc-3.2.2',
-  scala: 'scala-3.5.0'
+  scala: 'scala-3.5.1',
+  julia: 'julia-1.10.5',
+  zig: 'zig-0.16.0'
 };
 
 async function handler(req, res) {
@@ -318,7 +320,8 @@ async function handler(req, res) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
         },
         body: JSON.stringify({
           compiler: wandboxCompiler,

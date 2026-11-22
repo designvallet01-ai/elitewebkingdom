@@ -1560,17 +1560,25 @@ export default function App() {
           data = evaluateMatlabLocally(codeToRun, customStdin);
         } else {
           const WANDBOX_MAP = {
-            python: 'cpython-3.12.7',
-            py: 'cpython-3.12.7',
+            python: 'cpython-3.12.16',
+            py: 'cpython-3.12.16',
             cpp: 'gcc-13.2.0',
             c: 'gcc-13.2.0-c',
             java: 'openjdk-jdk-22+36',
             javascript: 'nodejs-20.17.0',
             js: 'nodejs-20.17.0',
-            rust: 'rust-1.82.0',
-            go: 'go-1.23.2'
+            typescript: 'typescript-5.6.2',
+            ts: 'typescript-5.6.2',
+            rust: 'rust-1.100.0',
+            go: 'go-1.27.4',
+            php: 'php-8.3.12',
+            ruby: 'ruby-4.0.2',
+            bash: 'bash',
+            swift: 'swift-6.0.1',
+            lua: 'lua-5.4.7',
+            r: 'r-4.4.1'
           };
-          const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.7';
+          const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.16';
           const wbStartTime = performance.now();
           try {
             let src = codeToRun;
@@ -1904,17 +1912,25 @@ export default function App() {
 
       // High-speed direct Wandbox fallback
       const WANDBOX_MAP = {
-        python: 'cpython-3.12.7',
-        py: 'cpython-3.12.7',
+        python: 'cpython-3.12.16',
+        py: 'cpython-3.12.16',
         cpp: 'gcc-13.2.0',
         c: 'gcc-13.2.0-c',
         java: 'openjdk-jdk-22+36',
         javascript: 'nodejs-20.17.0',
         js: 'nodejs-20.17.0',
-        rust: 'rust-1.82.0',
-        go: 'go-1.23.2'
+        typescript: 'typescript-5.6.2',
+        ts: 'typescript-5.6.2',
+        rust: 'rust-1.100.0',
+        go: 'go-1.27.4',
+        php: 'php-8.3.12',
+        ruby: 'ruby-4.0.2',
+        bash: 'bash',
+        swift: 'swift-6.0.1',
+        lua: 'lua-5.4.7',
+        r: 'r-4.4.1'
       };
-      const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.7';
+      const wbCompiler = WANDBOX_MAP[lang] || 'cpython-3.12.16';
       const tcStartTime = performance.now();
       try {
         let src = codeToRun;

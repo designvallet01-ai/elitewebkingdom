@@ -242,7 +242,7 @@ export default function SpeedCodingArenaModal({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            compiler: activeLanguage === 'javascript' ? 'nodejs-20.17.0' : activeLanguage === 'cpp' ? 'gcc-13.2.0' : 'cpython-3.12.7',
+            compiler: activeLanguage === 'javascript' ? 'nodejs-20.17.0' : activeLanguage === 'cpp' ? 'gcc-13.2.0' : 'cpython-3.12.16',
             code: codeToRun,
             stdin: stdinInput
           })

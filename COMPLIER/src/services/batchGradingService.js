@@ -106,7 +106,7 @@ export async function runBatchGrading({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              compiler: 'cpython-3.12.7',
+              compiler: 'cpython-3.12.16',
               code: student.submissionCode,
               stdin: test.input || ''
             })
