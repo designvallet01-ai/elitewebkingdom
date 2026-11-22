@@ -1069,19 +1069,32 @@
               <span class="project-metric-lbl">Co-Editing &amp; Run</span>
             </div>
           </div>
-          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 18px;">
-            <a href="/compiler/" class="portfolio-link" style="color: #4F46E5; font-weight: 700; margin: 0;">
-              Launch Online Compiler ⚡
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </a>
-            <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="card-ide-download-btn" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem; border-radius: 8px; border-color: #4F46E5; color: #4F46E5; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              <span id="card-ide-btn-text">Download Offline Studio</span>
-              <span id="card-ide-badge" style="font-size: 0.65rem; background: #FEF3C7; border: 1px solid #FDE68A; color: #D97706; padding: 1px 5px; border-radius: 6px; font-weight: 800;">SOON</span>
-            </a>
+          <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+              <span style="font-size: 0.78rem; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.8px;">
+                ⚡ 100% Offline Desktop Studio Downloads:
+              </span>
+              <a href="/compiler/" class="portfolio-link" style="color: #4F46E5; font-weight: 700; margin: 0; font-size: 0.82rem;">
+                Launch Online IDE ↗
+              </a>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <!-- Apple Silicon -->
+              <a href="https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing" target="_blank" rel="noopener noreferrer" id="card-dl-link-mac-silicon" class="btn btn-secondary" style="padding: 7px 13px; font-size: 0.82rem; border-radius: 8px; border-color: rgba(16, 185, 129, 0.4); color: #10b981; background: rgba(16, 185, 129, 0.08); display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>🍎 Mac (Apple Silicon M-Series)</span>
+              </a>
+              <!-- Mac Intel -->
+              <a href="https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing" target="_blank" rel="noopener noreferrer" id="card-dl-link-mac-intel" class="btn btn-secondary" style="padding: 7px 13px; font-size: 0.82rem; border-radius: 8px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; background: rgba(56, 189, 248, 0.08); display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>💻 Mac (Intel Core)</span>
+              </a>
+              <!-- Windows -->
+              <a href="https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5" target="_blank" rel="noopener noreferrer" id="card-dl-link-windows" class="btn btn-secondary" style="padding: 7px 13px; font-size: 0.82rem; border-radius: 8px; border-color: rgba(99, 102, 241, 0.4); color: #a5b4fc; background: rgba(99, 102, 241, 0.08); display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>🪟 Windows (64-bit)</span>
+              </a>
+            </div>
           </div>
         </div>
 
@@ -1750,10 +1763,10 @@
               <span style="font-size: 0.74rem; color: #94a3b8;">For Mac 2020+ (Apple Silicon) • .dmg (130 MB)</span>
             </div>
           </div>
-          <button onclick="triggerIdeDownload('macSilicon')" class="btn btn-primary" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+          <a href="https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing" target="_blank" rel="noopener noreferrer" id="modal-btn-mac-silicon" class="btn btn-primary" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); text-decoration: none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             Download DMG
-          </button>
+          </a>
         </div>
 
         <!-- Option 2: macOS Intel -->
@@ -1768,10 +1781,10 @@
               <span style="font-size: 0.74rem; color: #94a3b8;">For Intel Macs (i3 / i5 / i7 / i9 / Xeon) • .dmg (134 MB)</span>
             </div>
           </div>
-          <button onclick="triggerIdeDownload('macIntel')" class="btn btn-secondary" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; border-color: #38bdf8; color: #38bdf8;">
+          <a href="https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing" target="_blank" rel="noopener noreferrer" id="modal-btn-mac-intel" class="btn btn-secondary" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; border-color: #38bdf8; color: #38bdf8; text-decoration: none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             Download DMG
-          </button>
+          </a>
         </div>
 
         <!-- Option 3: Windows -->
@@ -1786,10 +1799,10 @@
               <span style="font-size: 0.74rem; color: #94a3b8;">Standalone Portable &amp; Installer • .exe (173 MB)</span>
             </div>
           </div>
-          <button onclick="triggerIdeDownload('windows')" class="btn btn-secondary" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; border-color: rgba(255,255,255,0.2); color: #fff;">
+          <a href="https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5" target="_blank" rel="noopener noreferrer" id="modal-btn-windows" class="btn btn-secondary" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; border-color: rgba(255,255,255,0.2); color: #fff; text-decoration: none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             Download EXE
-          </button>
+          </a>
         </div>
 
       </div>

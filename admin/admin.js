@@ -5646,17 +5646,19 @@ window.loadIdeLaunchStatus = async function() {
       windows: 'https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5'
     };
 
-    if (item.code_snippet) {
-      if (item.code_snippet.trim().startsWith('{')) {
-        try {
-          const cfg = JSON.parse(item.code_snippet);
-          if (cfg.macIntel) parsedUrls.macIntel = cfg.macIntel;
-          if (cfg.macSilicon) parsedUrls.macSilicon = cfg.macSilicon;
-          if (cfg.windows) parsedUrls.windows = cfg.windows;
-        } catch (e) {}
-      } else {
-        parsedUrls.windows = item.code_snippet;
-      }
+    const rawConfig = (item.error_message && item.error_message.trim().startsWith('{'))
+      ? item.error_message
+      : (item.code_snippet && item.code_snippet.trim().startsWith('{')) ? item.code_snippet : null;
+
+    if (rawConfig) {
+      try {
+        const cfg = JSON.parse(rawConfig);
+        if (cfg.macIntel) parsedUrls.macIntel = cfg.macIntel;
+        if (cfg.macSilicon) parsedUrls.macSilicon = cfg.macSilicon;
+        if (cfg.windows) parsedUrls.windows = cfg.windows;
+      } catch (e) {}
+    } else if (item.code_snippet) {
+      parsedUrls.windows = item.code_snippet;
     }
 
     if (urlInput) urlInput.value = item.code_snippet || '';

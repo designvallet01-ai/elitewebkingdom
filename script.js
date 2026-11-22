@@ -699,16 +699,17 @@ async function initEliteIdeLaunchSync() {
     eliteIdeLaunchState.isLive = (record.system_name === 'OFFICIAL_LIVE');
     if (record.code_snippet) {
       eliteIdeLaunchState.downloadUrl = record.code_snippet;
-      if (record.code_snippet.trim().startsWith('{')) {
-        try {
-          const cfg = JSON.parse(record.code_snippet);
-          if (cfg.macIntel) eliteIdeLaunchState.downloads.macIntel = cfg.macIntel;
-          if (cfg.macSilicon) eliteIdeLaunchState.downloads.macSilicon = cfg.macSilicon;
-          if (cfg.windows) eliteIdeLaunchState.downloads.windows = cfg.windows;
-        } catch (e) {}
-      } else {
-        eliteIdeLaunchState.downloads.windows = record.code_snippet;
-      }
+    }
+    const rawConfig = (record.error_message && record.error_message.trim().startsWith('{'))
+      ? record.error_message
+      : (record.code_snippet && record.code_snippet.trim().startsWith('{')) ? record.code_snippet : null;
+    if (rawConfig) {
+      try {
+        const cfg = JSON.parse(rawConfig);
+        if (cfg.macIntel) eliteIdeLaunchState.downloads.macIntel = cfg.macIntel;
+        if (cfg.macSilicon) eliteIdeLaunchState.downloads.macSilicon = cfg.macSilicon;
+        if (cfg.windows) eliteIdeLaunchState.downloads.windows = cfg.windows;
+      } catch (e) {}
     }
 
     applyEliteIdeUIState();
@@ -775,6 +776,28 @@ function applyEliteIdeUIState() {
   if (cardText) {
     cardText.textContent = isLive ? 'Download Desktop Studio' : 'Elite IDE Offline Studio';
   }
+
+  // Update explicit 3-platform download links across Card & Modal
+  const dls = eliteIdeLaunchState.downloads || {};
+  const links = {
+    macSilicon: dls.macSilicon || 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing',
+    macIntel: dls.macIntel || 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing',
+    windows: dls.windows || 'https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5'
+  };
+
+  const cardSilicon = document.getElementById('card-dl-link-mac-silicon');
+  const cardIntel = document.getElementById('card-dl-link-mac-intel');
+  const cardWin = document.getElementById('card-dl-link-windows');
+  const modalSilicon = document.getElementById('modal-btn-mac-silicon');
+  const modalIntel = document.getElementById('modal-btn-mac-intel');
+  const modalWin = document.getElementById('modal-btn-windows');
+
+  if (cardSilicon) cardSilicon.href = links.macSilicon;
+  if (cardIntel) cardIntel.href = links.macIntel;
+  if (cardWin) cardWin.href = links.windows;
+  if (modalSilicon) modalSilicon.href = links.macSilicon;
+  if (modalIntel) modalIntel.href = links.macIntel;
+  if (modalWin) modalWin.href = links.windows;
 
   // 4. Modal Badge
   const modalBadge = document.getElementById('modal-ide-status-badge');
