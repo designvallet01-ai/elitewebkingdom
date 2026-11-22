@@ -665,8 +665,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Syncs dynamically with Supabase Launch Control state (DRAFT vs OFFICIAL_LIVE)
 // ============================================================================
 let eliteIdeLaunchState = {
-  isLive: true,
-  downloadUrl: 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing',
+  isLive: false,
+  downloadUrl: '',
   downloads: {
     macIntel: 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing',
     macSilicon: 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing',
@@ -675,6 +675,9 @@ let eliteIdeLaunchState = {
 };
 
 async function initEliteIdeLaunchSync() {
+  // 1. Immediately apply default safe state (guarantees DRAFT is enforced with zero delay)
+  applyEliteIdeUIState();
+
   try {
     const SUPABASE_URL = "https://jgvgqgbhzadxvcolgvly.supabase.co";
     const SUPABASE_KEY = "sb_publishable_5ToLoZzsP_B3FQoYBzTnEA_re1QwPPv";
@@ -693,11 +696,17 @@ async function initEliteIdeLaunchSync() {
       .order('id', { ascending: false })
       .limit(1);
 
-    if (error || !data || data.length === 0) return;
+    if (error || !data || data.length === 0) {
+      applyEliteIdeUIState();
+      return;
+    }
 
     const record = data[0];
-    eliteIdeLaunchState.isLive = (record.system_name === 'OFFICIAL_LIVE');
-    if (record.code_snippet) {
+    // STRICT LAUNCH CONTROL: Only live if explicitly OFFICIAL_LIVE and not COMING_SOON
+    const isLive = (record.system_name === 'OFFICIAL_LIVE' && record.status !== 'COMING_SOON');
+    eliteIdeLaunchState.isLive = isLive;
+
+    if (record.code_snippet && !record.code_snippet.trim().startsWith('{')) {
       eliteIdeLaunchState.downloadUrl = record.code_snippet;
     }
     const rawConfig = (record.error_message && record.error_message.trim().startsWith('{'))
@@ -715,6 +724,7 @@ async function initEliteIdeLaunchSync() {
     applyEliteIdeUIState();
   } catch (err) {
     console.warn('Elite IDE Launch Sync failed:', err);
+    applyEliteIdeUIState();
   }
 }
 
@@ -757,9 +767,11 @@ function applyEliteIdeUIState() {
     heroText.textContent = isLive ? 'Download Elite IDE' : 'Elite IDE Offline Studio';
   }
 
-  // 3. Portfolio Card Badge & Text
+  // 3. Portfolio Card Elements
   const cardBadge = document.getElementById('card-ide-badge');
   const cardText = document.getElementById('card-ide-btn-text');
+  const cardStatusPill = document.getElementById('card-ide-status-pill');
+
   if (cardBadge) {
     if (isLive) {
       cardBadge.textContent = 'LIVE';
@@ -777,7 +789,6 @@ function applyEliteIdeUIState() {
     cardText.textContent = isLive ? 'Download Desktop Studio' : 'Elite IDE Offline Studio';
   }
 
-  // Update explicit 3-platform download links across Card & Modal
   const dls = eliteIdeLaunchState.downloads || {};
   const links = {
     macSilicon: dls.macSilicon || 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing',
@@ -791,27 +802,144 @@ function applyEliteIdeUIState() {
   const modalSilicon = document.getElementById('modal-btn-mac-silicon');
   const modalIntel = document.getElementById('modal-btn-mac-intel');
   const modalWin = document.getElementById('modal-btn-windows');
-
-  if (cardSilicon) cardSilicon.href = links.macSilicon;
-  if (cardIntel) cardIntel.href = links.macIntel;
-  if (cardWin) cardWin.href = links.windows;
-  if (modalSilicon) modalSilicon.href = links.macSilicon;
-  if (modalIntel) modalIntel.href = links.macIntel;
-  if (modalWin) modalWin.href = links.windows;
-
-  // 4. Modal Badge
   const modalBadge = document.getElementById('modal-ide-status-badge');
-  if (modalBadge) {
-    if (isLive) {
+  const modalNotice = document.getElementById('modal-ide-launch-notice');
+
+  if (isLive) {
+    // ==========================================
+    // OFFICIAL LIVE MODE: ACTIVE DOWNLOADS
+    // ==========================================
+    if (cardStatusPill) {
+      cardStatusPill.textContent = '100% OFFLINE (LIVE)';
+      cardStatusPill.style.color = '#047857';
+      cardStatusPill.style.background = '#DCFCE7';
+      cardStatusPill.style.borderColor = '#86EFAC';
+    }
+
+    if (modalBadge) {
       modalBadge.textContent = 'OFFICIAL DESKTOP RELEASE';
       modalBadge.style.color = '#10b981';
       modalBadge.style.background = 'rgba(16, 185, 129, 0.15)';
       modalBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-    } else {
+    }
+    if (modalNotice) {
+      modalNotice.style.display = 'none';
+    }
+
+    const liveBtnStyle = 'padding: 9px 16px; font-size: 0.84rem; border-radius: 9px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #FFFFFF; border: none; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-weight: 700; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25); cursor: pointer;';
+
+    if (cardSilicon) {
+      cardSilicon.href = links.macSilicon;
+      cardSilicon.target = '_blank';
+      cardSilicon.removeAttribute('onclick');
+      cardSilicon.setAttribute('style', liveBtnStyle);
+      cardSilicon.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>🍎 Mac (Apple Silicon M-Series)</span>';
+    }
+    if (cardIntel) {
+      cardIntel.href = links.macIntel;
+      cardIntel.target = '_blank';
+      cardIntel.removeAttribute('onclick');
+      cardIntel.setAttribute('style', liveBtnStyle);
+      cardIntel.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>💻 Mac (Intel Core)</span>';
+    }
+    if (cardWin) {
+      cardWin.href = links.windows;
+      cardWin.target = '_blank';
+      cardWin.removeAttribute('onclick');
+      cardWin.setAttribute('style', liveBtnStyle);
+      cardWin.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>🪟 Windows (64-bit)</span>';
+    }
+
+    const modalLiveBtnStyle = 'padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #FFFFFF; text-decoration: none; border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); cursor: pointer;';
+
+    if (modalSilicon) {
+      modalSilicon.href = links.macSilicon;
+      modalSilicon.target = '_blank';
+      modalSilicon.removeAttribute('onclick');
+      modalSilicon.setAttribute('style', modalLiveBtnStyle);
+      modalSilicon.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download DMG';
+    }
+    if (modalIntel) {
+      modalIntel.href = links.macIntel;
+      modalIntel.target = '_blank';
+      modalIntel.removeAttribute('onclick');
+      modalIntel.setAttribute('style', modalLiveBtnStyle);
+      modalIntel.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download DMG';
+    }
+    if (modalWin) {
+      modalWin.href = links.windows;
+      modalWin.target = '_blank';
+      modalWin.removeAttribute('onclick');
+      modalWin.setAttribute('style', modalLiveBtnStyle);
+      modalWin.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download EXE';
+    }
+  } else {
+    // ==========================================
+    // DRAFT / COMING SOON MODE: DOWNLOADS LOCKED
+    // ==========================================
+    if (cardStatusPill) {
+      cardStatusPill.textContent = 'COMING SOON (DRAFT)';
+      cardStatusPill.style.color = '#d97706';
+      cardStatusPill.style.background = '#FEF3C7';
+      cardStatusPill.style.borderColor = '#FDE68A';
+    }
+
+    if (modalBadge) {
       modalBadge.textContent = 'PRE-LAUNCH / COMING SOON';
       modalBadge.style.color = '#f59e0b';
       modalBadge.style.background = 'rgba(245, 158, 11, 0.15)';
       modalBadge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+    }
+    if (modalNotice) {
+      modalNotice.style.display = 'block';
+    }
+
+    const draftBtnStyle = 'padding: 9px 16px; font-size: 0.84rem; border-radius: 9px; background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-weight: 700; cursor: pointer; transition: all 0.2s;';
+
+    if (cardSilicon) {
+      cardSilicon.removeAttribute('href');
+      cardSilicon.removeAttribute('target');
+      cardSilicon.setAttribute('onclick', 'handleEliteIdeDownloadClick(event)');
+      cardSilicon.setAttribute('style', draftBtnStyle);
+      cardSilicon.innerHTML = '<span>⏳ 🍎 Mac Silicon (Coming Soon)</span>';
+    }
+    if (cardIntel) {
+      cardIntel.removeAttribute('href');
+      cardIntel.removeAttribute('target');
+      cardIntel.setAttribute('onclick', 'handleEliteIdeDownloadClick(event)');
+      cardIntel.setAttribute('style', draftBtnStyle);
+      cardIntel.innerHTML = '<span>⏳ 💻 Mac Intel (Coming Soon)</span>';
+    }
+    if (cardWin) {
+      cardWin.removeAttribute('href');
+      cardWin.removeAttribute('target');
+      cardWin.setAttribute('onclick', 'handleEliteIdeDownloadClick(event)');
+      cardWin.setAttribute('style', draftBtnStyle);
+      cardWin.innerHTML = '<span>⏳ 🪟 Windows (Coming Soon)</span>';
+    }
+
+    const modalDraftBtnStyle = 'padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; background: rgba(255, 255, 255, 0.08); color: #94a3b8; text-decoration: none; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;';
+
+    if (modalSilicon) {
+      modalSilicon.removeAttribute('href');
+      modalSilicon.removeAttribute('target');
+      modalSilicon.setAttribute('onclick', "triggerIdeDownload('macSilicon')");
+      modalSilicon.setAttribute('style', modalDraftBtnStyle);
+      modalSilicon.innerHTML = '⏳ Coming Soon';
+    }
+    if (modalIntel) {
+      modalIntel.removeAttribute('href');
+      modalIntel.removeAttribute('target');
+      modalIntel.setAttribute('onclick', "triggerIdeDownload('macIntel')");
+      modalIntel.setAttribute('style', modalDraftBtnStyle);
+      modalIntel.innerHTML = '⏳ Coming Soon';
+    }
+    if (modalWin) {
+      modalWin.removeAttribute('href');
+      modalWin.removeAttribute('target');
+      modalWin.setAttribute('onclick', "triggerIdeDownload('windows')");
+      modalWin.setAttribute('style', modalDraftBtnStyle);
+      modalWin.innerHTML = '⏳ Coming Soon';
     }
   }
 }
@@ -866,6 +994,11 @@ window.handleEliteIdeDownloadClick = function(e) {
 };
 
 window.triggerIdeDownload = function(target) {
+  if (!eliteIdeLaunchState.isLive) {
+    alert("🔒 Elite IDE Desktop Release is currently in Pre-Launch (Draft). Official direct installer downloads will be activated upon Launch by Admin!");
+    return;
+  }
+
   let url = '';
   if (target === 'macIntel') {
     url = eliteIdeLaunchState.downloads.macIntel || 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing';
@@ -893,7 +1026,9 @@ window.closeIdeComingSoonModal = function() {
   if (modal) modal.style.display = 'none';
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initEliteIdeLaunchSync);
+} else {
   initEliteIdeLaunchSync();
-});
+}
 

@@ -5774,7 +5774,8 @@ window.executeIdeLaunchToggle = async function() {
         language: 'desktop_release',
         system_name: newSystemName,
         status: newStatus,
-        code_snippet: payloadStr,
+        code_snippet: macSilicon,
+        error_message: payloadStr,
         created_at: new Date().toISOString()
       }])
       .select();
