@@ -1055,22 +1055,30 @@
       }
     }
 
-    /* PRINT STYLES - STRICT A4 LANDSCAPE FULL-PAGE PRINT */
+    /* PRINT STYLES - STRICT 100% SINGLE PAGE A4 LANDSCAPE PRINT */
     @media print {
       @page {
         size: A4 landscape;
-        margin: 6mm;
+        margin: 0 !important;
       }
 
       html, body {
+        width: 297mm !important;
+        height: 210mm !important;
+        max-width: 297mm !important;
+        max-height: 210mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
+        overflow: hidden !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+      }
+
+      /* Hide ALL page chrome, navbars, cards, and footers */
+      body * {
+        visibility: hidden !important;
       }
 
       .ambient-grid,
@@ -1085,40 +1093,168 @@
       .cert-action-bar,
       .nav-right-actions {
         display: none !important;
+        visibility: hidden !important;
       }
 
-      main.portal-content {
-        padding: 0 !important;
+      /* Make ONLY the certificate canvas visible & lock it to exact 1 sheet */
+      #printable-certificate,
+      #printable-certificate * {
+        visibility: visible !important;
+      }
+
+      #printable-certificate {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 297mm !important;
+        height: 210mm !important;
+        max-width: 297mm !important;
+        max-height: 210mm !important;
+        min-width: 297mm !important;
+        min-height: 210mm !important;
         margin: 0 !important;
-        max-width: 100% !important;
-        width: 100% !important;
-      }
-
-      .verified-grid {
-        display: block !important;
-        margin: 0 !important;
-        padding: 0 !important;
-      }
-
-      .certificate-viewport {
-        overflow: visible !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        width: 100% !important;
-      }
-
-      .cert-award-canvas {
-        min-width: 100% !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        padding: 8mm 14mm !important;
+        box-sizing: border-box !important;
+        border: 4px solid #0c2340 !important;
         box-shadow: none !important;
-        border: 3px solid #0f2b48 !important;
+        overflow: hidden !important;
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
         page-break-inside: avoid !important;
+        break-after: avoid !important;
+        break-before: avoid !important;
         break-inside: avoid !important;
-        margin: 0 auto !important;
         background: #ffffff !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+        z-index: 999999 !important;
+      }
+
+      /* Fine-tuned internal proportions for 100% single page vertical fit */
+      #printable-certificate .cert-inner-border {
+        inset: 6mm !important;
+      }
+
+      #printable-certificate .cert-corner.top-left { top: 8mm !important; left: 8mm !important; width: 36px !important; height: 36px !important; }
+      #printable-certificate .cert-corner.top-right { top: 8mm !important; right: 8mm !important; width: 36px !important; height: 36px !important; }
+      #printable-certificate .cert-corner.bottom-left { bottom: 8mm !important; left: 8mm !important; width: 36px !important; height: 36px !important; }
+      #printable-certificate .cert-corner.bottom-right { bottom: 8mm !important; right: 8mm !important; width: 36px !important; height: 36px !important; }
+
+      #printable-certificate .cert-accreditation-bar {
+        margin-bottom: 4px !important;
+        padding: 2px 10px !important;
+        font-size: 0.58rem !important;
+        letter-spacing: 2px !important;
+      }
+
+      #printable-certificate .cert-brand-row {
+        margin-bottom: 6px !important;
+        gap: 10px !important;
+      }
+
+      #printable-certificate .cert-logo-img {
+        width: 38px !important;
+        height: 38px !important;
+      }
+
+      #printable-certificate .cert-authority-title {
+        font-size: 1.15rem !important;
+        letter-spacing: 4px !important;
+      }
+
+      #printable-certificate .cert-authority-sub {
+        font-size: 0.62rem !important;
+        letter-spacing: 2px !important;
+      }
+
+      #printable-certificate .cert-main-heading {
+        font-size: 1.65rem !important;
+        margin: 3px 0 1px !important;
+        letter-spacing: 2px !important;
+      }
+
+      #printable-certificate .cert-registry-tag {
+        font-size: 0.62rem !important;
+        letter-spacing: 1.8px !important;
+        margin-bottom: 6px !important;
+      }
+
+      #printable-certificate .cert-presented-text {
+        font-size: 0.95rem !important;
+        margin-bottom: 3px !important;
+      }
+
+      #printable-certificate .cert-recipient-name {
+        font-size: 2.15rem !important;
+        margin-bottom: 1px !important;
+      }
+
+      #printable-certificate .cert-flourish-divider {
+        margin: 1px auto 5px !important;
+        max-width: 340px !important;
+      }
+
+      #printable-certificate .cert-award-category-pill {
+        margin: 3px 0 6px !important;
+        padding: 3px 18px !important;
+        font-size: 0.8rem !important;
+        letter-spacing: 1.5px !important;
+      }
+
+      #printable-certificate .cert-reason-desc {
+        font-size: 0.82rem !important;
+        line-height: 1.4 !important;
+        margin-bottom: 3px !important;
+        max-width: 580px !important;
+      }
+
+      #printable-certificate .cert-month-line {
+        font-size: 0.72rem !important;
+        letter-spacing: 1.5px !important;
+        margin-bottom: 8px !important;
+      }
+
+      #printable-certificate .cert-footer-row {
+        margin-top: 3px !important;
+        padding-top: 6px !important;
+        gap: 12px !important;
+      }
+
+      #printable-certificate .cert-qr-box {
+        width: 60px !important;
+        height: 60px !important;
+        margin-bottom: 2px !important;
+        padding: 3px !important;
+      }
+
+      #printable-certificate .cert-seal-graphic {
+        width: 64px !important;
+        height: 64px !important;
+        font-size: 0.46rem !important;
+        padding: 2px !important;
+      }
+
+      #printable-certificate .cert-seal-ribbons {
+        top: 46px !important;
+        width: 42px !important;
+        height: 24px !important;
+      }
+
+      #printable-certificate .cert-seal-ribbon {
+        width: 16px !important;
+        height: 24px !important;
+      }
+
+      #printable-certificate .cert-signature-img {
+        font-size: 2.1rem !important;
+        padding: 0 14px 2px !important;
+        margin-bottom: 1px !important;
+      }
+
+      #printable-certificate .cert-sign-title {
+        font-size: 0.8rem !important;
+      }
+
+      #printable-certificate .cert-sign-role {
+        font-size: 0.65rem !important;
       }
     }
   </style>
