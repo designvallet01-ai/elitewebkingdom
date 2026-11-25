@@ -22,10 +22,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cinzel:wght@600;700;800;900&family=Cinzel+Decorative:wght@700;900&family=Great+Vibes&family=Herr+Von+Muellerhoff&family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,400;1,600;1,700&display=swap" rel="stylesheet">
 
-  <!-- Supabase JS Client, QRCode, and html2canvas for Direct High-Res PNG Download -->
+  <!-- Supabase JS Client, QRCode, html2canvas & jsPDF for 1-Click High-Res PDF & PNG Download -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
     :root {
@@ -692,16 +693,13 @@
 
     .cert-main-heading {
       font-family: var(--font-ornate);
-      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
+      font-size: clamp(1.4rem, 3.2vw, 2.1rem);
       font-weight: 900;
-      letter-spacing: clamp(1px, 0.5vw, 3px);
+      letter-spacing: clamp(1px, 0.4vw, 2.5px);
       color: #0f2b48;
       text-transform: uppercase;
       margin: 6px 0 2px;
-      background: linear-gradient(135deg, #0f2b48 0%, #1e3a8a 50%, #b45309 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      word-break: break-word;
+      white-space: nowrap;
     }
 
     .cert-tagline {
@@ -980,7 +978,7 @@
       }
     }
 
-    /* PRINT STYLES - STRICT 100% SINGLE PAGE A4 LANDSCAPE PRINT */
+    /* PRINT STYLES - STRICT 100% SINGLE PAGE A4 LANDSCAPE FIT */
     @media print {
       @page {
         size: A4 landscape;
@@ -988,23 +986,22 @@
       }
 
       *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-sizing: border-box !important;
         animation: none !important;
         transform: none !important;
         transition: none !important;
       }
 
       html, body {
-        width: 297mm !important;
-        height: 210mm !important;
-        max-width: 297mm !important;
-        max-height: 210mm !important;
+        width: 100% !important;
+        height: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
         overflow: hidden !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
       }
 
       .page-wrap,
@@ -1015,11 +1012,16 @@
       .certificate-viewport {
         margin: 0 !important;
         padding: 0 !important;
-        display: block !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         min-height: 0 !important;
-        height: auto !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        max-height: 100vh !important;
         border: none !important;
-        background: transparent !important;
+        background: #ffffff !important;
+        overflow: hidden !important;
       }
 
       /* Hide ALL page chrome, navbars, cards, meta strips, and footers */
@@ -1039,24 +1041,23 @@
         visibility: hidden !important;
       }
 
-      /* Make ONLY the certificate canvas visible & lock it to exact 1 sheet */
+      /* Make ONLY the certificate canvas visible & scale to 100% single page */
       #printable-certificate {
         display: flex !important;
         flex-direction: column !important;
+        justify-content: space-between !important;
         position: relative !important;
-        width: 297mm !important;
-        height: 210mm !important;
-        max-width: 297mm !important;
-        max-height: 210mm !important;
-        min-width: 297mm !important;
-        min-height: 210mm !important;
-        margin: 0 auto !important;
-        padding: 16mm 22mm !important;
+        width: 95vw !important;
+        height: 94vh !important;
+        max-width: 95vw !important;
+        max-height: 94vh !important;
+        margin: auto !important;
+        padding: 20px 32px !important;
         box-sizing: border-box !important;
         border: 3.5px solid #0f2b48 !important;
         box-shadow: 
-          0 0 0 3px #ffffff,
-          0 0 0 5px #c59b27 !important;
+          0 0 0 2px #ffffff,
+          0 0 0 4.5px #c59b27 !important;
         overflow: hidden !important;
         page-break-after: avoid !important;
         page-break-before: avoid !important;
@@ -1076,116 +1077,128 @@
         box-sizing: border-box !important;
       }
 
-      /* Fine-tuned internal proportions for 100% single page vertical fit */
       #printable-certificate .cert-inner-border {
-        inset: 6mm !important;
+        inset: 8px !important;
         border: 2px solid #c59b27 !important;
       }
 
-      #printable-certificate .cert-corner.top-left { top: 8mm !important; left: 8mm !important; width: 36px !important; height: 36px !important; }
-      #printable-certificate .cert-corner.top-right { top: 8mm !important; right: 8mm !important; width: 36px !important; height: 36px !important; }
-      #printable-certificate .cert-corner.bottom-left { bottom: 8mm !important; left: 8mm !important; width: 36px !important; height: 36px !important; }
-      #printable-certificate .cert-corner.bottom-right { bottom: 8mm !important; right: 8mm !important; width: 36px !important; height: 36px !important; }
+      #printable-certificate .cert-corner.top-left { top: 10px !important; left: 10px !important; width: 32px !important; height: 32px !important; }
+      #printable-certificate .cert-corner.top-right { top: 10px !important; right: 10px !important; width: 32px !important; height: 32px !important; }
+      #printable-certificate .cert-corner.bottom-left { bottom: 10px !important; left: 10px !important; width: 32px !important; height: 32px !important; }
+      #printable-certificate .cert-corner.bottom-right { bottom: 10px !important; right: 10px !important; width: 32px !important; height: 32px !important; }
 
       #printable-certificate .cert-brand-row {
-        margin-bottom: 4px !important;
+        margin-bottom: 2px !important;
         gap: 10px !important;
       }
 
       #printable-certificate .cert-logo-img {
-        width: 44px !important;
-        height: 44px !important;
+        width: 38px !important;
+        height: 38px !important;
       }
 
       #printable-certificate .cert-authority-title {
-        font-size: 1.25rem !important;
-        letter-spacing: 4px !important;
+        font-size: 1.15rem !important;
+        letter-spacing: 3.5px !important;
+        color: #0f2b48 !important;
+        white-space: nowrap !important;
       }
 
       #printable-certificate .cert-authority-sub {
-        font-size: 0.65rem !important;
+        font-size: 0.62rem !important;
         letter-spacing: 2px !important;
+        color: #b45309 !important;
       }
 
       #printable-certificate .cert-main-heading {
-        font-size: 1.95rem !important;
-        margin: 4px 0 2px !important;
-        letter-spacing: 2.5px !important;
+        font-size: 1.8rem !important;
+        margin: 2px 0 2px !important;
+        letter-spacing: 2px !important;
+        color: #0f2b48 !important;
+        -webkit-text-fill-color: #0f2b48 !important;
+        background: none !important;
+        white-space: nowrap !important;
       }
 
       #printable-certificate .cert-tagline {
-        font-size: 0.72rem !important;
-        letter-spacing: 1.8px !important;
-        margin-bottom: 6px !important;
+        font-size: 0.68rem !important;
+        letter-spacing: 1.6px !important;
+        margin-bottom: 4px !important;
+        color: #64748b !important;
       }
 
       #printable-certificate .cert-presented-text {
-        font-size: 1.05rem !important;
-        margin-bottom: 4px !important;
+        font-size: 0.95rem !important;
+        margin-bottom: 2px !important;
       }
 
       #printable-certificate .cert-recipient-name {
-        font-size: 2.7rem !important;
-        margin: 4px 0 8px !important;
+        font-size: 2.3rem !important;
+        margin: 2px 0 6px !important;
+        color: #0f2b48 !important;
+        white-space: nowrap !important;
       }
 
       #printable-certificate .cert-flourish-divider {
-        margin: 0 auto 8px !important;
-        max-width: 380px !important;
+        margin: 0 auto 6px !important;
+        max-width: 320px !important;
       }
 
       #printable-certificate .cert-award-category-pill {
-        margin: 4px 0 10px !important;
-        padding: 5px 22px !important;
-        font-size: 0.88rem !important;
-        letter-spacing: 1.5px !important;
+        margin: 2px 0 8px !important;
+        padding: 4px 18px !important;
+        font-size: 0.82rem !important;
+        letter-spacing: 1.2px !important;
       }
 
       #printable-certificate .cert-reason-desc {
-        font-size: 0.92rem !important;
-        line-height: 1.6 !important;
-        margin-bottom: 4px !important;
-        max-width: 640px !important;
+        font-size: 0.85rem !important;
+        line-height: 1.45 !important;
+        margin-bottom: 2px !important;
+        max-width: 600px !important;
       }
 
       #printable-certificate .cert-month-line {
-        font-size: 0.8rem !important;
-        letter-spacing: 1.5px !important;
-        margin-bottom: 8px !important;
+        font-size: 0.74rem !important;
+        letter-spacing: 1.2px !important;
+        margin-bottom: 6px !important;
       }
 
       #printable-certificate .cert-footer-row {
         margin-top: auto !important;
-        padding-top: 10px !important;
-        gap: 16px !important;
+        padding-top: 8px !important;
+        gap: 12px !important;
       }
 
       #printable-certificate .cert-qr-box {
-        width: 68px !important;
-        height: 68px !important;
-        margin-bottom: 3px !important;
-        padding: 3px !important;
+        width: 62px !important;
+        height: 62px !important;
+        margin-bottom: 2px !important;
+        padding: 2px !important;
       }
 
       #printable-certificate .cert-seal-graphic {
-        width: 72px !important;
-        height: 72px !important;
-        font-size: 0.55rem !important;
-        padding: 3px !important;
+        width: 64px !important;
+        height: 64px !important;
+        font-size: 0.52rem !important;
+        padding: 2px !important;
       }
 
       #printable-certificate .cert-signature-img {
-        font-size: 2.4rem !important;
-        padding: 0 16px 2px !important;
+        font-size: 2.2rem !important;
+        padding: 0 14px 2px !important;
         margin-bottom: 2px !important;
+        color: #0f2b48 !important;
       }
 
       #printable-certificate .cert-sign-title {
-        font-size: 0.88rem !important;
+        font-size: 0.82rem !important;
+        color: #0f172a !important;
       }
 
       #printable-certificate .cert-sign-role {
-        font-size: 0.72rem !important;
+        font-size: 0.68rem !important;
+        color: #b45309 !important;
       }
     }
   </style>
@@ -1431,13 +1444,17 @@
             </div>
 
             <div class="status-actions">
+              <button class="btn-action gold-btn" onclick="downloadCertificatePDF('printable-certificate', '${escapeHtml(cert.certificate_id)}')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>📥 Download PDF</span>
+              </button>
               <button class="btn-action download-btn" onclick="downloadCertificatePNG('printable-certificate', '${escapeHtml(cert.certificate_id)}')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                <span>📥 Download PNG</span>
+                <span>🖼️ Download PNG</span>
               </button>
-              <button class="btn-action gold-btn" onclick="window.print()">
+              <button class="btn-action" onclick="window.print()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                <span>🖨️ Print / Save PDF (1 Page)</span>
+                <span>🖨️ Print</span>
               </button>
               <button class="btn-action" onclick="copyVerificationLink('${escapeHtml(shareUrl)}')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -1603,6 +1620,48 @@
         input.focus();
       }
       window.history.replaceState({}, '', window.location.pathname);
+    };
+
+    // DIRECT 1-CLICK HIGH-RES A4 LANDSCAPE PDF DOWNLOAD (300 DPI, EXACT ZERO CUTOFF)
+    window.downloadCertificatePDF = async function(elementId, certId) {
+      const certEl = document.getElementById(elementId);
+      if (!certEl) return;
+
+      const toast = document.getElementById('toast-msg');
+      const text = document.getElementById('toast-text');
+      if (text) text.textContent = "Rendering official 1-page landscape PDF...";
+      if (toast) toast.classList.add('show');
+
+      try {
+        if (window.html2canvas && window.jspdf) {
+          const canvas = await window.html2canvas(certEl, {
+            scale: 3,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: false
+          });
+          const imgData = canvas.toDataURL('image/jpeg', 0.98);
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4',
+            compress: true
+          });
+          pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+          pdf.save(`Certificate_${certId || 'EliteWebKingdom'}.pdf`);
+
+          if (text) text.textContent = "Official PDF saved successfully!";
+          setTimeout(() => {
+            if (toast) toast.classList.remove('show');
+          }, 3500);
+          return;
+        }
+      } catch (err) {
+        console.warn("Direct PDF generation error, falling back to print:", err);
+      }
+      window.print();
     };
 
     // DIRECT 1-CLICK HIGH-RES CERTIFICATE PNG DOWNLOAD

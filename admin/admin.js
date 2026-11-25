@@ -5333,6 +5333,39 @@ window.closeCertPreviewModal = function() {
   window.activePreviewCert = null;
 };
 
+// 10.5 Direct 1-Click High-Res Landscape PDF Download from Modal
+window.downloadAdminCertPDF = async function() {
+  const certEl = document.getElementById('admin-active-cert-canvas');
+  if (!certEl) return;
+  const certId = window.activePreviewCert ? window.activePreviewCert.certificate_id : 'EIDE-CERT';
+
+  if (window.html2canvas && window.jspdf) {
+    try {
+      const canvas = await window.html2canvas(certEl, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+      pdf.save(`Certificate_${certId}.pdf`);
+      return;
+    } catch(err) {
+      console.warn("Direct admin PDF generation error:", err);
+    }
+  }
+  window.printAdminCert();
+};
+
 // 11. Direct 1-Click High-Res PNG Download from Modal
 window.downloadAdminCertPNG = function() {
   const certEl = document.getElementById('admin-active-cert-canvas');

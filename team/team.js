@@ -1105,6 +1105,38 @@ window.closeTeamCertPreviewModal = function() {
   window.activeTeamPreviewCert = null;
 };
 
+window.downloadTeamCertPDF = async function() {
+  const certEl = document.getElementById('team-active-cert-canvas');
+  if (!certEl) return;
+  const certId = window.activeTeamPreviewCert ? window.activeTeamPreviewCert.certificate_id : 'EIDE-CERT';
+
+  if (window.html2canvas && window.jspdf) {
+    try {
+      const canvas = await window.html2canvas(certEl, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#030712',
+        logging: false
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+      pdf.save(`Certificate_${certId}.pdf`);
+      return;
+    } catch(err) {
+      console.warn("Team PDF download error:", err);
+    }
+  }
+  window.printTeamCert();
+};
+
 window.downloadTeamCertPNG = function() {
   const certEl = document.getElementById('team-active-cert-canvas');
   if (!certEl) return;
