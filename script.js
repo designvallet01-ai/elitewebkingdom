@@ -167,15 +167,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: true });
   }
 
-  // --- HEADER SCROLL & BACK TO TOP (THROTTLED WITH RAF) ---
+  // --- HEADER SCROLL, PROGRESS BAR & BACK TO TOP (THROTTLED WITH RAF) ---
   const header = document.getElementById('header');
   const backToTopBtn = document.getElementById('back-to-top');
+  const scrollProgress = document.getElementById('scroll-progress');
   let scrollTicking = false;
 
   window.addEventListener('scroll', () => {
     if (!scrollTicking) {
       window.requestAnimationFrame(() => {
         const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        if (scrollProgress) {
+          const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+          const pct = docHeight > 0 ? Math.min(100, (scrollY / docHeight) * 100) : 0;
+          scrollProgress.style.width = `${pct}%`;
+        }
         if (scrollY > 50) {
           header?.classList.add('scrolled');
           if (backToTopBtn) backToTopBtn.style.opacity = '1';
@@ -977,25 +983,24 @@ window.handleEliteIdeDownloadClick = function(e) {
     const winCard = document.getElementById('card-dl-windows');
 
     if (env.os === 'mac') {
-      if (macSiliconCard) {
-        macSiliconCard.style.boxShadow = '0 0 16px rgba(16, 185, 129, 0.25)';
-        macSiliconCard.style.borderColor = 'rgba(16, 185, 129, 0.5)';
-      }
-      if (macIntelCard) {
-        macIntelCard.style.borderColor = 'rgba(56, 189, 248, 0.4)';
-      }
+      if (macSiliconCard) macSiliconCard.classList.add('ide-os-recommended');
+      if (macIntelCard) macIntelCard.style.borderColor = 'rgba(56, 189, 248, 0.45)';
     } else if (env.os === 'windows') {
-      if (winCard) {
-        winCard.style.boxShadow = '0 0 16px rgba(99, 102, 241, 0.25)';
-        winCard.style.borderColor = 'rgba(99, 102, 241, 0.5)';
-      }
+      if (winCard) winCard.classList.add('ide-os-recommended');
     }
   }
 };
 
 window.triggerIdeDownload = function(target) {
   if (!eliteIdeLaunchState.isLive) {
-    alert("🔒 Elite IDE Desktop Release is currently in Pre-Launch (Draft). Official direct installer downloads will be activated upon Launch by Admin!");
+    const notice = document.getElementById('modal-ide-launch-notice');
+    if (notice) {
+      notice.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      notice.classList.remove('pulse-highlight');
+      void notice.offsetWidth;
+      notice.classList.add('pulse-highlight');
+      setTimeout(() => notice.classList.remove('pulse-highlight'), 1400);
+    }
     return;
   }
 
@@ -1025,6 +1030,12 @@ window.closeIdeComingSoonModal = function() {
   const modal = document.getElementById('ide-coming-soon-modal');
   if (modal) modal.style.display = 'none';
 };
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    window.closeIdeComingSoonModal();
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initEliteIdeLaunchSync);

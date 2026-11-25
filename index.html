@@ -78,7 +78,7 @@
   </noscript>
 
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=22.0">
+  <link rel="stylesheet" href="style.css?v=23.0">
 
   <!-- Structured Data / Schema.org JSON-LD for Google Knowledge Graph & Rich Snippets -->
   <script type="application/ld+json">
@@ -457,6 +457,9 @@
     <div class="grid-overlay"></div>
   </div>
   <div class="cursor-spotlight" id="spotlight"></div>
+
+  <!-- TOP SCROLL PROGRESS BAR -->
+  <div class="scroll-progress-bar" id="scroll-progress"></div>
 
   <!-- HEADER / NAVIGATION -->
   <header id="header">
@@ -1706,89 +1709,103 @@
   </footer>
 
   <!-- ELITE IDE OFFICIAL DOWNLOAD / LAUNCHPAD MODAL -->
-  <div id="ide-coming-soon-modal" onclick="if(event.target === this) closeIdeComingSoonModal()" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(2, 6, 23, 0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: linear-gradient(145deg, #0b1120, #030712); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 24px; padding: 32px; max-width: 580px; width: 100%; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 50px rgba(99, 102, 241, 0.25); position: relative; max-height: 90vh; overflow-y: auto;">
-      <button onclick="closeIdeComingSoonModal()" style="position: absolute; top: 18px; right: 18px; background: rgba(255, 255, 255, 0.08); border: none; width: 36px; height: 36px; border-radius: 50%; color: #94a3b8; font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='#fff';" onmouseout="this.style.background='rgba(255,255,255,0.08)'; this.style.color='#94a3b8';">&times;</button>
+  <div id="ide-coming-soon-modal" class="ide-modal-overlay" onclick="if(event.target === this) closeIdeComingSoonModal()">
+    <div class="ide-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="ide-modal-title">
+      <button onclick="closeIdeComingSoonModal()" class="ide-modal-close" aria-label="Close download modal">&times;</button>
       
       <!-- Modal Header -->
-      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
-        <div style="width: 54px; height: 54px; border-radius: 16px; background: linear-gradient(135deg, #4F46E5, #06B6D4); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(79, 70, 229, 0.5); flex-shrink: 0;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path></svg>
+      <div class="ide-modal-header">
+        <div class="ide-modal-logo">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
         </div>
         <div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span id="modal-ide-status-badge" style="font-size: 0.72rem; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 800; color: #f59e0b; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); padding: 3px 8px; border-radius: 6px;">PRE-LAUNCH / COMING SOON</span>
-            <span style="font-size: 0.72rem; font-weight: 700; color: #818cf8; background: rgba(99, 102, 241, 0.12); padding: 3px 8px; border-radius: 6px;">v2.0.0</span>
+          <div class="ide-modal-badges">
+            <span id="modal-ide-status-badge" class="ide-modal-status-badge">PRE-LAUNCH / COMING SOON</span>
+            <span class="ide-modal-version-badge">v2.0.0</span>
           </div>
-          <h3 style="font-size: 1.35rem; color: #fff; margin: 4px 0 0; font-family: var(--font-heading); font-weight: 800;">Elite IDE (Offline Studio)</h3>
+          <h3 id="ide-modal-title" class="ide-modal-title">Elite IDE (Offline Studio)</h3>
         </div>
       </div>
 
       <!-- Launch notice when in draft -->
-      <div id="modal-ide-launch-notice" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 18px; color: #fcd34d; font-size: 0.82rem; line-height: 1.5;">
+      <div id="modal-ide-launch-notice" class="ide-modal-notice">
         <strong>🔒 Pre-Launch Stage (Draft Mode):</strong> Standalone binaries for macOS (Apple Silicon &amp; Intel) and Windows are configured and staged. Official direct installer downloads will become active once published live by Administrator.
       </div>
 
-      <p style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.55; margin-bottom: 20px;">
-        100% Offline Multi-Language Developer Studio by <strong>Elite Web Kingdom</strong>. Built-in native GCC, Clang, Python 3.12, interactive terminals, and AI Error Healer. Select your system architecture:
+      <p class="ide-modal-desc">
+        100% Offline Multi-Language Developer Studio by <strong>Elite Web Kingdom</strong>. Built-in native toolchains, interactive terminals, and zero-internet execution.
       </p>
 
+      <!-- Included Offline Capabilities -->
+      <div class="ide-modal-features">
+        <span class="ide-feature-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>GCC &amp; Clang</span>
+        <span class="ide-feature-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>Python 3.12</span>
+        <span class="ide-feature-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>AI Error Healer</span>
+        <span class="ide-feature-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>Zero Internet Needed</span>
+      </div>
+
       <!-- System Architecture Detection Banner -->
-      <div id="ide-detected-system-banner" style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 10px 14px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; font-size: 0.82rem; color: #c7d2fe;">
-        <span style="font-size: 1.1rem;">⚡</span>
-        <div><strong id="ide-detected-system-text">Detected System: macOS</strong> — Select the matching chip architecture below.</div>
+      <div id="ide-detected-system-banner" class="ide-detected-banner">
+        <span style="font-size: 1.05rem;">⚡</span>
+        <div id="ide-detected-system-text"><strong>Detected System: macOS</strong> — Select the matching chip architecture below.</div>
       </div>
 
       <!-- Platform Selection Cards -->
-      <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px;">
+      <div class="ide-os-list">
 
         <!-- Option 1: macOS Apple Silicon -->
-        <div id="card-dl-mac-silicon" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all 0.2s;" onmouseover="this.style.borderColor='#10b981'; this.style.background='rgba(16, 185, 129, 0.05)';" onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='rgba(255, 255, 255, 0.03)';">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🍎</div>
+        <div id="card-dl-mac-silicon" class="ide-os-card">
+          <div class="ide-os-info">
+            <div class="ide-os-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.96 6.32c.67-.81 1.12-1.94 1-3.07-.96.04-2.13.64-2.82 1.45-.61.71-1.15 1.86-1.01 2.97 1.08.08 2.16-.54 2.83-1.35"/></svg>
+            </div>
             <div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <strong style="color: #fff; font-size: 0.92rem;">macOS (Apple Silicon)</strong>
-                <span style="font-size: 0.68rem; font-weight: 700; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 6px; border-radius: 4px;">M1 / M2 / M3 / M4</span>
+              <div class="ide-os-title-row">
+                <strong class="ide-os-name">macOS (Apple Silicon)</strong>
+                <span class="ide-os-arch ide-os-arch-green">M1 / M2 / M3 / M4</span>
               </div>
-              <span style="font-size: 0.74rem; color: #94a3b8;">For Mac 2020+ (Apple Silicon) • .dmg (130 MB)</span>
+              <span class="ide-os-meta">For Mac 2020+ (arm64) • .dmg (130 MB)</span>
             </div>
           </div>
-          <a href="javascript:void(0)" onclick="triggerIdeDownload('macSilicon')" id="modal-btn-mac-silicon" class="btn" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; background: rgba(255, 255, 255, 0.08); color: #94a3b8; text-decoration: none; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;">
+          <a href="javascript:void(0)" onclick="triggerIdeDownload('macSilicon')" id="modal-btn-mac-silicon" class="ide-os-action">
             ⏳ Coming Soon
           </a>
         </div>
 
         <!-- Option 2: macOS Intel -->
-        <div id="card-dl-mac-intel" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all 0.2s;" onmouseover="this.style.borderColor='#38bdf8'; this.style.background='rgba(56, 189, 248, 0.05)';" onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='rgba(255, 255, 255, 0.03)';">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">💻</div>
+        <div id="card-dl-mac-intel" class="ide-os-card">
+          <div class="ide-os-info">
+            <div class="ide-os-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+            </div>
             <div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <strong style="color: #fff; font-size: 0.92rem;">macOS (Intel Core)</strong>
-                <span style="font-size: 0.68rem; font-weight: 700; background: rgba(56, 189, 248, 0.2); color: #38bdf8; padding: 2px 6px; border-radius: 4px;">x86_64</span>
+              <div class="ide-os-title-row">
+                <strong class="ide-os-name">macOS (Intel Core)</strong>
+                <span class="ide-os-arch ide-os-arch-blue">x86_64</span>
               </div>
-              <span style="font-size: 0.74rem; color: #94a3b8;">For Intel Macs (i3 / i5 / i7 / i9 / Xeon) • .dmg (134 MB)</span>
+              <span class="ide-os-meta">For Intel Macs (i3 / i5 / i7 / i9) • .dmg (134 MB)</span>
             </div>
           </div>
-          <a href="javascript:void(0)" onclick="triggerIdeDownload('macIntel')" id="modal-btn-mac-intel" class="btn" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; background: rgba(255, 255, 255, 0.08); color: #94a3b8; text-decoration: none; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;">
+          <a href="javascript:void(0)" onclick="triggerIdeDownload('macIntel')" id="modal-btn-mac-intel" class="ide-os-action">
             ⏳ Coming Soon
           </a>
         </div>
 
         <!-- Option 3: Windows -->
-        <div id="card-dl-windows" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; transition: all 0.2s;" onmouseover="this.style.borderColor='#10b981'; this.style.background='rgba(16, 185, 129, 0.05)';" onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='rgba(255, 255, 255, 0.03)';">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🪟</div>
+        <div id="card-dl-windows" class="ide-os-card">
+          <div class="ide-os-info">
+            <div class="ide-os-icon">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+            </div>
             <div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <strong style="color: #fff; font-size: 0.92rem;">Windows (64-bit)</strong>
-                <span style="font-size: 0.68rem; font-weight: 700; background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 6px; border-radius: 4px;">Win 10 / 11</span>
+              <div class="ide-os-title-row">
+                <strong class="ide-os-name">Windows (64-bit)</strong>
+                <span class="ide-os-arch ide-os-arch-green">Win 10 / 11</span>
               </div>
-              <span style="font-size: 0.74rem; color: #94a3b8;">Standalone Portable &amp; Installer • .exe (173 MB)</span>
+              <span class="ide-os-meta">Standalone Portable &amp; Installer • .exe (173 MB)</span>
             </div>
           </div>
-          <a href="javascript:void(0)" onclick="triggerIdeDownload('windows')" id="modal-btn-windows" class="btn" style="padding: 9px 18px; font-size: 0.84rem; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; background: rgba(255, 255, 255, 0.08); color: #94a3b8; text-decoration: none; border: 1px solid rgba(255,255,255,0.15); cursor: pointer;">
+          <a href="javascript:void(0)" onclick="triggerIdeDownload('windows')" id="modal-btn-windows" class="ide-os-action">
             ⏳ Coming Soon
           </a>
         </div>
@@ -1796,11 +1813,11 @@
       </div>
 
       <!-- Cloud IDE Fallback / Alternate Link -->
-      <div style="text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px;">
-        <a href="/compiler/" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; padding: 10px 20px; border-radius: 10px; text-decoration: none; color: #818cf8; border-color: rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.08);">
+      <div class="ide-modal-footer">
+        <a href="/compiler/" class="ide-cloud-btn">
           <span>⚡</span> Launch Instant Cloud IDE In Browser
         </a>
-        <p style="color: #64748b; font-size: 0.73rem; margin-top: 12px; margin-bottom: 0;">
+        <p class="ide-modal-footnote">
           All packages run 100% offline with zero external dependencies required after installation.
         </p>
       </div>
