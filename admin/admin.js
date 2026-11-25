@@ -5164,15 +5164,15 @@ function generateAdminLuxuryCertHtml(cert, canvasId, qrContainerId) {
     "Awarded in recognition of exceptional engineering leadership, delivering high-impact code across core platforms, and exemplary technical excellence.";
 
   return `
-    <div id="${canvasId}" style="min-width: 720px; max-width: 820px; width: 100%; margin: 0 auto; background: radial-gradient(circle at 50% 30%, #0f172a 0%, #030712 100%); border: 3px solid #d4af37; border-radius: 12px; position: relative; padding: 36px 42px; box-shadow: 0 0 0 6px #030712, 0 0 0 8px rgba(212, 175, 55, 0.4), 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 50px rgba(245, 158, 11, 0.15); color: #ffffff; overflow: hidden; box-sizing: border-box; text-align: center;">
+    <div id="${canvasId}" style="min-width: 720px; max-width: 820px; width: 100%; margin: 0 auto; background: #FFFFFF; background-image: radial-gradient(circle at 50% 50%, #ffffff 0%, #faf8f5 100%), repeating-linear-gradient(45deg, rgba(212, 175, 55, 0.015) 0px, rgba(212, 175, 55, 0.015) 2px, transparent 2px, transparent 8px); border: 3px solid #0f2b48; border-radius: 12px; position: relative; padding: 36px 42px; box-shadow: 0 0 0 5px #ffffff, 0 0 0 7px #c59b27, 0 20px 50px rgba(15, 23, 42, 0.15), 0 0 30px rgba(212, 175, 55, 0.12); color: #0f172a; overflow: hidden; box-sizing: border-box; text-align: center;">
       <!-- Inner Border -->
-      <div style="position: absolute; inset: 12px; border: 1px solid rgba(212, 175, 55, 0.5); pointer-events: none; border-radius: 6px;"></div>
+      <div style="position: absolute; inset: 12px; border: 2px solid #c59b27; outline: 1px dashed rgba(197, 155, 39, 0.45); outline-offset: -5px; pointer-events: none; border-radius: 6px;"></div>
 
       <!-- Gold Corner Accents -->
-      <div style="position: absolute; top: 16px; left: 16px; width: 22px; height: 22px; border-top: 3px solid #d4af37; border-left: 3px solid #d4af37; pointer-events: none;"></div>
-      <div style="position: absolute; top: 16px; right: 16px; width: 22px; height: 22px; border-top: 3px solid #d4af37; border-right: 3px solid #d4af37; pointer-events: none;"></div>
-      <div style="position: absolute; bottom: 16px; left: 16px; width: 22px; height: 22px; border-bottom: 3px solid #d4af37; border-left: 3px solid #d4af37; pointer-events: none;"></div>
-      <div style="position: absolute; bottom: 16px; right: 16px; width: 22px; height: 22px; border-bottom: 3px solid #d4af37; border-right: 3px solid #d4af37; pointer-events: none;"></div>
+      <div style="position: absolute; top: 16px; left: 16px; width: 22px; height: 22px; border-top: 3px solid #c59b27; border-left: 3px solid #c59b27; pointer-events: none;"></div>
+      <div style="position: absolute; top: 16px; right: 16px; width: 22px; height: 22px; border-top: 3px solid #c59b27; border-right: 3px solid #c59b27; pointer-events: none;"></div>
+      <div style="position: absolute; bottom: 16px; left: 16px; width: 22px; height: 22px; border-bottom: 3px solid #c59b27; border-left: 3px solid #c59b27; pointer-events: none;"></div>
+      <div style="position: absolute; bottom: 16px; right: 16px; width: 22px; height: 22px; border-bottom: 3px solid #c59b27; border-right: 3px solid #c59b27; pointer-events: none;"></div>
 
       <!-- Center Watermark -->
       <img src="/logo.jpeg" alt="Watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.04; width: 360px; height: 360px; pointer-events: none; filter: grayscale(100%); z-index: 0;">
@@ -5180,82 +5180,82 @@ function generateAdminLuxuryCertHtml(cert, canvasId, qrContainerId) {
       <div style="position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center;">
         <!-- Brand Row -->
         <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 12px;">
-          <img src="/logo.jpeg" alt="Logo" style="width: 46px; height: 46px; border-radius: 8px; border: 1px solid rgba(212, 175, 55, 0.6); box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);">
+          <img src="/logo.jpeg" alt="Logo" style="width: 48px; height: 48px; border-radius: 8px; border: 1.5px solid #c59b27; box-shadow: 0 4px 12px rgba(197, 155, 39, 0.25);">
           <div>
-            <div style="font-family: 'Cinzel', serif; font-size: 1.15rem; font-weight: 800; letter-spacing: 3px; color: #f8fafc; text-transform: uppercase;">
+            <div style="font-family: 'Cinzel', serif; font-size: 1.25rem; font-weight: 800; letter-spacing: 4px; color: #0f2b48; text-transform: uppercase;">
               ELITE WEB KINGDOM
             </div>
-            <div style="font-size: 0.72rem; color: #00f2fe; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;">
+            <div style="font-size: 0.72rem; color: #b45309; letter-spacing: 2.5px; text-transform: uppercase; font-weight: 700;">
               ENGINEERING DISTINCTION
             </div>
           </div>
         </div>
 
         <!-- Main Heading -->
-        <h2 style="font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 900; letter-spacing: 3px; color: #fbbf24; text-transform: uppercase; margin: 8px 0 3px; line-height: 1.2;">
+        <h2 style="font-family: 'Cinzel', serif; font-size: 1.9rem; font-weight: 900; letter-spacing: 3px; color: #0f2b48; text-transform: uppercase; margin: 8px 0 3px; line-height: 1.2;">
           ${escapeHtml(cert.main_heading || 'CERTIFICATE OF ACHIEVEMENT')}
         </h2>
-        <div style="font-size: 0.8rem; color: #94a3b8; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px;">
+        <div style="font-size: 0.8rem; color: #64748b; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; margin-bottom: 16px;">
           Official Credential of Engineering Distinction
         </div>
 
-        <div style="font-style: italic; font-family: 'Playfair Display', serif; font-size: 1rem; color: #cbd5e1; margin-bottom: 6px;">
+        <div style="font-style: italic; font-family: 'Playfair Display', serif; font-size: 1.05rem; color: #475569; margin-bottom: 6px;">
           This is proudly presented to
         </div>
 
         <!-- Recipient Name -->
-        <div style="font-family: 'Playfair Display', serif; font-size: 2.3rem; font-weight: 700; color: #ffffff; letter-spacing: 1px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(0, 242, 254, 0.3); border-bottom: 2px solid rgba(212, 175, 55, 0.6); padding-bottom: 4px; display: inline-block; min-width: 280px;">
+        <div style="font-family: 'Playfair Display', serif; font-size: 2.3rem; font-weight: 800; color: #090d16; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 2px solid #c59b27; padding-bottom: 4px; display: inline-block; min-width: 280px;">
           ${escapeHtml(cert.recipient_name)}
         </div>
 
         <!-- Award Category Pill -->
-        <div style="display: inline-block; margin: 6px 0 12px; padding: 4px 16px; border-radius: 20px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase;">
+        <div style="display: inline-block; margin: 6px 0 12px; padding: 6px 22px; border-radius: 9999px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1.5px solid #d97706; color: #78350f; font-weight: 800; font-size: 0.88rem; letter-spacing: 1.5px; text-transform: uppercase; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.18);">
           ${escapeHtml(cert.award_category)}
         </div>
 
         <!-- Achievement Description -->
-        <p style="max-width: 600px; font-size: 0.9rem; color: #cbd5e1; line-height: 1.55; margin: 0 auto 8px; font-style: italic;">
+        <p style="max-width: 600px; font-size: 0.94rem; color: #334155; line-height: 1.6; margin: 0 auto 8px;">
           "${escapeHtml(descText)}"
         </p>
 
-        <div style="font-size: 0.82rem; color: #00f2fe; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 22px;">
+        <div style="font-size: 0.85rem; color: #1e3a8a; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; margin-bottom: 20px;">
           Performance Period: ${escapeHtml(cert.performance_month)}
         </div>
 
         <!-- Footer Row -->
-        <div style="width: 100%; display: flex; align-items: flex-end; justify-content: space-between; margin-top: 6px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); gap: 16px;">
+        <div style="width: 100%; display: flex; align-items: flex-end; justify-content: space-between; margin-top: 6px; padding-top: 14px; border-top: 1px solid #e2e8f0; gap: 16px;">
           <!-- Left: QR Code Box + ID -->
           <div style="display: flex; flex-direction: column; align-items: flex-start; flex: 1;">
-            <div id="${qrContainerId}" style="width: 74px; height: 74px; background: #ffffff; border-radius: 8px; padding: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); margin-bottom: 5px;"></div>
-            <div style="font-family: monospace; font-size: 0.75rem; color: #00f2fe; font-weight: 700;">
+            <div id="${qrContainerId}" style="width: 74px; height: 74px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 4px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); margin-bottom: 5px;"></div>
+            <div style="font-family: monospace; font-size: 0.75rem; color: #0f2b48; font-weight: 800;">
               ID: ${escapeHtml(cert.certificate_id)}
             </div>
-            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">
+            <div style="font-size: 0.7rem; color: #64748b; margin-top: 2px;">
               Issued: ${escapeHtml(cert.issue_date)}
             </div>
           </div>
 
           <!-- Center: Verified Seal Graphic -->
           <div style="display: flex; flex-direction: column; align-items: center; flex: 1;">
-            <div style="width: 68px; height: 68px; border-radius: 50%; background: radial-gradient(circle, #f59e0b 0%, #b45309 80%, #78350f 100%); border: 3px double #fef08a; box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff; text-align: center; margin-bottom: 4px; font-size: 0.56rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.1; padding: 4px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fef08a" stroke-width="2.5" style="margin-bottom: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <div style="width: 74px; height: 74px; border-radius: 50%; background: radial-gradient(circle, #fde047 0%, #d97706 70%, #92400e 100%); border: 3px double #fef08a; box-shadow: 0 4px 16px rgba(180, 83, 9, 0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff; text-align: center; margin-bottom: 4px; font-size: 0.58rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.1; padding: 4px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" style="margin-bottom: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               <span>ELITE<br>VERIFIED</span>
             </div>
-            <span style="font-size: 0.6rem; color: #d4af37; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;">Verified Seal</span>
+            <span style="font-size: 0.62rem; color: #b45309; letter-spacing: 1px; text-transform: uppercase; font-weight: 700;">Verified Seal</span>
           </div>
 
           <!-- Right: Signatory Bathala Harika - Executive Director -->
           <div style="display: flex; flex-direction: column; align-items: flex-end; flex: 1;">
-            <div style="font-family: 'Herr Von Muellerhoff', cursive; font-size: 2rem; color: #f8fafc; letter-spacing: 1px; border-bottom: 1px solid rgba(212, 175, 55, 0.6); padding: 0 16px 2px; margin-bottom: 3px; line-height: 1;">
+            <div style="font-family: 'Herr Von Muellerhoff', cursive; font-size: 2.1rem; color: #090d16; letter-spacing: 1px; border-bottom: 1.5px solid #c59b27; padding: 0 18px 2px; margin-bottom: 3px; line-height: 1;">
               Bathala Harika
             </div>
-            <div style="font-size: 0.85rem; font-weight: 700; color: #ffffff;">
+            <div style="font-size: 0.88rem; font-weight: 800; color: #0f172a;">
               Bathala Harika
             </div>
-            <div style="font-size: 0.72rem; color: #fbbf24; font-weight: 600; letter-spacing: 0.5px;">
+            <div style="font-size: 0.74rem; color: #b45309; font-weight: 700; letter-spacing: 0.5px;">
               Executive Director
             </div>
-            <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 1px;">
+            <div style="font-size: 0.68rem; color: #64748b; margin-top: 1px;">
               Elite Web Kingdom
             </div>
           </div>
@@ -5333,7 +5333,7 @@ window.downloadAdminCertPNG = function() {
       scale: 2.5,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: '#030712',
+      backgroundColor: '#ffffff',
       logging: false
     }).then(canvas => {
       const link = document.createElement('a');
@@ -5377,7 +5377,7 @@ window.downloadAdminRowCert = function(certId) {
         scale: 2.5,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#030712',
+        backgroundColor: '#ffffff',
         logging: false
       }).then(canvas => {
         const link = document.createElement('a');
