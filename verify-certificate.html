@@ -574,70 +574,72 @@
     }
 
     /* =================================================================
-       PRESTIGE CORPORATE LUXURY CERTIFICATE CANVAS (PRINT & VIEW OPTIMIZED)
+       PRESTIGE WHITE LUXURY CERTIFICATE CANVAS (PRINT & VIEW OPTIMIZED)
        ================================================================= */
     .certificate-viewport {
       width: 100%;
-      overflow-x: visible;
+      overflow-x: auto;
       padding-bottom: 12px;
+      display: flex;
+      justify-content: center;
     }
 
     .cert-award-canvas {
       width: 100%;
       min-width: 0;
       max-width: 900px;
+      aspect-ratio: 1.414;
       background: #FFFFFF;
       background-image: 
-        radial-gradient(circle at 50% 50%, #ffffff 0%, #faf8f5 65%, #f4eee2 100%),
-        repeating-radial-gradient(circle at 50% 50%, rgba(197, 155, 39, 0.02) 0px, rgba(197, 155, 39, 0.02) 1px, transparent 1px, transparent 12px),
-        repeating-linear-gradient(45deg, rgba(12, 35, 64, 0.012) 0px, rgba(12, 35, 64, 0.012) 1px, transparent 1px, transparent 16px);
-      border: 4px solid #0c2340;
-      border-radius: 6px;
+        radial-gradient(circle at 50% 50%, #ffffff 0%, #faf8f5 100%);
+      border: 3px solid #0f2b48;
+      border-radius: 8px;
       position: relative;
-      padding: clamp(30px, 4.8vw, 44px) clamp(24px, 5.2vw, 50px);
+      padding: clamp(24px, 3.8vw, 36px) clamp(24px, 4.5vw, 48px);
       box-shadow: 
         0 0 0 4px #ffffff, 
-        0 0 0 7px #c59b27,
-        0 0 0 9px #0c2340,
-        0 25px 70px rgba(12, 35, 64, 0.16),
-        0 0 40px rgba(197, 155, 39, 0.12);
-      color: #0c2340;
+        0 0 0 6px #c59b27,
+        0 16px 45px rgba(15, 43, 72, 0.12);
+      color: #0f172a;
       overflow: hidden;
       margin: 0 auto;
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
     }
 
     .cert-inner-border {
       position: absolute;
-      inset: 14px;
+      inset: 12px;
       border: 2px solid #c59b27;
-      outline: 1.5px dashed rgba(197, 155, 39, 0.55);
-      outline-offset: -6px;
+      outline: 1px dashed rgba(197, 155, 39, 0.45);
+      outline-offset: -5px;
       pointer-events: none;
       border-radius: 4px;
     }
 
     .cert-corner {
       position: absolute;
-      width: 48px;
-      height: 48px;
+      width: 40px;
+      height: 40px;
       pointer-events: none;
       z-index: 1;
     }
 
-    .cert-corner.top-left { top: 16px; left: 16px; }
-    .cert-corner.top-right { top: 16px; right: 16px; }
-    .cert-corner.bottom-left { bottom: 16px; left: 16px; }
-    .cert-corner.bottom-right { bottom: 16px; right: 16px; }
+    .cert-corner.top-left { top: 14px; left: 14px; }
+    .cert-corner.top-right { top: 14px; right: 14px; }
+    .cert-corner.bottom-left { bottom: 14px; left: 14px; }
+    .cert-corner.bottom-right { bottom: 14px; right: 14px; }
 
     .cert-watermark {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      opacity: 0.045;
-      width: 380px;
-      height: 380px;
+      opacity: 0.035;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
       pointer-events: none;
       filter: grayscale(100%);
       z-index: 0;
@@ -649,103 +651,88 @@
       text-align: center;
       display: flex;
       flex-direction: column;
-      align-items: center;
-    }
-
-    .cert-accreditation-bar {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.65rem;
-      font-weight: 800;
-      letter-spacing: 2.5px;
-      color: #b45309;
-      text-transform: uppercase;
-      padding: 3px 14px;
-      background: rgba(254, 243, 199, 0.5);
-      border: 1px solid rgba(217, 119, 6, 0.25);
-      border-radius: 9999px;
-      margin-bottom: 12px;
-    }
-
-    .cert-accreditation-bar span.star {
-      color: #d97706;
-      font-size: 0.72rem;
+      justify-content: space-between;
+      height: 100%;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .cert-brand-row {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 14px;
-      margin-bottom: 12px;
+      gap: 12px;
+      margin-bottom: 6px;
     }
 
     .cert-logo-img {
-      width: 52px;
-      height: 52px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
-      border: 2px solid #c59b27;
-      box-shadow: 0 4px 14px rgba(197, 155, 39, 0.3);
+      border: 1.5px solid #c59b27;
+      box-shadow: 0 2px 8px rgba(197, 155, 39, 0.25);
     }
 
     .cert-authority-title {
       font-family: var(--font-ornate);
-      font-size: 1.35rem;
-      font-weight: 900;
-      letter-spacing: 5px;
-      color: #0c2340;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 4px;
+      color: #0f2b48;
       text-transform: uppercase;
     }
 
     .cert-authority-sub {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: #b45309;
-      letter-spacing: 2.8px;
+      letter-spacing: 2.2px;
       text-transform: uppercase;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .cert-main-heading {
       font-family: var(--font-ornate);
-      font-size: clamp(1.5rem, 4.2vw, 2.35rem);
+      font-size: clamp(1.5rem, 3.5vw, 2.2rem);
       font-weight: 900;
-      letter-spacing: clamp(1px, 0.5vw, 3.5px);
-      color: #0c2340;
+      letter-spacing: clamp(1px, 0.5vw, 3px);
+      color: #0f2b48;
       text-transform: uppercase;
-      margin: 8px 0 2px;
-      background: linear-gradient(135deg, #0c2340 0%, #1e3a8a 50%, #b45309 100%);
+      margin: 6px 0 2px;
+      background: linear-gradient(135deg, #0f2b48 0%, #1e3a8a 50%, #b45309 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       word-break: break-word;
     }
 
-    .cert-registry-tag {
-      font-size: 0.72rem;
+    .cert-tagline {
+      font-size: 0.78rem;
       color: #64748b;
-      letter-spacing: 2.2px;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      font-weight: 700;
-      margin-bottom: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
     }
 
     .cert-presented-text {
       font-style: italic;
       font-family: var(--font-serif);
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       color: #475569;
-      margin-bottom: 6px;
+      margin-bottom: 2px;
     }
 
     .cert-recipient-name {
       font-family: var(--font-serif);
-      font-size: clamp(1.9rem, 4.5vw, 2.75rem);
+      font-size: clamp(1.9rem, 4.2vw, 2.7rem);
       font-weight: 800;
-      color: #071326;
+      color: #0f2b48;
+      text-transform: capitalize;
       letter-spacing: 1px;
-      margin-bottom: 4px;
+      margin: 4px 0 8px;
       position: relative;
       display: inline-block;
+      padding-bottom: 4px;
+      border-bottom: 2px solid #c59b27;
       word-break: break-word;
       max-width: 100%;
     }
@@ -756,53 +743,53 @@
       justify-content: center;
       gap: 12px;
       width: 100%;
-      max-width: 440px;
-      margin: 2px auto 10px;
+      max-width: 380px;
+      margin: 0 auto 6px;
     }
 
     .cert-flourish-line {
       flex: 1;
       height: 1.5px;
-      background: linear-gradient(90deg, transparent, #c59b27, #0c2340, #c59b27, transparent);
+      background: linear-gradient(90deg, transparent, #c59b27, #0f2b48, #c59b27, transparent);
     }
 
     .cert-flourish-symbol {
       color: #c59b27;
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       letter-spacing: 4px;
     }
 
     .cert-award-category-pill {
       display: inline-block;
-      margin: 4px 0 12px;
-      padding: 6px 24px;
+      margin: 4px 0 10px;
+      padding: 5px 22px;
       border-radius: 9999px;
-      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%);
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
       border: 1.5px solid #d97706;
       color: #78350f;
       font-weight: 800;
-      font-size: 0.92rem;
-      letter-spacing: 2px;
+      font-size: 0.88rem;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      box-shadow: 0 3px 12px rgba(217, 119, 6, 0.22);
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.18);
     }
 
     .cert-reason-desc {
       max-width: 640px;
-      font-size: 0.94rem;
+      font-size: 0.92rem;
       color: #334155;
-      line-height: 1.65;
-      margin-bottom: 8px;
+      line-height: 1.6;
+      margin: 0 auto 6px;
       font-weight: 500;
     }
 
     .cert-month-line {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: #1e3a8a;
-      font-weight: 800;
-      letter-spacing: 2px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      margin-bottom: 18px;
+      margin-bottom: 12px;
     }
 
     .cert-footer-row {
@@ -810,10 +797,10 @@
       display: flex;
       align-items: flex-end;
       justify-content: space-between;
-      margin-top: 8px;
-      padding-top: 14px;
+      margin-top: auto;
+      padding-top: 12px;
       border-top: 1px solid #e2e8f0;
-      gap: 20px;
+      gap: 16px;
     }
 
     .cert-footer-col {
@@ -824,8 +811,8 @@
     }
 
     .cert-qr-box {
-      width: 80px;
-      height: 80px;
+      width: 72px;
+      height: 72px;
       background: #ffffff;
       border: 1.5px solid #c59b27;
       border-radius: 6px;
@@ -833,8 +820,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-      margin-bottom: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      margin-bottom: 4px;
     }
 
     .cert-qr-box canvas, .cert-qr-box img {
@@ -843,88 +830,51 @@
       display: block;
     }
 
-    .cert-seal-wrapper {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
     .cert-seal-graphic {
-      width: 82px;
-      height: 82px;
+      width: 74px;
+      height: 74px;
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #fffbeb 0%, #fde047 25%, #d97706 65%, #92400e 100%);
+      background: radial-gradient(circle at 35% 35%, #fde047 0%, #d97706 70%, #92400e 100%);
       border: 3px double #fef08a;
-      box-shadow: 
-        0 0 0 2px #b45309,
-        0 6px 20px rgba(180, 83, 9, 0.4),
-        inset 0 2px 4px rgba(255, 255, 255, 0.8),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 14px rgba(180, 83, 9, 0.35);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       color: #ffffff;
       text-align: center;
-      position: relative;
-      z-index: 2;
-      font-size: 0.54rem;
+      margin-bottom: 4px;
+      font-size: 0.58rem;
       font-weight: 900;
       letter-spacing: 0.8px;
       text-transform: uppercase;
       line-height: 1.1;
       padding: 4px;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
     }
 
-    .cert-seal-graphic svg {
-      margin-bottom: 2px;
-      color: #ffffff;
-    }
-
-    .cert-seal-ribbons {
-      position: absolute;
-      top: 60px;
-      width: 56px;
-      height: 36px;
-      display: flex;
-      justify-content: space-between;
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    .cert-seal-ribbon {
-      width: 22px;
-      height: 34px;
-      background: linear-gradient(180deg, #d97706 0%, #b45309 60%, #78350f 100%);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-      clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 50% 80%, 0% 100%);
-    }
-
-    .cert-seal-ribbon.left {
-      transform: rotate(-12deg);
-    }
-
-    .cert-seal-ribbon.right {
-      transform: rotate(12deg);
+    .cert-seal-caption {
+      font-size: 0.64rem;
+      color: #b45309;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 700;
     }
 
     .cert-signature-img {
       font-family: 'Alex Brush', cursive;
-      font-size: 2.7rem;
-      color: #0c2340;
+      font-size: 2.5rem;
+      color: #0f2b48;
       letter-spacing: 1px;
-      border-bottom: 2px solid #c59b27;
-      padding: 0 22px 2px;
-      margin-bottom: 4px;
+      border-bottom: 1.5px solid #c59b27;
+      padding: 0 18px 2px;
+      margin-bottom: 2px;
       line-height: 1;
     }
 
     .cert-sign-title {
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       font-weight: 800;
-      color: #0c2340;
+      color: #0f172a;
     }
 
     .cert-sign-role {
@@ -936,29 +886,9 @@
 
     .cert-id-tag {
       font-family: var(--font-mono);
-      font-size: 0.76rem;
-      color: #0c2340;
+      font-size: 0.74rem;
+      color: #0f2b48;
       font-weight: 800;
-    }
-
-    .cert-security-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.65rem;
-      color: #059669;
-      font-weight: 800;
-      margin-top: 3px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .cert-security-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
     }
 
     /* FOOTER */
@@ -1111,7 +1041,8 @@
 
       /* Make ONLY the certificate canvas visible & lock it to exact 1 sheet */
       #printable-certificate {
-        display: block !important;
+        display: flex !important;
+        flex-direction: column !important;
         position: relative !important;
         width: 297mm !important;
         height: 210mm !important;
@@ -1120,10 +1051,12 @@
         min-width: 297mm !important;
         min-height: 210mm !important;
         margin: 0 auto !important;
-        padding: 8mm 12mm !important;
+        padding: 16mm 22mm !important;
         box-sizing: border-box !important;
-        border: 4px solid #0c2340 !important;
-        box-shadow: none !important;
+        border: 3.5px solid #0f2b48 !important;
+        box-shadow: 
+          0 0 0 3px #ffffff,
+          0 0 0 5px #c59b27 !important;
         overflow: hidden !important;
         page-break-after: avoid !important;
         page-break-before: avoid !important;
@@ -1135,9 +1068,18 @@
         z-index: 1 !important;
       }
 
+      #printable-certificate .cert-content {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
+      }
+
       /* Fine-tuned internal proportions for 100% single page vertical fit */
       #printable-certificate .cert-inner-border {
         inset: 6mm !important;
+        border: 2px solid #c59b27 !important;
       }
 
       #printable-certificate .cert-corner.top-left { top: 8mm !important; left: 8mm !important; width: 36px !important; height: 36px !important; }
@@ -1145,123 +1087,105 @@
       #printable-certificate .cert-corner.bottom-left { bottom: 8mm !important; left: 8mm !important; width: 36px !important; height: 36px !important; }
       #printable-certificate .cert-corner.bottom-right { bottom: 8mm !important; right: 8mm !important; width: 36px !important; height: 36px !important; }
 
-      #printable-certificate .cert-accreditation-bar {
-        margin-bottom: 4px !important;
-        padding: 2px 10px !important;
-        font-size: 0.58rem !important;
-        letter-spacing: 2px !important;
-      }
-
       #printable-certificate .cert-brand-row {
-        margin-bottom: 6px !important;
+        margin-bottom: 4px !important;
         gap: 10px !important;
       }
 
       #printable-certificate .cert-logo-img {
-        width: 38px !important;
-        height: 38px !important;
+        width: 44px !important;
+        height: 44px !important;
       }
 
       #printable-certificate .cert-authority-title {
-        font-size: 1.15rem !important;
+        font-size: 1.25rem !important;
         letter-spacing: 4px !important;
       }
 
       #printable-certificate .cert-authority-sub {
-        font-size: 0.62rem !important;
+        font-size: 0.65rem !important;
         letter-spacing: 2px !important;
       }
 
       #printable-certificate .cert-main-heading {
-        font-size: 1.65rem !important;
-        margin: 3px 0 1px !important;
-        letter-spacing: 2px !important;
+        font-size: 1.95rem !important;
+        margin: 4px 0 2px !important;
+        letter-spacing: 2.5px !important;
       }
 
-      #printable-certificate .cert-registry-tag {
-        font-size: 0.62rem !important;
+      #printable-certificate .cert-tagline {
+        font-size: 0.72rem !important;
         letter-spacing: 1.8px !important;
         margin-bottom: 6px !important;
       }
 
       #printable-certificate .cert-presented-text {
-        font-size: 0.95rem !important;
-        margin-bottom: 3px !important;
+        font-size: 1.05rem !important;
+        margin-bottom: 4px !important;
       }
 
       #printable-certificate .cert-recipient-name {
-        font-size: 2.15rem !important;
-        margin-bottom: 1px !important;
+        font-size: 2.7rem !important;
+        margin: 4px 0 8px !important;
       }
 
       #printable-certificate .cert-flourish-divider {
-        margin: 1px auto 5px !important;
-        max-width: 340px !important;
+        margin: 0 auto 8px !important;
+        max-width: 380px !important;
       }
 
       #printable-certificate .cert-award-category-pill {
-        margin: 3px 0 6px !important;
-        padding: 3px 18px !important;
-        font-size: 0.8rem !important;
+        margin: 4px 0 10px !important;
+        padding: 5px 22px !important;
+        font-size: 0.88rem !important;
         letter-spacing: 1.5px !important;
       }
 
       #printable-certificate .cert-reason-desc {
-        font-size: 0.82rem !important;
-        line-height: 1.4 !important;
-        margin-bottom: 3px !important;
-        max-width: 580px !important;
+        font-size: 0.92rem !important;
+        line-height: 1.6 !important;
+        margin-bottom: 4px !important;
+        max-width: 640px !important;
       }
 
       #printable-certificate .cert-month-line {
-        font-size: 0.72rem !important;
+        font-size: 0.8rem !important;
         letter-spacing: 1.5px !important;
         margin-bottom: 8px !important;
       }
 
       #printable-certificate .cert-footer-row {
-        margin-top: 3px !important;
-        padding-top: 6px !important;
-        gap: 12px !important;
+        margin-top: auto !important;
+        padding-top: 10px !important;
+        gap: 16px !important;
       }
 
       #printable-certificate .cert-qr-box {
-        width: 60px !important;
-        height: 60px !important;
-        margin-bottom: 2px !important;
+        width: 68px !important;
+        height: 68px !important;
+        margin-bottom: 3px !important;
         padding: 3px !important;
       }
 
       #printable-certificate .cert-seal-graphic {
-        width: 64px !important;
-        height: 64px !important;
-        font-size: 0.46rem !important;
-        padding: 2px !important;
-      }
-
-      #printable-certificate .cert-seal-ribbons {
-        top: 46px !important;
-        width: 42px !important;
-        height: 24px !important;
-      }
-
-      #printable-certificate .cert-seal-ribbon {
-        width: 16px !important;
-        height: 24px !important;
+        width: 72px !important;
+        height: 72px !important;
+        font-size: 0.55rem !important;
+        padding: 3px !important;
       }
 
       #printable-certificate .cert-signature-img {
-        font-size: 2.1rem !important;
-        padding: 0 14px 2px !important;
-        margin-bottom: 1px !important;
+        font-size: 2.4rem !important;
+        padding: 0 16px 2px !important;
+        margin-bottom: 2px !important;
       }
 
       #printable-certificate .cert-sign-title {
-        font-size: 0.8rem !important;
+        font-size: 0.88rem !important;
       }
 
       #printable-certificate .cert-sign-role {
-        font-size: 0.65rem !important;
+        font-size: 0.72rem !important;
       }
     }
   </style>
@@ -1569,75 +1493,62 @@
                 <img src="/logo.jpeg" alt="Watermark" class="cert-watermark">
 
                 <div class="cert-content">
-                  <!-- Corporate Accreditation Bar -->
-                  <div class="cert-accreditation-bar">
-                    <span class="star">★ ★ ★</span>
-                    <span>OFFICIAL CORPORATE CREDENTIAL • ISO 9001:2015 ALIGNED STANDARDS</span>
-                    <span class="star">★ ★ ★</span>
-                  </div>
-
-                  <div class="cert-brand-row">
-                    <img src="/logo.jpeg" alt="Logo" class="cert-logo-img">
-                    <div>
-                      <div class="cert-authority-title">Elite Web Kingdom</div>
-                      <div class="cert-authority-sub">Directorate of Software Engineering & Technical Architecture</div>
+                  <div>
+                    <div class="cert-brand-row">
+                      <img src="/logo.jpeg" alt="Logo" class="cert-logo-img">
+                      <div>
+                        <div class="cert-authority-title">Elite Web Kingdom</div>
+                        <div class="cert-authority-sub">Engineering Distinction</div>
+                      </div>
                     </div>
+
+                    <h1 class="cert-main-heading">${escapeHtml(cert.main_heading || 'Certificate of Appreciation')}</h1>
+                    <p class="cert-tagline">Official Credential of Engineering Distinction</p>
                   </div>
 
-                  <h1 class="cert-main-heading">${escapeHtml(cert.main_heading || 'Certificate of Technical Excellence')}</h1>
-                  <p class="cert-registry-tag">CORPORATE REGISTER ENTRY NO. EWK-VERIFIED-CREDENTIAL-2026</p>
+                  <div>
+                    <p class="cert-presented-text">This is proudly presented to</p>
+                    <div class="cert-recipient-name">${escapeHtml(cert.recipient_name)}</div>
 
-                  <p class="cert-presented-text">This official corporate credential is duly conferred upon</p>
-                  <div class="cert-recipient-name">${escapeHtml(cert.recipient_name)}</div>
+                    <!-- Victorian Flourish Divider -->
+                    <div class="cert-flourish-divider">
+                      <span class="cert-flourish-line"></span>
+                      <span class="cert-flourish-symbol">✦ ❖ ✦</span>
+                      <span class="cert-flourish-line"></span>
+                    </div>
 
-                  <!-- Victorian Flourish Divider -->
-                  <div class="cert-flourish-divider">
-                    <span class="cert-flourish-line"></span>
-                    <span class="cert-flourish-symbol">✦ ❖ ✦</span>
-                    <span class="cert-flourish-line"></span>
+                    <div class="cert-award-category-pill">✦ ${escapeHtml(cert.award_category)} ✦</div>
+
+                    <p class="cert-reason-desc">${escapeHtml(descText)}</p>
+                    <div class="cert-month-line">Performance Period: ${escapeHtml(cert.performance_month)}</div>
                   </div>
-
-                  <div class="cert-award-category-pill">✦ ${escapeHtml(cert.award_category)} ✦</div>
-
-                  <p class="cert-reason-desc">${escapeHtml(descText)}</p>
-                  <div class="cert-month-line">PERFORMANCE RATIFICATION PERIOD: ${escapeHtml(cert.performance_month)} • REGISTRY STATUS: DULY ACCREDITED</div>
 
                   <!-- Footer -->
                   <div class="cert-footer-row">
-                    <!-- Left: Security QR & Digital Ledger Hash -->
+                    <!-- Left: Security QR & ID -->
                     <div class="cert-footer-col" style="align-items: flex-start;">
                       <div class="cert-qr-box" id="cert-qr-container"></div>
                       <div class="cert-id-tag">ID: ${escapeHtml(cert.certificate_id)}</div>
                       <div style="font-size: 0.72rem; color: #64748b; margin-top: 2px;">
                         Issue Date: ${escapeHtml(cert.issue_date)}
                       </div>
-                      <div class="cert-security-pill">
-                        <span class="cert-security-dot"></span>
-                        CRYPTOGRAPHICALLY SECURED
-                      </div>
                     </div>
 
-                    <!-- Center: 3D Embossed Metallic Gold Corporate Seal with Ribbon Tails -->
+                    <!-- Center: Verified Gold Seal -->
                     <div class="cert-footer-col">
-                      <div class="cert-seal-wrapper">
-                        <div class="cert-seal-graphic">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                          <span>ELITE<br>VERIFIED<br>SEAL</span>
-                        </div>
-                        <div class="cert-seal-ribbons">
-                          <div class="cert-seal-ribbon left"></div>
-                          <div class="cert-seal-ribbon right"></div>
-                        </div>
+                      <div class="cert-seal-graphic">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        <span>ELITE<br>VERIFIED</span>
                       </div>
-                      <span style="font-size: 0.62rem; color: #b45309; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 800; margin-top: 18px;">Official Corporate Seal</span>
+                      <span class="cert-seal-caption">Official Seal</span>
                     </div>
 
                     <!-- Right: Executive Director Signatory -->
                     <div class="cert-footer-col" style="align-items: flex-end;">
                       <div class="cert-signature-img">Bathala Harika</div>
                       <div class="cert-sign-title">Bathala Harika</div>
-                      <div class="cert-sign-role">Executive Director & Technical Directorate</div>
-                      <div style="font-size: 0.68rem; color: #64748b; margin-top: 1px;">Elite Web Kingdom Private Limited</div>
+                      <div class="cert-sign-role">Executive Director</div>
+                      <div style="font-size: 0.72rem; color: #64748b; margin-top: 1px;">Elite Web Kingdom</div>
                     </div>
                   </div>
                 </div>
