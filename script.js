@@ -671,8 +671,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Syncs dynamically with Supabase Launch Control state (DRAFT vs OFFICIAL_LIVE)
 // ============================================================================
 let eliteIdeLaunchState = {
-  isLive: false,
-  downloadUrl: '',
+  isLive: true,
+  downloadUrl: 'https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5',
   downloads: {
     macIntel: 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing',
     macSilicon: 'https://drive.google.com/file/d/11JNSwhKCe3hxipJblfM6G0ssv2lOKMbS/view?usp=sharing',
@@ -681,7 +681,7 @@ let eliteIdeLaunchState = {
 };
 
 async function initEliteIdeLaunchSync() {
-  // 1. Immediately apply default safe state (guarantees DRAFT is enforced with zero delay)
+  // 1. Immediately apply default live state (guarantees downloads work instantly)
   applyEliteIdeUIState();
 
   try {
@@ -708,9 +708,9 @@ async function initEliteIdeLaunchSync() {
     }
 
     const record = data[0];
-    // STRICT LAUNCH CONTROL: Only live if explicitly OFFICIAL_LIVE and not COMING_SOON
-    const isLive = (record.system_name === 'OFFICIAL_LIVE' && record.status !== 'COMING_SOON');
-    eliteIdeLaunchState.isLive = isLive;
+    // Keep live unless explicitly marked DRAFT_LOCK or COMING_SOON
+    const isExplicitlyDraft = (record.status === 'COMING_SOON' || record.system_name === 'DRAFT_LOCK');
+    eliteIdeLaunchState.isLive = !isExplicitlyDraft;
 
     if (record.code_snippet && !record.code_snippet.trim().startsWith('{')) {
       eliteIdeLaunchState.downloadUrl = record.code_snippet;
@@ -992,18 +992,6 @@ window.handleEliteIdeDownloadClick = function(e) {
 };
 
 window.triggerIdeDownload = function(target) {
-  if (!eliteIdeLaunchState.isLive) {
-    const notice = document.getElementById('modal-ide-launch-notice');
-    if (notice) {
-      notice.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      notice.classList.remove('pulse-highlight');
-      void notice.offsetWidth;
-      notice.classList.add('pulse-highlight');
-      setTimeout(() => notice.classList.remove('pulse-highlight'), 1400);
-    }
-    return;
-  }
-
   let url = '';
   if (target === 'macIntel') {
     url = eliteIdeLaunchState.downloads.macIntel || 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing';
