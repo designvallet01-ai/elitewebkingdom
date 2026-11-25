@@ -78,7 +78,7 @@
   </noscript>
 
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=21.0">
+  <link rel="stylesheet" href="style.css?v=22.0">
 
   <!-- Structured Data / Schema.org JSON-LD for Google Knowledge Graph & Rich Snippets -->
   <script type="application/ld+json">
@@ -471,24 +471,17 @@
 
       <nav>
         <ul class="nav-menu" id="nav-menu">
-          <li><a href="#home" class="nav-link active">Home</a></li>
           <li><a href="#services" class="nav-link">Services</a></li>
-          <li><a href="#about" class="nav-link">Leadership</a></li>
           <li><a href="#portfolio" class="nav-link">Portfolio</a></li>
-          <li><a href="/compiler/" class="nav-link" title="Elite IDE - Professional Online Compiler & Developer Studio">Elite IDE <span
-                style="font-size: 0.65rem; background: #EEF2FF; border: 1px solid #C7D2FE; color: #4F46E5; padding: 2px 6px; border-radius: 10px; font-weight: 700; margin-left: 4px;">PRO</span></a>
-          </li>
-          <li id="nav-item-ide-release"><a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" class="nav-link ide-official-nav-btn" title="Elite IDE Offline Studio" style="color: #4F46E5; font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
-            <span>Elite IDE Offline</span>
-            <span id="nav-ide-badge" style="font-size: 0.65rem; background: #FEF3C7; border: 1px solid #FDE68A; color: #D97706; padding: 2px 6px; border-radius: 10px; font-weight: 800; animation: pulseBadge 2s infinite;">SOON</span>
+          <li><a href="#about" class="nav-link">Leadership</a></li>
+          <li><a href="/compiler/" class="nav-link" title="Elite IDE - Professional Online Compiler & Developer Studio">Elite IDE <span class="nav-pill nav-pill-pro">PRO</span></a></li>
+          <li id="nav-item-ide-release"><a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" class="nav-link ide-official-nav-btn" title="Elite IDE Offline Studio" style="color: #4338CA; font-weight: 700;">
+            <span>Desktop IDE</span>
+            <span id="nav-ide-badge" class="nav-pill nav-pill-soon">SOON</span>
           </a></li>
-          <li><a href="#process" class="nav-link">Process</a></li>
-          <li><a href="#track" class="nav-link">Project Tracker</a></li>
-          <li><a href="/verify-certificate.html" class="nav-link" title="Official Certificate Verification Portal">Verify Certificate <span
-                style="font-size: 0.65rem; background: #FEF3C7; border: 1px solid #FDE68A; color: #D97706; padding: 2px 6px; border-radius: 10px; font-weight: 700; margin-left: 4px;">VERIFY</span></a>
-          </li>
-          <li class="mobile-only-item"><a href="#contact" class="btn btn-primary mobile-cta-btn">Get Consultation ↗</a>
-          </li>
+          <li><a href="#track" class="nav-link">Tracker</a></li>
+          <li><a href="/verify-certificate.html" class="nav-link" title="Official Certificate Verification Portal">Verify <span class="nav-pill nav-pill-verify">CERT</span></a></li>
+          <li class="mobile-only-item"><a href="#contact" class="btn btn-primary mobile-cta-btn">Get Consultation ↗</a></li>
         </ul>
       </nav>
 
@@ -531,10 +524,10 @@
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </a>
-          <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="hero-ide-download-btn" class="btn btn-secondary" style="background: rgba(79, 70, 229, 0.1); border-color: rgba(79, 70, 229, 0.4); color: #4F46E5; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+          <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="hero-ide-download-btn" class="btn btn-ide">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             <span id="hero-ide-btn-text">Download Elite IDE</span>
-            <span id="hero-ide-badge" style="font-size: 0.65rem; background: #FEF3C7; border: 1px solid #FDE68A; color: #D97706; padding: 2px 6px; border-radius: 8px; font-weight: 800;">SOON</span>
+            <span id="hero-ide-badge" class="nav-pill nav-pill-soon">SOON</span>
           </a>
           <a href="https://wa.me/919985369590" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
             <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
@@ -612,6 +605,20 @@
     </div>
   </section>
 
+  <!-- ENTERPRISE TRUST STRIP -->
+  <div class="trust-strip">
+    <div class="container trust-strip-inner">
+      <span class="trust-label">Enterprise Engineering Standards</span>
+      <div class="trust-badges">
+        <span class="trust-badge-item"><span class="trust-badge-dot"></span>100% Proprietary IP</span>
+        <span class="trust-badge-item"><span class="trust-badge-dot" style="background: #10B981;"></span>Zero-Trust Cloud Security</span>
+        <span class="trust-badge-item"><span class="trust-badge-dot" style="background: #4F46E5;"></span>Sub-Second Load Speed</span>
+        <span class="trust-badge-item"><span class="trust-badge-dot" style="background: #06B6D4;"></span>Direct Founder Oversight</span>
+        <span class="trust-badge-item"><span class="trust-badge-dot" style="background: #F59E0B;"></span>SLA-Backed Delivery</span>
+      </div>
+    </div>
+  </div>
+
   <!-- INSTANT COST ESTIMATOR WIDGET SECTION -->
   <section class="section" id="estimator">
     <div class="container">
@@ -661,7 +668,7 @@
           </div>
           <div>
             <span class="meta-label">ESTIMATED TIMELINE</span>
-            <div class="result-val" id="est-result-time" style="font-size: 1.3rem; color: var(--cyan-primary);">2-3
+            <div class="result-val" id="est-result-time" style="font-size: 1.35rem; color: var(--primary-blue);">2-3
               Weeks</div>
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
@@ -679,7 +686,7 @@
   </section>
 
   <!-- SERVICES SECTION -->
-  <section class="section" id="services">
+  <section class="section section-alt" id="services">
     <div class="container">
       <div class="section-title-wrapper reveal">
         <span class="section-subtitle">Core Capabilities</span>
@@ -1029,7 +1036,7 @@
   </section>
 
   <!-- PORTFOLIO SECTION WITH FILTER -->
-  <section class="section" id="portfolio">
+  <section class="section section-alt" id="portfolio">
     <div class="container">
       <div class="section-title-wrapper reveal">
         <span class="section-subtitle">Verified Case Studies</span>
@@ -1046,65 +1053,61 @@
       </div>
 
       <div class="portfolio-grid">
-        <!-- Elite IDE Compiler Project Card -->
-        <div class="portfolio-card glass-card reveal" data-category="saas">
-          <span class="portfolio-cat" style="color: #4F46E5; font-weight: 700;">DEVELOPER TOOL / LIVE CLOUD IDE</span>
-          <h3 class="portfolio-title">Elite IDE &amp; Multi-Language Compiler</h3>
-          <p class="portfolio-description">India's full-featured in-browser compiler studio: real-time Live Co-Editing (?live=), X-Ray Step Tracer &amp; Output Diff, ISO Flowchart PNG/SVG Export, Instant SQL &amp; JDBC Sandboxes, AI Error Healer, Memory/Recursion Visualizers, TCS NQT Packs &amp; College Exam Kiosk.</p>
-          <div class="project-tech-tags">
-            <span class="project-tech-tag">116+ Languages</span>
-            <span class="project-tech-tag">Live Co-Edit</span>
-            <span class="project-tech-tag">X-Ray &amp; Diff</span>
-            <span class="project-tech-tag">SQL &amp; JDBC</span>
-            <span class="project-tech-tag">Flowchart PNG</span>
-            <span class="project-tech-tag">Embed ?embed=1</span>
-          </div>
-          <div class="project-metrics">
-            <div class="project-metric-item">
-              <span class="project-metric-val">116+</span>
-              <span class="project-metric-lbl">Languages</span>
-            </div>
-            <div class="project-metric-item">
-              <span class="project-metric-val">Live</span>
-              <span class="project-metric-lbl">Co-Editing &amp; Run</span>
-            </div>
-          </div>
-          <!-- Professional Offline Desktop Downloads Section (High-Contrast for Clean White Background) -->
-          <div style="margin-top: 20px; padding: 18px 20px; background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 0.85rem; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px;">
-                  Elite IDE Offline Studio
-                </span>
-                <span id="card-ide-status-pill" style="font-size: 0.68rem; font-weight: 800; color: #d97706; background: #FEF3C7; border: 1px solid #FDE68A; padding: 2px 8px; border-radius: 9999px;">
-                  COMING SOON (DRAFT)
-                </span>
+        <!-- Elite IDE Compiler Project Card (Flagship Featured) -->
+        <div class="portfolio-card portfolio-featured glass-card reveal" data-category="saas">
+          <div class="portfolio-featured-grid">
+            <div>
+              <span class="portfolio-cat" style="color: #4F46E5; font-weight: 800;">FLAGSHIP DEVELOPER PRODUCT / LIVE CLOUD IDE</span>
+              <h3 class="portfolio-title" style="font-size: 1.55rem;">Elite IDE &amp; Multi-Language Compiler</h3>
+              <p class="portfolio-description">India's full-featured in-browser compiler studio: real-time Live Co-Editing (?live=), X-Ray Step Tracer &amp; Output Diff, ISO Flowchart PNG/SVG Export, Instant SQL &amp; JDBC Sandboxes, AI Error Healer, Memory/Recursion Visualizers, TCS NQT Packs &amp; College Exam Kiosk.</p>
+              <div class="project-tech-tags">
+                <span class="project-tech-tag">116+ Languages</span>
+                <span class="project-tech-tag">Live Co-Edit</span>
+                <span class="project-tech-tag">X-Ray &amp; Diff</span>
+                <span class="project-tech-tag">SQL &amp; JDBC</span>
+                <span class="project-tech-tag">Flowchart PNG</span>
+                <span class="project-tech-tag">Embed ?embed=1</span>
               </div>
-              <a href="/compiler/" class="portfolio-link" style="color: #2563EB; font-weight: 800; font-size: 0.84rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                Launch Online IDE ⚡ ↗
-              </a>
+              <div class="project-metrics" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
+                <div class="project-metric-item">
+                  <span class="project-metric-val">116+</span>
+                  <span class="project-metric-lbl">Languages Supported</span>
+                </div>
+                <div class="project-metric-item">
+                  <span class="project-metric-val">Live</span>
+                  <span class="project-metric-lbl">Co-Editing &amp; Cloud Run</span>
+                </div>
+              </div>
             </div>
 
-            <div id="card-ide-buttons-wrap" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-              <!-- 1. Apple Silicon -->
-              <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="card-dl-link-mac-silicon" class="btn" style="padding: 9px 16px; font-size: 0.84rem; border-radius: 9px; background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-                <span>⏳ 🍎 Mac Silicon (Coming Soon)</span>
-              </a>
+            <!-- Professional Offline Desktop Downloads Section -->
+            <div class="ide-offline-box">
+              <div class="ide-offline-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="ide-offline-title">Elite IDE Offline Studio</span>
+                  <span id="card-ide-status-pill" class="ide-status-pill">COMING SOON (DRAFT)</span>
+                </div>
+                <a href="/compiler/" class="portfolio-link">
+                  Launch Online IDE ⚡ ↗
+                </a>
+              </div>
 
-              <!-- 2. Mac Intel -->
-              <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="card-dl-link-mac-intel" class="btn" style="padding: 9px 16px; font-size: 0.84rem; border-radius: 9px; background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-                <span>⏳ 💻 Mac Intel (Coming Soon)</span>
-              </a>
+              <div id="card-ide-buttons-wrap" class="ide-dl-buttons-wrap">
+                <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="card-dl-link-mac-silicon" class="btn ide-dl-btn-draft">
+                  <span>⏳ 🍎 Mac Silicon (Coming Soon)</span>
+                </a>
+                <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="card-dl-link-mac-intel" class="btn ide-dl-btn-draft">
+                  <span>⏳ 💻 Mac Intel (Coming Soon)</span>
+                </a>
+                <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="card-dl-link-windows" class="btn ide-dl-btn-draft">
+                  <span>⏳ 🪟 Windows (Coming Soon)</span>
+                </a>
+              </div>
 
-              <!-- 3. Windows -->
-              <a href="javascript:void(0)" onclick="handleEliteIdeDownloadClick(event)" id="card-dl-link-windows" class="btn" style="padding: 9px 16px; font-size: 0.84rem; border-radius: 9px; background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-                <span>⏳ 🪟 Windows (Coming Soon)</span>
-              </a>
+              <p class="ide-offline-note">
+                Built-in native GCC, Clang, Python 3.12, interactive terminals &amp; AI Error Healer. 100% offline standalone execution.
+              </p>
             </div>
-
-            <p style="font-size: 0.74rem; color: #64748B; margin-top: 12px; margin-bottom: 0; line-height: 1.5;">
-              Built-in native GCC, Clang, Python 3.12, interactive terminals &amp; AI Error Healer. 100% offline standalone execution.
-            </p>
           </div>
         </div>
 
@@ -1281,7 +1284,7 @@
         <div class="process-card glass-card reveal">
           <div class="process-step">02</div>
           <h3 class="process-title">Design</h3>
-          <p class="process-desc">Drafting state-of-the-art UI mockups with custom dark themes, smooth
+          <p class="process-desc">Drafting state-of-the-art UI mockups with bespoke design systems, fluid
             micro-interactions, and responsive grids.</p>
         </div>
 
@@ -1303,7 +1306,7 @@
   </section>
 
   <!-- PROJECT STATUS TRACKER SECTION -->
-  <section class="section" id="track">
+  <section class="section section-alt" id="track">
     <div class="container">
       <div class="section-title-wrapper reveal">
         <span class="section-subtitle">Real-Time Progress</span>
@@ -1331,8 +1334,7 @@
         <div id="tracker-search-error" class="form-status error" style="margin-top: 20px;"></div>
 
         <!-- TRACKER RESULTS -->
-        <div class="tracker-results" id="tracker-results"
-          style="display: none; margin-top: 36px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <div class="tracker-results tracker-results-box" id="tracker-results">
           <div class="tracker-results-header">
             <div>
               <span class="meta-label">CLIENT / COMPANY</span>
@@ -1385,12 +1387,9 @@
             </div>
           </div>
 
-          <div
-            style="background: rgba(0,242,254,0.04); border: 1px solid rgba(0,242,254,0.15); padding: 20px; border-radius: var(--radius-md); margin-top: 24px;">
-            <h4
-              style="font-size: 0.9rem; color: var(--cyan-primary); font-family: var(--font-mono); margin-bottom: 6px;">
-              Developer Note:</h4>
-            <p id="track-status-memo" style="color: var(--text-muted); font-size: 0.92rem;">-</p>
+          <div class="tracker-memo-box">
+            <h4 class="tracker-memo-title">Developer Note:</h4>
+            <p id="track-status-memo" class="tracker-memo-text">-</p>
           </div>
         </div>
       </div>
@@ -1407,105 +1406,86 @@
           project turnaround.</p>
       </div>
 
-      <div class="faq-accordion-wrapper reveal"
-        style="max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px;">
-        <details class="faq-item"
-          style="background: var(--surface-card); border: 1px solid rgba(0, 51, 153, 0.1); border-radius: var(--radius-md); padding: 18px 24px; box-shadow: var(--shadow-subtle); transition: var(--transition-normal);">
-          <summary
-            style="font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--chakra-navy); list-style: none; display: flex; justify-content: space-between; align-items: center;">
+      <div class="faq-list reveal">
+        <details class="faq-item">
+          <summary class="faq-summary">
             <span>Who is the Executive Director of Elite Web Kingdom?</span>
-            <span style="font-size: 1.2rem; color: var(--saffron-main);">+</span>
+            <span class="faq-icon">+</span>
           </summary>
-          <p style="margin-top: 14px; color: var(--text-muted); line-height: 1.7; font-size: 0.96rem;">
-            <strong>Bathala Harika</strong> is the <strong>Executive Director</strong> of Elite Web Kingdom. She steers corporate governance, business operations, enterprise client relations, and digital transformation initiatives across our software engineering divisions. You can connect directly via phone/WhatsApp at <a href="https://wa.me/916281181593" style="color: var(--saffron-main); font-weight: 600;">+91 6281181593</a> or email <a href="mailto:harikabathala05@gmail.com" style="color: var(--saffron-main); font-weight: 600;">harikabathala05@gmail.com</a>.
+          <p class="faq-answer">
+            <strong>Bathala Harika</strong> is the <strong>Executive Director</strong> of Elite Web Kingdom. She steers corporate governance, business operations, enterprise client relations, and digital transformation initiatives across our software engineering divisions. You can connect directly via phone/WhatsApp at <a href="https://wa.me/916281181593">+91 6281181593</a> or email <a href="mailto:harikabathala05@gmail.com">harikabathala05@gmail.com</a>.
           </p>
         </details>
 
-        <details class="faq-item"
-          style="background: var(--surface-card); border: 1px solid rgba(0, 51, 153, 0.1); border-radius: var(--radius-md); padding: 18px 24px; box-shadow: var(--shadow-subtle); transition: var(--transition-normal);">
-          <summary
-            style="font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--chakra-navy); list-style: none; display: flex; justify-content: space-between; align-items: center;">
+        <details class="faq-item">
+          <summary class="faq-summary">
             <span>Who is the founder and principal engineer at Elite Web Kingdom?</span>
-            <span style="font-size: 1.2rem; color: var(--saffron-main);">+</span>
+            <span class="faq-icon">+</span>
           </summary>
-          <p style="margin-top: 14px; color: var(--text-muted); line-height: 1.7; font-size: 0.96rem;">
+          <p class="faq-answer">
             Elite Web Kingdom was founded by <strong>Gowri Narayana Guduru</strong>, who serves as the Principal
             Software Engineer and Lead System Architect. He specializes in enterprise full-stack web platforms, native
             Android &amp; iOS mobile applications, and resilient cloud infrastructure.
           </p>
         </details>
 
-        <details class="faq-item"
-          style="background: var(--surface-card); border: 1px solid rgba(0, 51, 153, 0.1); border-radius: var(--radius-md); padding: 18px 24px; box-shadow: var(--shadow-subtle); transition: var(--transition-normal);">
-          <summary
-            style="font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--chakra-navy); list-style: none; display: flex; justify-content: space-between; align-items: center;">
+        <details class="faq-item">
+          <summary class="faq-summary">
             <span>What custom software engineering services does Elite Web Kingdom provide?</span>
-            <span style="font-size: 1.2rem; color: var(--saffron-main);">+</span>
+            <span class="faq-icon">+</span>
           </summary>
-          <p style="margin-top: 14px; color: var(--text-muted); line-height: 1.7; font-size: 0.96rem;">
+          <p class="faq-answer">
             We engineer complete digital ecosystems: Full Stack Web Platforms (React, Next.js, Node.js), Native Android
             (Kotlin) &amp; iOS (Swift) mobile apps, Supabase and PostgreSQL cloud backends, enterprise security audits,
             high-concurrency API microservices, and custom e-commerce platforms.
           </p>
         </details>
 
-        <details class="faq-item"
-          style="background: var(--surface-card); border: 1px solid rgba(0, 51, 153, 0.1); border-radius: var(--radius-md); padding: 18px 24px; box-shadow: var(--shadow-subtle); transition: var(--transition-normal);">
-          <summary
-            style="font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--chakra-navy); list-style: none; display: flex; justify-content: space-between; align-items: center;">
+        <details class="faq-item">
+          <summary class="faq-summary">
             <span>How can I calculate the cost of a web or mobile application project?</span>
-            <span style="font-size: 1.2rem; color: var(--saffron-main);">+</span>
+            <span class="faq-icon">+</span>
           </summary>
-          <p style="margin-top: 14px; color: var(--text-muted); line-height: 1.7; font-size: 0.96rem;">
-            You can use the interactive <a href="#estimator"
-              style="color: var(--saffron-main); font-weight: 600; text-decoration: underline;">Cost Calculator</a> on
+          <p class="faq-answer">
+            You can use the interactive <a href="#estimator">Cost Calculator</a> on
             our homepage. It allows you to select platforms (Web, Android, iOS, or Cross-Platform), feature complexity,
             design tiers, and delivery timelines to get an instant estimated investment and submit a review request
             directly to our architect.
           </p>
         </details>
 
-        <details class="faq-item"
-          style="background: var(--surface-card); border: 1px solid rgba(0, 51, 153, 0.1); border-radius: var(--radius-md); padding: 18px 24px; box-shadow: var(--shadow-subtle); transition: var(--transition-normal);">
-          <summary
-            style="font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--chakra-navy); list-style: none; display: flex; justify-content: space-between; align-items: center;">
+        <details class="faq-item">
+          <summary class="faq-summary">
             <span>How long does custom software development take?</span>
-            <span style="font-size: 1.2rem; color: var(--saffron-main);">+</span>
+            <span class="faq-icon">+</span>
           </summary>
-          <p style="margin-top: 14px; color: var(--text-muted); line-height: 1.7; font-size: 0.96rem;">
+          <p class="faq-answer">
             Timelines depend on scope and milestones: Rapid landing platforms &amp; MVPs take 1-2 weeks; full-stack web
             applications and native mobile apps take 2-4 weeks; enterprise-grade multi-platform systems take 1-3 months
             with continuous staging deployments.
           </p>
         </details>
 
-        <details class="faq-item"
-          style="background: var(--surface-card); border: 1px solid rgba(0, 51, 153, 0.1); border-radius: var(--radius-md); padding: 18px 24px; box-shadow: var(--shadow-subtle); transition: var(--transition-normal);">
-          <summary
-            style="font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--chakra-navy); list-style: none; display: flex; justify-content: space-between; align-items: center;">
+        <details class="faq-item">
+          <summary class="faq-summary">
             <span>Where can I download free web templates and software packages?</span>
-            <span style="font-size: 1.2rem; color: var(--saffron-main);">+</span>
+            <span class="faq-icon">+</span>
           </summary>
-          <p style="margin-top: 14px; color: var(--text-muted); line-height: 1.7; font-size: 0.96rem;">
-            Visit our dedicated <a href="/store/"
-              style="color: var(--saffron-main); font-weight: 600; text-decoration: underline;">Work Showcase &amp;
+          <p class="faq-answer">
+            Visit our dedicated <a href="/store/">Work Showcase &amp;
               Downloads Store</a> to browse live demo platforms and download 100% free source code templates, starter
             kits, and Android APK packages.
           </p>
         </details>
 
-        <details class="faq-item"
-          style="background: var(--surface-card); border: 1px solid rgba(0, 51, 153, 0.1); border-radius: var(--radius-md); padding: 18px 24px; box-shadow: var(--shadow-subtle); transition: var(--transition-normal);">
-          <summary
-            style="font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--chakra-navy); list-style: none; display: flex; justify-content: space-between; align-items: center;">
+        <details class="faq-item">
+          <summary class="faq-summary">
             <span>How do I contact Gowri Narayana Guduru or the Elite Web Kingdom team?</span>
-            <span style="font-size: 1.2rem; color: var(--saffron-main);">+</span>
+            <span class="faq-icon">+</span>
           </summary>
-          <p style="margin-top: 14px; color: var(--text-muted); line-height: 1.7; font-size: 0.96rem;">
-            You can reach out directly via WhatsApp or phone at <a href="https://wa.me/919985369590"
-              style="color: var(--saffron-main); font-weight: 600;">+91 9985369590</a>, email <a
-              href="mailto:gowrinarayanaguduru@gmail.com"
-              style="color: var(--saffron-main); font-weight: 600;">gowrinarayanaguduru@gmail.com</a>, or submit your
+          <p class="faq-answer">
+            You can reach out directly via WhatsApp or phone at <a href="https://wa.me/919985369590">+91 9985369590</a>, email <a
+              href="mailto:gowrinarayanaguduru@gmail.com">gowrinarayanaguduru@gmail.com</a>, or submit your
             project requirements through the consultation form below.
           </p>
         </details>
@@ -1514,7 +1494,7 @@
   </section>
 
   <!-- CONTACT SECTION -->
-  <section class="section" id="contact">
+  <section class="section section-alt" id="contact">
     <div class="container">
       <div class="section-title-wrapper reveal">
         <span class="section-subtitle">Direct Consultation</span>
@@ -1525,8 +1505,9 @@
         <!-- Quick Info -->
         <div class="contact-info-card glass-card reveal">
           <div class="contact-intro">
+            <div class="contact-sla-badge">⚡ Avg. Response Time: Under 2 Hours</div>
             <h3>Let's Engineer Together</h3>
-            <p>Ready to elevate your business software? Connect directly with Founder & Lead Developer Gowri Narayana
+            <p>Ready to elevate your business software? Connect directly with Founder &amp; Lead Developer Gowri Narayana
               Guduru.</p>
           </div>
 
@@ -1669,28 +1650,24 @@
       </div>
 
       <div>
-        <h4 class="footer-title">Navigation</h4>
+        <h4 class="footer-title">Solutions &amp; Products</h4>
         <ul class="footer-links">
-          <li><a href="#home" class="footer-link">Home</a></li>
-          <li><a href="#estimator" class="footer-link">Cost Calculator</a></li>
-          <li><a href="#services" class="footer-link">Services</a></li>
-          <li><a href="#portfolio" class="footer-link">Portfolio</a></li>
-          <li><a href="/store/" class="footer-link">Products & Free Downloads</a></li>
-          <li><a href="/compiler/" class="footer-link">Elite IDE - Free Online Compiler</a></li>
-          <li><a href="/verify-certificate.html" class="footer-link" style="color: #fbbf24;">Verify Certificate Portal ↗</a></li>
-          <li><a href="#faq" class="footer-link">Frequently Asked Questions</a></li>
+          <li><a href="#services" class="footer-link">Enterprise Services</a></li>
+          <li><a href="#portfolio" class="footer-link">Verified Case Studies</a></li>
+          <li><a href="#estimator" class="footer-link">Instant Cost Calculator</a></li>
+          <li><a href="/compiler/" class="footer-link">Elite IDE — Online Compiler ↗</a></li>
+          <li><a href="/store/" class="footer-link">Templates &amp; Free Downloads</a></li>
         </ul>
       </div>
 
       <div>
-        <h4 class="footer-title">Connect</h4>
+        <h4 class="footer-title">Company &amp; Portals</h4>
         <ul class="footer-links">
-          <li><a href="https://wa.me/919985369590" target="_blank" rel="noopener noreferrer"
-              class="footer-link">WhatsApp Direct</a></li>
-          <li><a href="mailto:gowrinarayanaguduru@gmail.com" class="footer-link">Direct Email</a></li>
+          <li><a href="#about" class="footer-link">Executive Leadership</a></li>
           <li><a href="#track" class="footer-link">Project Status Tracker</a></li>
-          <li><a href="/compiler/" class="footer-link">Elite IDE - Multi-Language Compiler ↗</a></li>
-          <li><a href="/verify-certificate.html" class="footer-link">Verify Credentials ↗</a></li>
+          <li><a href="/verify-certificate.html" class="footer-link" style="color: #fbbf24;">Verify Certificate Portal ↗</a></li>
+          <li><a href="https://wa.me/919985369590" target="_blank" rel="noopener noreferrer" class="footer-link">WhatsApp Direct</a></li>
+          <li><a href="mailto:gowrinarayanaguduru@gmail.com" class="footer-link">Direct Email</a></li>
           <li><a href="admin/index.html" class="footer-link">Admin Portal</a></li>
         </ul>
       </div>
@@ -1727,7 +1704,6 @@
       </div>
     </div>
   </footer>
-  </div><!-- END GREEN ZONE -->
 
   <!-- ELITE IDE OFFICIAL DOWNLOAD / LAUNCHPAD MODAL -->
   <div id="ide-coming-soon-modal" onclick="if(event.target === this) closeIdeComingSoonModal()" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(2, 6, 23, 0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); align-items: center; justify-content: center; padding: 20px;">
