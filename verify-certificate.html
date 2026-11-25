@@ -478,65 +478,60 @@
       box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
     }
 
-    /* GRID: RECORD DETAILS + CERTIFICATE */
+    /* VERIFIED VIEW - CLEAN CENTERED SINGLE HERO VIEW */
     .verified-grid {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-
-    @media (max-width: 992px) {
-      .verified-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* RECORD DETAILS CARD */
-    .record-card {
-      background: var(--bg-card);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 22px;
-      backdrop-filter: blur(16px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    }
-
-    .record-header {
-      padding-bottom: 12px;
-      margin-bottom: 14px;
-      border-bottom: 1px solid var(--glass-border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .record-header h4 {
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: var(--cyan-primary);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .record-field-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      align-items: center;
+      width: 100%;
+      margin: 0 auto;
     }
 
-    .record-item {
+    /* VERIFIED META STRIP (CLEAN HORIZONTAL DETAILS BELOW CERTIFICATE) */
+    .verified-meta-strip {
+      width: 100%;
+      max-width: 920px;
+      margin: 20px auto 0;
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 16px 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      box-sizing: border-box;
+    }
+
+    .meta-item {
       display: flex;
       flex-direction: column;
       gap: 3px;
     }
 
-    .record-label {
-      font-size: 0.72rem;
+    .meta-lbl {
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       color: var(--text-muted);
+    }
+
+    .meta-val {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      word-break: break-word;
+    }
+
+    .meta-val.mono {
+      font-family: var(--font-mono);
+      color: var(--cyan-primary);
+    }
+
+    /* RECORD DETAILS CARD (FALLBACK/EXPANDED) */
+    .record-card {
+      display: none;
     }
 
     .record-value {
@@ -1062,6 +1057,12 @@
         margin: 0 !important;
       }
 
+      *, *::before, *::after {
+        animation: none !important;
+        transform: none !important;
+        transition: none !important;
+      }
+
       html, body {
         width: 297mm !important;
         height: 210mm !important;
@@ -1076,11 +1077,22 @@
         print-color-adjust: exact !important;
       }
 
-      /* Hide ALL page chrome, navbars, cards, and footers */
-      body * {
-        visibility: hidden !important;
+      .page-wrap,
+      main.portal-content,
+      #status-section,
+      .verified-container,
+      .verified-grid,
+      .certificate-viewport {
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+        min-height: 0 !important;
+        height: auto !important;
+        border: none !important;
+        background: transparent !important;
       }
 
+      /* Hide ALL page chrome, navbars, cards, meta strips, and footers */
       .ambient-grid,
       .ambient-orb,
       header.portal-nav,
@@ -1088,6 +1100,7 @@
       .search-card,
       .verified-status-banner,
       .record-card,
+      .verified-meta-strip,
       footer.portal-footer,
       .toast-msg,
       .cert-action-bar,
@@ -1097,23 +1110,17 @@
       }
 
       /* Make ONLY the certificate canvas visible & lock it to exact 1 sheet */
-      #printable-certificate,
-      #printable-certificate * {
-        visibility: visible !important;
-      }
-
       #printable-certificate {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
+        display: block !important;
+        position: relative !important;
         width: 297mm !important;
         height: 210mm !important;
         max-width: 297mm !important;
         max-height: 210mm !important;
         min-width: 297mm !important;
         min-height: 210mm !important;
-        margin: 0 !important;
-        padding: 8mm 14mm !important;
+        margin: 0 auto !important;
+        padding: 8mm 12mm !important;
         box-sizing: border-box !important;
         border: 4px solid #0c2340 !important;
         box-shadow: none !important;
@@ -1125,7 +1132,7 @@
         break-before: avoid !important;
         break-inside: avoid !important;
         background: #ffffff !important;
-        z-index: 999999 !important;
+        z-index: 1 !important;
       }
 
       /* Fine-tuned internal proportions for 100% single page vertical fit */
@@ -1466,6 +1473,12 @@
       const statusSection = document.getElementById('status-section');
       const shareUrl = `${window.location.origin}/verify-certificate.html?id=${encodeURIComponent(cert.certificate_id)}`;
 
+      // Hide bulky search hero so certificate takes full center stage
+      const hero = document.querySelector('.hero-section');
+      const searchCard = document.querySelector('.search-card');
+      if (hero) hero.style.display = 'none';
+      if (searchCard) searchCard.style.display = 'none';
+
       // Format Issue Date
       let displayDate = cert.issue_date || '25 OCTOBER 2026';
       try {
@@ -1489,84 +1502,32 @@
               </div>
               <div class="status-text">
                 <h3>✓ OFFICIAL CREDENTIAL VERIFIED</h3>
-                <p>Authentic Certificate signed by Executive Director & registered in the Central Registry.</p>
+                <p>Issued to <strong>${escapeHtml(cert.recipient_name)}</strong> • Registered in Central Directorate</p>
               </div>
             </div>
 
             <div class="status-actions">
               <button class="btn-action download-btn" onclick="downloadCertificatePNG('printable-certificate', '${escapeHtml(cert.certificate_id)}')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                <span>📥 Download Certificate (PNG)</span>
+                <span>📥 Download PNG</span>
               </button>
               <button class="btn-action gold-btn" onclick="window.print()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-                <span>🖨️ Save as PDF</span>
+                <span>🖨️ Print / Save PDF (1 Page)</span>
               </button>
               <button class="btn-action" onclick="copyVerificationLink('${escapeHtml(shareUrl)}')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 <span>Copy Link</span>
               </button>
+              <button class="btn-action" onclick="resetSearch()" style="background: rgba(255,255,255,0.08);">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <span>Verify Another</span>
+              </button>
             </div>
           </div>
 
-          <!-- DUAL VIEW: DETAILS CARD + LUXURY VINTAGE CERTIFICATE -->
+          <!-- CLEAN FULL-WIDTH CENTERED CERTIFICATE HERO VIEW -->
           <div class="verified-grid">
-            <!-- DETAILS CARD -->
-            <div class="record-card">
-              <div class="record-header">
-                <h4>Verified Details</h4>
-                <span style="font-size: 0.72rem; font-weight: 700; color: #34d399; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); padding: 2px 8px; border-radius: 12px;">
-                  ● Active Status
-                </span>
-              </div>
-
-              <div class="record-field-list">
-                <div class="record-item">
-                  <span class="record-label">Certificate Title</span>
-                  <span class="record-value highlight">${escapeHtml(cert.main_heading || 'Certificate of Achievement')}</span>
-                </div>
-
-                <div class="record-item">
-                  <span class="record-label">Recipient's Full Name</span>
-                  <span class="record-value recipient">${escapeHtml(cert.recipient_name)}</span>
-                </div>
-
-                <div class="record-item">
-                  <span class="record-label">Award Category</span>
-                  <span class="record-value" style="color: var(--gold-light); font-weight: 700;">${escapeHtml(cert.award_category)}</span>
-                </div>
-
-                <div class="record-item">
-                  <span class="record-label">Performance Month</span>
-                  <span class="record-value">${escapeHtml(cert.performance_month)}</span>
-                </div>
-
-                <div class="record-item">
-                  <span class="record-label">Issue Date</span>
-                  <span class="record-value">${escapeHtml(cert.issue_date)}</span>
-                </div>
-
-                <div class="record-item">
-                  <span class="record-label">Certificate ID</span>
-                  <span class="record-value mono">${escapeHtml(cert.certificate_id)}</span>
-                </div>
-
-                <div class="record-item">
-                  <span class="record-label">Authorized Signatory</span>
-                  <span class="record-value" style="color: #38bdf8;">Bathala Harika</span>
-                  <span style="font-size: 0.75rem; color: var(--text-muted);">Executive Director, Elite Web Kingdom</span>
-                </div>
-
-                <div class="record-item">
-                  <span class="record-label">Achievement Description</span>
-                  <div class="record-value desc">
-                    "${escapeHtml(descText)}"
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- LUXURY DIGITAL CERTIFICATE CARD (RESTORED) -->
             <div class="certificate-viewport">
               <div class="cert-award-canvas" id="printable-certificate">
                 <div class="cert-inner-border"></div>
@@ -1682,6 +1643,34 @@
                 </div>
               </div>
             </div>
+
+            <!-- SLIM HORIZONTAL METADATA BAR (NEAT & CLEAN) -->
+            <div class="verified-meta-strip">
+              <div class="meta-item">
+                <span class="meta-lbl">Certificate ID</span>
+                <span class="meta-val mono">${escapeHtml(cert.certificate_id)}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-lbl">Recipient</span>
+                <span class="meta-val">${escapeHtml(cert.recipient_name)}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-lbl">Award Category</span>
+                <span class="meta-val" style="color: var(--gold-light);">${escapeHtml(cert.award_category)}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-lbl">Evaluation Period</span>
+                <span class="meta-val">${escapeHtml(cert.performance_month)}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-lbl">Issue Date</span>
+                <span class="meta-val">${escapeHtml(cert.issue_date)}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-lbl">Authorized Signatory</span>
+                <span class="meta-val" style="color: #38bdf8;">Bathala Harika (Executive Director)</span>
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -1689,6 +1678,21 @@
       renderQRCode(shareUrl, 'cert-qr-container');
       statusSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    window.resetSearch = function() {
+      const hero = document.querySelector('.hero-section');
+      const searchCard = document.querySelector('.search-card');
+      if (hero) hero.style.display = 'block';
+      if (searchCard) searchCard.style.display = 'block';
+      const statusSection = document.getElementById('status-section');
+      if (statusSection) statusSection.innerHTML = '';
+      const input = document.getElementById('cert-input-id');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+      window.history.replaceState({}, '', window.location.pathname);
+    };
 
     // DIRECT 1-CLICK HIGH-RES CERTIFICATE PNG DOWNLOAD
     window.downloadCertificatePNG = function(elementId, certId) {
