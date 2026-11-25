@@ -630,6 +630,16 @@ document.addEventListener('DOMContentLoaded', () => {
         formStatus.style.display = 'block';
       }
 
+      // Track key conversion event in Google Analytics 4
+      if (typeof gtag === 'function') {
+        gtag('event', 'generate_lead', {
+          event_category: 'conversions',
+          event_label: category,
+          value: 25000,
+          currency: 'INR'
+        });
+      }
+
       contactForm.reset();
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -1040,6 +1050,13 @@ window.triggerIdeDownload = function(target) {
   }
 
   if (url) {
+    if (typeof gtag === 'function') {
+      gtag('event', 'ide_download', {
+        event_category: 'downloads',
+        event_label: target || 'standalone_package'
+      });
+    }
+
     const a = document.createElement('a');
     a.href = url;
     a.target = '_blank';
@@ -1061,9 +1078,69 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// ============================================================================
+// GOOGLE CONSENT MODE V2 & PRIVACY BANNER CONTROLLER
+// ============================================================================
+function initCookieConsent() {
+  const banner = document.getElementById('cookie-consent-banner');
+  const acceptBtn = document.getElementById('cookie-accept-btn');
+  const rejectBtn = document.getElementById('cookie-reject-btn');
+  const consentState = localStorage.getItem('ewk_consent_state');
+
+  if (consentState === 'granted') {
+    if (typeof gtag === 'function') {
+      gtag('consent', 'update', {
+        'analytics_storage': 'granted',
+        'ad_storage': 'granted',
+        'ad_user_data': 'granted',
+        'ad_personalization': 'granted'
+      });
+    }
+  } else if (!consentState && banner) {
+    setTimeout(() => {
+      banner.style.display = 'block';
+    }, 1000);
+  }
+
+  if (acceptBtn) {
+    acceptBtn.addEventListener('click', () => {
+      localStorage.setItem('ewk_consent_state', 'granted');
+      if (typeof gtag === 'function') {
+        gtag('consent', 'update', {
+          'analytics_storage': 'granted',
+          'ad_storage': 'granted',
+          'ad_user_data': 'granted',
+          'ad_personalization': 'granted'
+        });
+        gtag('event', 'consent_granted', { event_category: 'compliance' });
+      }
+      if (banner) banner.style.display = 'none';
+    });
+  }
+
+  if (rejectBtn) {
+    rejectBtn.addEventListener('click', () => {
+      localStorage.setItem('ewk_consent_state', 'denied');
+      if (typeof gtag === 'function') {
+        gtag('consent', 'update', {
+          'analytics_storage': 'denied',
+          'ad_storage': 'denied',
+          'ad_user_data': 'denied',
+          'ad_personalization': 'denied'
+        });
+      }
+      if (banner) banner.style.display = 'none';
+    });
+  }
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initEliteIdeLaunchSync);
+  document.addEventListener('DOMContentLoaded', () => {
+    initEliteIdeLaunchSync();
+    initCookieConsent();
+  });
 } else {
   initEliteIdeLaunchSync();
+  initCookieConsent();
 }
 
