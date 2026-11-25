@@ -515,7 +515,10 @@ header.scrolled {
    ========================================== */
 .hero {
   padding: clamp(36px, 4.5vh, 62px) 0 clamp(44px, 5vh, 70px) 0;
-  background: radial-gradient(ellipse at 50% -20%, #EFF6FF 0%, #F8FAFC 60%, #FFFFFF 100%);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(37, 99, 235, 0.11) 0%, transparent 70%),
+    radial-gradient(circle at 85% 30%, rgba(79, 70, 229, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
   position: relative;
   border-bottom: 1px solid #E2E8F0;
 }
@@ -1305,9 +1308,10 @@ header.scrolled {
 /* PROCESS */
 .process-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
   width: 100%;
+  position: relative;
 }
 
 .process-card {
@@ -1315,14 +1319,23 @@ header.scrolled {
   display: flex;
   flex-direction: column;
   background: #FFFFFF;
+  position: relative;
 }
 
 .process-step {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+  color: #FFFFFF;
   font-family: var(--font-heading);
-  font-size: 2.5rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: var(--primary-blue);
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.35);
 }
 
 .process-title {
