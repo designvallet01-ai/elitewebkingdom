@@ -124,10 +124,36 @@
     .nav-container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 16px 24px;
+      padding: 14px clamp(16px, 3vw, 24px);
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .back-home-link {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.2s ease;
+    }
+
+    .back-home-link:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
     }
 
     .brand-group {
@@ -234,8 +260,8 @@
     }
 
     .search-input-wrap {
-      flex: 1;
-      min-width: 260px;
+      flex: 1 1 220px;
+      min-width: 0;
       position: relative;
     }
 
@@ -557,19 +583,19 @@
        ================================================================= */
     .certificate-viewport {
       width: 100%;
-      overflow-x: auto;
+      overflow-x: visible;
       padding-bottom: 8px;
     }
 
     .cert-award-canvas {
       width: 100%;
-      min-width: 640px;
+      min-width: 0;
       max-width: 860px;
       background: radial-gradient(circle at 50% 30%, #0f172a 0%, #030712 100%);
       border: 3px solid #d4af37;
       border-radius: 12px;
       position: relative;
-      padding: 38px 44px;
+      padding: clamp(22px, 4vw, 38px) clamp(16px, 4.5vw, 44px);
       box-shadow: 
         0 0 0 6px #030712, 
         0 0 0 8px rgba(212, 175, 55, 0.4),
@@ -879,6 +905,53 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    @media (max-width: 640px) {
+      main.portal-content {
+        padding: 28px 16px 60px;
+      }
+      .hero-title {
+        font-size: clamp(1.5rem, 6vw, 2rem);
+      }
+      .brand-title {
+        font-size: 0.96rem;
+        gap: 6px;
+      }
+      .official-seal-tag {
+        display: none;
+      }
+      .search-card {
+        padding: 16px;
+      }
+      .btn-verify {
+        width: 100%;
+        justify-content: center;
+      }
+      .cert-authority-title {
+        font-size: 0.92rem;
+        letter-spacing: 1.5px;
+      }
+      .cert-main-heading {
+        font-size: 1.35rem;
+        letter-spacing: 1.5px;
+      }
+      .cert-recipient-name {
+        font-size: 1.65rem;
+      }
+      .cert-footer-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+      }
+      .cert-signature-img {
+        font-size: 1.65rem;
+      }
+      .toast-msg {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+      }
+    }
+
     /* PRINT STYLES */
     @media print {
       body {
@@ -947,9 +1020,12 @@
           </span>
         </a>
 
-        <div class="official-seal-tag">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-          <span>Central Certificate Registry</span>
+        <div class="nav-right-actions">
+          <div class="official-seal-tag">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Central Certificate Registry
+          </div>
+          <a href="/" class="back-home-link">← Main Website</a>
         </div>
       </div>
     </header>
