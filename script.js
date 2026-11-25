@@ -669,9 +669,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================================================================
 // ELITE IDE DESKTOP OFFICIAL LAUNCH CONTROL & CLIENT RUNTIME
 // Syncs dynamically with Supabase Launch Control state (DRAFT vs OFFICIAL_LIVE)
+// ONLY shows LIVE when explicitly launched via Admin Control panel!
 // ============================================================================
 let eliteIdeLaunchState = {
-  isLive: true,
+  isLive: false,
   downloadUrl: 'https://drive.google.com/uc?export=download&id=1xUh3wuww1BXcPZq0CAuoS4eLTdToYnu5',
   downloads: {
     macIntel: 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing',
@@ -681,7 +682,7 @@ let eliteIdeLaunchState = {
 };
 
 async function initEliteIdeLaunchSync() {
-  // 1. Immediately apply default live state (guarantees downloads work instantly)
+  // 1. Immediately apply default UI state (defaults to SOON/DRAFT until Admin confirms LIVE)
   applyEliteIdeUIState();
 
   try {
@@ -708,9 +709,10 @@ async function initEliteIdeLaunchSync() {
     }
 
     const record = data[0];
-    // Keep 100% LIVE by default. Only lock if explicitly marked FORCE_DRAFT_LOCK
-    const isForceLocked = (record.status === 'FORCE_DRAFT_LOCK' || record.system_name === 'FORCE_DRAFT_LOCK');
-    eliteIdeLaunchState.isLive = !isForceLocked;
+    // STRICT ADMIN LAUNCH CHECK:
+    // Only becomes LIVE when Admin explicitly publishes OFFICIAL_LIVE or LIVE in Admin Panel!
+    const isLive = (record.system_name === 'OFFICIAL_LIVE' || record.status === 'LIVE' || record.status === 'ACTIVE_LIVE') && record.status !== 'COMING_SOON' && record.system_name !== 'DRAFT';
+    eliteIdeLaunchState.isLive = !!isLive;
 
     if (record.code_snippet && !record.code_snippet.trim().startsWith('{')) {
       eliteIdeLaunchState.downloadUrl = record.code_snippet;
@@ -728,6 +730,31 @@ async function initEliteIdeLaunchSync() {
     }
 
     applyEliteIdeUIState();
+
+    // Subscribe to realtime launch status updates from Admin Panel
+    try {
+      client
+        .channel('elite_ide_launch_realtime')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'compiler_telemetry',
+          filter: 'session_id=eq.ELITE_IDE_LAUNCH_STATUS'
+        }, (payload) => {
+          if (payload && payload.new) {
+            const rec = payload.new;
+            const liveNow = (rec.system_name === 'OFFICIAL_LIVE' || rec.status === 'LIVE' || rec.status === 'ACTIVE_LIVE') && rec.status !== 'COMING_SOON' && rec.system_name !== 'DRAFT';
+            eliteIdeLaunchState.isLive = !!liveNow;
+            if (rec.code_snippet && !rec.code_snippet.trim().startsWith('{')) {
+              eliteIdeLaunchState.downloadUrl = rec.code_snippet;
+            }
+            applyEliteIdeUIState();
+          }
+        })
+        .subscribe();
+    } catch (realtimeErr) {
+      console.warn('Realtime sync skipped:', realtimeErr);
+    }
   } catch (err) {
     console.warn('Elite IDE Launch Sync failed:', err);
     applyEliteIdeUIState();
@@ -996,6 +1023,11 @@ window.handleEliteIdeDownloadClick = function(e) {
 };
 
 window.triggerIdeDownload = function(target) {
+  if (!eliteIdeLaunchState.isLive) {
+    alert("⚡ Elite IDE Offline Studio is currently in Pre-Launch Staging. Official direct downloads will activate instantly upon Founder Launch from Admin Control.");
+    return;
+  }
+
   let url = '';
   if (target === 'macIntel') {
     url = eliteIdeLaunchState.downloads.macIntel || 'https://drive.google.com/file/d/1ZLVGw0BonA8awn9wBv51yikuC3OLKY4i/view?usp=sharing';
