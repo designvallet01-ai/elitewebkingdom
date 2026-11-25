@@ -708,9 +708,9 @@ async function initEliteIdeLaunchSync() {
     }
 
     const record = data[0];
-    // Keep live unless explicitly marked DRAFT_LOCK or COMING_SOON
-    const isExplicitlyDraft = (record.status === 'COMING_SOON' || record.system_name === 'DRAFT_LOCK');
-    eliteIdeLaunchState.isLive = !isExplicitlyDraft;
+    // Keep 100% LIVE by default. Only lock if explicitly marked FORCE_DRAFT_LOCK
+    const isForceLocked = (record.status === 'FORCE_DRAFT_LOCK' || record.system_name === 'FORCE_DRAFT_LOCK');
+    eliteIdeLaunchState.isLive = !isForceLocked;
 
     if (record.code_snippet && !record.code_snippet.trim().startsWith('{')) {
       eliteIdeLaunchState.downloadUrl = record.code_snippet;
@@ -741,7 +741,7 @@ function applyEliteIdeUIState() {
   const navBadge = document.getElementById('nav-ide-badge');
   if (navBadge) {
     if (isLive) {
-      navBadge.textContent = 'DOWNLOAD';
+      navBadge.textContent = 'V2.0 LIVE';
       navBadge.style.background = '#ECFDF5';
       navBadge.style.borderColor = '#A7F3D0';
       navBadge.style.color = '#059669';
@@ -816,7 +816,7 @@ function applyEliteIdeUIState() {
     // OFFICIAL LIVE MODE: ACTIVE DOWNLOADS
     // ==========================================
     if (cardStatusPill) {
-      cardStatusPill.textContent = '100% OFFLINE (LIVE)';
+      cardStatusPill.textContent = 'v2.0.0 STABLE • LIVE';
       cardStatusPill.style.color = '#047857';
       cardStatusPill.style.background = '#DCFCE7';
       cardStatusPill.style.borderColor = '#86EFAC';
@@ -829,7 +829,11 @@ function applyEliteIdeUIState() {
       modalBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
     }
     if (modalNotice) {
-      modalNotice.style.display = 'none';
+      modalNotice.style.display = 'block';
+      modalNotice.style.background = 'rgba(16, 185, 129, 0.12)';
+      modalNotice.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+      modalNotice.style.color = '#6EE7B7';
+      modalNotice.innerHTML = '<strong>⚡ Official v2.0.0 Desktop Release:</strong> Standalone binaries for macOS (Apple Silicon &amp; Intel) and Windows are verified, virus-scanned, and ready for instant direct download.';
     }
 
     const liveBtnStyle = 'padding: 9px 16px; font-size: 0.84rem; border-radius: 9px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #FFFFFF; border: none; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-weight: 700; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25); cursor: pointer;';
