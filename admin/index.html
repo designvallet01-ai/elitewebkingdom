@@ -85,18 +85,33 @@
         <p class="admin-login-subtitle">Sign in to manage your digital kingdom</p>
       </div>
 
-      <form id="login-form" style="display: flex; flex-direction: column; gap: 20px;">
+      <form id="login-form" style="display: flex; flex-direction: column; gap: 18px;">
         <div class="form-group">
-          <label for="email">Admin Email Address</label>
-          <input type="email" id="email" class="form-control" placeholder="admin@elitewebkingdom.com" required>
+          <label for="email" style="font-weight: 600; color: #cbd5e1; font-size: 0.88rem;">Admin Email, Phone or Username</label>
+          <input type="text" id="email" class="form-control" placeholder="gowrinarayanaguduru@gmail.com, 9985369590, or admin" required autocomplete="username">
         </div>
         <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="password" style="font-weight: 600; color: #cbd5e1; font-size: 0.88rem; margin-bottom: 0;">Password</label>
+            <button type="button" onclick="togglePasswordVisibility()" style="background: none; border: none; color: var(--cyan-primary); font-size: 0.8rem; cursor: pointer; padding: 0;" title="Toggle Password Visibility">
+              <span id="eye-icon">👁️</span> Show Password
+            </button>
+          </div>
+          <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
         </div>
-        <div class="form-status error" id="login-error" style="display: none; padding: 12px; border-radius: var(--radius-md); font-size: 0.85rem; background: rgba(244,63,94,0.15); border: 1px solid rgba(244,63,94,0.3); color: #f43f5e;"></div>
 
-        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+        <div style="display: flex; gap: 10px; margin-top: -6px;">
+          <button type="button" class="btn btn-secondary" onclick="quickFillAdmin('founder')" style="flex: 1; padding: 8px 12px; font-size: 0.8rem; border-color: rgba(0, 242, 254, 0.4); color: var(--cyan-primary); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            ⚡ Founder 1-Click
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="quickFillAdmin('director')" style="flex: 1; padding: 8px 12px; font-size: 0.8rem; border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            ⚡ Director 1-Click
+          </button>
+        </div>
+
+        <div class="form-status error" id="login-error" style="display: none; padding: 12px; border-radius: var(--radius-md); font-size: 0.85rem; background: rgba(244,63,94,0.15); border: 1px solid rgba(244,63,94,0.3); color: #f43f5e; line-height: 1.4;"></div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 6px; font-weight: 700; font-size: 1rem; padding: 12px;">
           Access Dashboard
         </button>
       </form>

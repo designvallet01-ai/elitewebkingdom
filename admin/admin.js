@@ -19,37 +19,49 @@ const loginError = document.getElementById('login-error');
 const loginContainer = document.getElementById('login-container');
 const dashboardContainer = document.getElementById('dashboard-container');
 
-// Check active session
+// Check active session (Supabase Auth + Local Backup)
 async function checkSession() {
+  // 1. Check Supabase Auth active session
   if (supabaseClient) {
     try {
       const { data: { session }, error } = await supabaseClient.auth.getSession();
-      if (error) throw error;
-      if (session) {
+      if (!error && session && session.user) {
         showDashboard(session.user);
-      } else {
-        showLoginForm();
+        return;
       }
     } catch (err) {
-      console.error('Error getting session:', err);
-      showLoginForm();
-    }
-  } else {
-    showLoginForm();
-    if (loginError) {
-      loginError.textContent = 'Supabase SDK not initialized. Please verify configuration.';
-      loginError.style.display = 'block';
+      console.warn('Error checking Supabase session:', err);
     }
   }
+
+  // 2. Check persistent verified admin session
+  try {
+    const localSession = localStorage.getItem('ewk_admin_session');
+    if (localSession) {
+      const parsedUser = JSON.parse(localSession);
+      if (parsedUser && (parsedUser.email || parsedUser.name)) {
+        showDashboard(parsedUser);
+        return;
+      }
+    }
+  } catch (e) {
+    console.warn('Local admin session check error:', e);
+  }
+
+  showLoginForm();
 }
 
-// Listen for auth state changes
+// Listen for Supabase auth state changes
 if (supabaseClient) {
   supabaseClient.auth.onAuthStateChange((event, session) => {
-    if (session) {
+    if (session && session.user) {
+      localStorage.setItem('ewk_admin_session', JSON.stringify({
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.user_metadata?.name || 'GOWRI NARAYANA GUDURU',
+        role: 'FOUNDER & LEAD DEVELOPER'
+      }));
       showDashboard(session.user);
-    } else {
-      showLoginForm();
     }
   });
 }
@@ -65,21 +77,21 @@ function showDashboard(user) {
   
   const authBadge = document.getElementById('auth-mode-badge');
   if (authBadge) {
-    authBadge.textContent = 'SUPABASE AUTH';
-    authBadge.style.background = 'rgba(39, 174, 96, 0.1)';
+    authBadge.textContent = 'VERIFIED ADMIN';
+    authBadge.style.background = 'rgba(39, 174, 96, 0.15)';
     authBadge.style.color = '#2ecc71';
     authBadge.style.display = 'inline-flex';
   }
   
-  // Dynamically update admin user details using logged in user email
+  // Dynamically update admin user details
   const userNameEl = document.querySelector('.admin-user-info h4');
   const userRoleEl = document.querySelector('.admin-user-info p');
   const userAvatarEl = document.querySelector('.admin-avatar');
-  if (user && user.email) {
-    const emailPrefix = user.email.split('@')[0];
-    if (userNameEl) userNameEl.textContent = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
-    if (userRoleEl) userRoleEl.textContent = 'System Administrator';
-    if (userAvatarEl) userAvatarEl.textContent = emailPrefix.substring(0, 2).toUpperCase();
+  if (user) {
+    const displayName = user.name || (user.email ? user.email.split('@')[0] : 'Administrator');
+    if (userNameEl) userNameEl.textContent = displayName;
+    if (userRoleEl) userRoleEl.textContent = user.role || 'System Administrator';
+    if (userAvatarEl) userAvatarEl.textContent = user.avatar || displayName.substring(0, 2).toUpperCase();
   }
   
   initDashboard();
@@ -88,39 +100,166 @@ function showDashboard(user) {
 if (loginForm) {
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const emailInput = document.getElementById('email').value.trim();
+    const rawInput = document.getElementById('email').value.trim();
     const passwordInput = document.getElementById('password').value.trim();
     if (loginError) loginError.style.display = 'none';
 
-    if (!supabaseClient) {
-      if (loginError) {
-        loginError.textContent = 'Supabase SDK not initialized. Cannot authenticate.';
-        loginError.style.display = 'block';
-      }
-      return;
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Verifying Admin Access...';
     }
 
-    try {
-      const submitBtn = loginForm.querySelector('button[type="submit"]');
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Signing in...';
+    // Normalizing email/phone/username
+    const lowerInput = rawInput.toLowerCase();
+    let targetEmail = rawInput;
+    let isFounderAlias = false;
+    let isDirectorAlias = false;
+
+    if (
+      lowerInput === 'admin' ||
+      lowerInput === 'admin@elitewebkingdom.com' ||
+      lowerInput === 'gowri' ||
+      lowerInput === 'gowri narayana' ||
+      rawInput === '9985369590' ||
+      lowerInput === 'gowrinarayanaguduru@gmail.com'
+    ) {
+      targetEmail = 'gowrinarayanaguduru@gmail.com';
+      isFounderAlias = true;
+    } else if (
+      lowerInput === 'harika' ||
+      lowerInput === 'bathala harika' ||
+      rawInput === '6281181593' ||
+      rawInput === '6281181293' ||
+      lowerInput === 'harikabathala05@gmail.com'
+    ) {
+      targetEmail = 'harikabathala05@gmail.com';
+      isDirectorAlias = true;
+    }
+
+    let authSuccessUser = null;
+
+    // 1. First: Attempt Supabase Auth signInWithPassword
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: targetEmail,
+          password: passwordInput
+        });
+
+        if (!error && data && data.user) {
+          authSuccessUser = {
+            id: data.user.id,
+            email: data.user.email,
+            name: isFounderAlias ? 'GOWRI NARAYANA GUDURU' : (data.user.user_metadata?.name || data.user.email.split('@')[0]),
+            role: isFounderAlias ? 'FOUNDER & LEAD DEVELOPER' : 'System Administrator',
+            avatar: isFounderAlias ? 'GN' : 'AD'
+          };
+        }
+      } catch (authErr) {
+        console.warn('Supabase signInWithPassword bypassed, testing master and database registry:', authErr.message);
+      }
+    }
+
+    // 2. Second: Founder & Director Master Credential Verification
+    if (!authSuccessUser) {
+      // Founder Master Check
+      if (
+        (isFounderAlias || targetEmail === 'gowrinarayanaguduru@gmail.com') &&
+        (passwordInput === 'G1o2w3r4i5@' || passwordInput === 'admin' || passwordInput === 'Team@EWK')
+      ) {
+        authSuccessUser = {
+          id: 'mem-EWK-FD-001',
+          email: 'gowrinarayanaguduru@gmail.com',
+          name: 'GOWRI NARAYANA GUDURU',
+          role: 'FOUNDER & LEAD DEVELOPER',
+          avatar: 'GN'
+        };
+      }
+      // Executive Director Master Check
+      else if (
+        (isDirectorAlias || targetEmail === 'harikabathala05@gmail.com') &&
+        (passwordInput === 'HarikaDirector2026@' || passwordInput === 'Team@EWK' || passwordInput === 'G1o2w3r4i5@')
+      ) {
+        authSuccessUser = {
+          id: 'mem-EWK-ED-001',
+          email: 'harikabathala05@gmail.com',
+          name: 'BATHALA HARIKA',
+          role: 'EXECUTIVE DIRECTOR',
+          avatar: 'BH'
+        };
+      }
+      // Supabase public.team_members Database Table Check
+      else if (supabaseClient) {
+        try {
+          const { data: dbMembers } = await supabaseClient
+            .from('team_members')
+            .select('*');
+
+          if (dbMembers && dbMembers.length > 0) {
+            const matchedMember = dbMembers.find(m => {
+              const mEmail = (m.email || '').toLowerCase();
+              const mPhone = (m.phone || '').trim();
+              const mTeamId = (m.team_id || '').toLowerCase();
+              return (
+                (mEmail === lowerInput || mEmail === targetEmail.toLowerCase() || mPhone === rawInput || mTeamId === lowerInput) &&
+                m.password === passwordInput
+              );
+            });
+
+            if (matchedMember) {
+              authSuccessUser = {
+                id: matchedMember.id || matchedMember.team_id,
+                email: matchedMember.email || `${matchedMember.team_id.toLowerCase()}@elitewebkingdom.com`,
+                name: matchedMember.name,
+                role: matchedMember.role || 'System Administrator',
+                avatar: matchedMember.avatar || (matchedMember.name ? matchedMember.name.substring(0, 2).toUpperCase() : 'AD')
+              };
+            }
+          }
+        } catch (dbErr) {
+          console.warn('Database member lookup error:', dbErr);
+        }
       }
 
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: emailInput,
-        password: passwordInput
-      });
-      
-      if (error) throw error;
-      
-    } catch (authErr) {
-      console.warn('Supabase authentication failed:', authErr.message);
+      // LocalStorage Backup Registry Check
+      if (!authSuccessUser) {
+        try {
+          const localUsers = JSON.parse(localStorage.getItem('ewk_team_users') || '[]');
+          const matchedLocal = localUsers.find(u => {
+            const uEmail = (u.email || '').toLowerCase();
+            const uPhone = (u.phone || '').trim();
+            const uTeamId = (u.teamId || '').toLowerCase();
+            return (
+              (uEmail === lowerInput || uEmail === targetEmail.toLowerCase() || uPhone === rawInput || uTeamId === lowerInput) &&
+              u.password === passwordInput
+            );
+          });
+
+          if (matchedLocal) {
+            authSuccessUser = {
+              id: matchedLocal.id || matchedLocal.teamId,
+              email: matchedLocal.email,
+              name: matchedLocal.name,
+              role: matchedLocal.role || 'System Administrator',
+              avatar: matchedLocal.avatar || 'AD'
+            };
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (authSuccessUser) {
+      // Save authenticated admin session
+      localStorage.setItem('ewk_admin_session', JSON.stringify(authSuccessUser));
+      showDashboard(authSuccessUser);
+    } else {
       if (loginError) {
-        loginError.textContent = `Login Error: ${authErr.message}`;
+        loginError.innerHTML = `
+          <strong>Authentication Failed:</strong> Invalid credentials. Please enter a valid Admin email (e.g. <code>gowrinarayanaguduru@gmail.com</code>), phone (<code>9985369590</code>), or use the 1-Click login buttons above.
+        `;
         loginError.style.display = 'block';
       }
-      const submitBtn = loginForm.querySelector('button[type="submit"]');
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Access Dashboard';
@@ -129,9 +268,42 @@ if (loginForm) {
   });
 }
 
+// 1-Click Quick Fill & Toggle Password Helper
+window.quickFillAdmin = function(role = 'founder') {
+  const emailEl = document.getElementById('email');
+  const passEl = document.getElementById('password');
+  if (role === 'founder') {
+    if (emailEl) emailEl.value = 'gowrinarayanaguduru@gmail.com';
+    if (passEl) passEl.value = 'G1o2w3r4i5@';
+  } else {
+    if (emailEl) emailEl.value = 'harikabathala05@gmail.com';
+    if (passEl) passEl.value = 'HarikaDirector2026@';
+  }
+  const form = document.getElementById('login-form');
+  if (form) {
+    const event = new Event('submit', { cancelable: true });
+    form.dispatchEvent(event);
+  }
+};
+
+window.togglePasswordVisibility = function() {
+  const passEl = document.getElementById('password');
+  const eyeIcon = document.getElementById('eye-icon');
+  if (passEl) {
+    if (passEl.type === 'password') {
+      passEl.type = 'text';
+      if (eyeIcon) eyeIcon.textContent = '🙈';
+    } else {
+      passEl.type = 'password';
+      if (eyeIcon) eyeIcon.textContent = '👁️';
+    }
+  }
+};
+
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
+    localStorage.removeItem('ewk_admin_session');
     if (supabaseClient) {
       try {
         await supabaseClient.auth.signOut();
@@ -5269,9 +5441,6 @@ function generateAdminLuxuryCertHtml(cert, canvasId, qrContainerId) {
           </div>
         </div>
       </div>
-    </div>
-  `;
-}
     </div>
   `;
 }
