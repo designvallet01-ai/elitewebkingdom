@@ -355,6 +355,11 @@ window.switchTab = function(tabId) {
       window.loadCertificates();
     }
   }
+  if (tabId === 'hackathon' || tabId === 'overview') {
+    if (typeof window.loadHackathonRegistrations === 'function') {
+      window.loadHackathonRegistrations();
+    }
+  }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -422,6 +427,9 @@ function initDashboard() {
   loadTeamDataFromSupabase();
   if (typeof window.loadCertificates === 'function') {
     window.loadCertificates();
+  }
+  if (typeof window.loadHackathonRegistrations === 'function') {
+    window.loadHackathonRegistrations();
   }
 }
 
@@ -6018,6 +6026,285 @@ if (typeof window !== 'undefined') {
     loadIdeLaunchStatus();
   }, 1200);
 }
+
+// ==========================================================================
+// HACKATHON 2026 REGISTRATIONS & UPI PAYMENT MANAGEMENT ENGINE
+// ==========================================================================
+window.allHackathonRegistrations = [];
+
+window.loadHackathonRegistrations = async function() {
+  let registrations = [];
+
+  // 1. Load from Supabase leads table where category is 'Hackathon 2026 Registration'
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('leads')
+        .select('*')
+        .eq('category', 'Hackathon 2026 Registration')
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        data.forEach(item => {
+          try {
+            const parsed = JSON.parse(item.message);
+            if (parsed && parsed.registration_id) {
+              if (item.status === 'Payment Verified' || item.status === 'Verified') {
+                parsed.payment_status = 'Payment Verified';
+              }
+              registrations.push(parsed);
+            }
+          } catch(e) {
+            // Fallback plain lead format
+            registrations.push({
+              registration_id: item.id || 'EWK-HACK-2026-REG',
+              team_name: item.name || 'Team',
+              team_size: 3,
+              college: item.company || 'Engineering College',
+              track: 'Full-Stack Web & Cloud Innovation',
+              leader: { name: item.name, email: item.email, phone: item.phone },
+              members: [{ role: 'Leader', name: item.name, email: item.email, phone: item.phone, college: item.company }],
+              amount: 1299,
+              utr_number: (item.timeline || '').replace('UTR:', '').trim() || 'N/A',
+              payment_status: item.status === 'Payment Verified' ? 'Payment Verified' : 'Payment Recorded',
+              timestamp: item.created_at || new Date().toISOString()
+            });
+          }
+        });
+      }
+    } catch(err) {
+      console.warn("Supabase hackathon query error:", err);
+    }
+  }
+
+  // 2. Load from LocalStorage
+  try {
+    const localList = JSON.parse(localStorage.getItem('ewk_hackathon_registrations') || '[]');
+    localList.forEach(localItem => {
+      if (!registrations.some(r => r.registration_id === localItem.registration_id)) {
+        registrations.push(localItem);
+      }
+    });
+  } catch(e) {
+    console.warn("Local hackathon read error:", e);
+  }
+
+  window.allHackathonRegistrations = registrations;
+  updateHackathonStats(registrations);
+  renderHackathonTable(registrations);
+};
+
+function updateHackathonStats(regs) {
+  const totalCountEl = document.getElementById('admin-hack-total-count');
+  const totalRevenueEl = document.getElementById('admin-hack-total-revenue');
+  const verifiedCountEl = document.getElementById('admin-hack-verified-count');
+  const pendingCountEl = document.getElementById('admin-hack-pending-count');
+  const sidebarCountEl = document.getElementById('sidebar-hackathon-count');
+
+  const total = regs.length;
+  const verified = regs.filter(r => r.payment_status === 'Payment Verified').length;
+  const pending = total - verified;
+  const totalRevenue = total * 1299;
+
+  if (totalCountEl) totalCountEl.textContent = total;
+  if (totalRevenueEl) totalRevenueEl.textContent = `₹${totalRevenue.toLocaleString('en-IN')}`;
+  if (verifiedCountEl) verifiedCountEl.textContent = verified;
+  if (pendingCountEl) pendingCountEl.textContent = pending;
+  if (sidebarCountEl) sidebarCountEl.textContent = total;
+}
+
+function renderHackathonTable(regs) {
+  const tbody = document.getElementById('admin-hackathon-tbody');
+  if (!tbody) return;
+
+  if (regs.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">🏆</div>
+          <div style="font-size: 1rem; font-weight: 700; color: #f8fafc;">No Hackathon Registrations Yet</div>
+          <p style="font-size: 0.82rem; margin-top: 4px;">Teams registering through <code>/hackathon.html</code> with ₹1,299 UPI fee will appear here instantly.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = regs.map(r => {
+    const isVerified = r.payment_status === 'Payment Verified';
+    const leader = r.leader || {};
+    const membersCount = r.team_size || (r.members ? r.members.length : 1);
+    const receiptUrl = `/hackathon.html?receipt=${encodeURIComponent(r.registration_id)}`;
+
+    return `
+      <tr>
+        <td>
+          <a href="${receiptUrl}" target="_blank" style="font-family: var(--font-mono); font-weight: 800; color: #fbbf24; text-decoration: none;">
+            ${escapeHtml(r.registration_id)} ↗
+          </a>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(r.timestamp || '')}</div>
+        </td>
+        <td>
+          <strong style="color: #ffffff; font-size: 0.95rem;">${escapeHtml(r.team_name)}</strong>
+          <div>
+            <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-weight: 700;">
+              ${membersCount} Member${membersCount > 1 ? 's' : ''}
+            </span>
+          </div>
+        </td>
+        <td>
+          <span style="font-size: 0.88rem; font-weight: 600; color: #e2e8f0;">${escapeHtml(r.college || 'N/A')}</span>
+        </td>
+        <td>
+          <div style="font-weight: 700; color: #ffffff;">${escapeHtml(leader.name || 'Leader')}</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">${escapeHtml(leader.email || '')}</div>
+          <div style="font-size: 0.78rem; color: var(--cyan-primary); font-family: var(--font-mono);">${escapeHtml(leader.phone || '')}</div>
+        </td>
+        <td>
+          <span style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1;">${escapeHtml(r.track || 'Full-Stack Web')}</span>
+        </td>
+        <td>
+          <div style="font-family: var(--font-mono); font-weight: 800; color: #34d399; font-size: 0.95rem;">₹1,299</div>
+          <div style="font-family: var(--font-mono); font-size: 0.78rem; color: #fbbf24;">UTR: ${escapeHtml(r.utr_number || 'N/A')}</div>
+        </td>
+        <td>
+          <span style="font-size: 0.75rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; ${isVerified ? 'background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);' : 'background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4);'}">
+            ${isVerified ? '✓ VERIFIED' : '⏳ PENDING UTR'}
+          </span>
+        </td>
+        <td>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            ${!isVerified ? `
+              <button class="btn btn-secondary btn-sm" onclick="verifyHackathonPayment('${escapeHtml(r.registration_id)}')" style="color: #34d399; border-color: rgba(16, 185, 129, 0.4);" title="Verify UTR and Approve">
+                ✓ Verify
+              </button>
+            ` : ''}
+            <a href="${receiptUrl}" target="_blank" class="btn btn-secondary btn-sm" style="color: var(--cyan-primary); border-color: rgba(0, 242, 254, 0.4);" title="View / Print Receipt">
+              Receipt
+            </a>
+            <button class="btn btn-secondary btn-sm" onclick="contactHackLeaderWhatsApp('${escapeHtml(leader.phone || '')}', '${escapeHtml(leader.name || '')}', '${escapeHtml(r.team_name)}', '${escapeHtml(r.registration_id)}')" style="color: #25d366; border-color: rgba(37, 211, 102, 0.4);" title="WhatsApp Leader">
+              WhatsApp
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="deleteHackathonRegistration('${escapeHtml(r.registration_id)}')" style="color: #f43f5e; border-color: rgba(244, 63, 94, 0.4);" title="Delete">
+              &times;
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.filterHackathonTable = function() {
+  const query = (document.getElementById('admin-hack-search')?.value || '').trim().toLowerCase();
+  if (!query) {
+    renderHackathonTable(window.allHackathonRegistrations || []);
+    return;
+  }
+
+  const filtered = (window.allHackathonRegistrations || []).filter(r => {
+    const regId = (r.registration_id || '').toLowerCase();
+    const team = (r.team_name || '').toLowerCase();
+    const college = (r.college || '').toLowerCase();
+    const leaderName = (r.leader?.name || '').toLowerCase();
+    const utr = (r.utr_number || '').toLowerCase();
+    return regId.includes(query) || team.includes(query) || college.includes(query) || leaderName.includes(query) || utr.includes(query);
+  });
+
+  renderHackathonTable(filtered);
+};
+
+window.verifyHackathonPayment = async function(regId) {
+  const reg = (window.allHackathonRegistrations || []).find(r => r.registration_id === regId);
+  if (!reg) return;
+
+  reg.payment_status = 'Payment Verified';
+
+  // 1. Update in LocalStorage
+  try {
+    const localList = JSON.parse(localStorage.getItem('ewk_hackathon_registrations') || '[]');
+    const idx = localList.findIndex(r => r.registration_id === regId);
+    if (idx !== -1) {
+      localList[idx].payment_status = 'Payment Verified';
+      localStorage.setItem('ewk_hackathon_registrations', JSON.stringify(localList));
+    }
+  } catch(e){}
+
+  // 2. Update in Supabase leads
+  if (supabaseClient) {
+    try {
+      await supabaseClient
+        .from('leads')
+        .update({ status: 'Payment Verified' })
+        .eq('id', regId);
+    } catch(e){}
+  }
+
+  updateHackathonStats(window.allHackathonRegistrations);
+  renderHackathonTable(window.allHackathonRegistrations);
+  alert(`✓ Registration ${regId} marked as Payment Verified!`);
+};
+
+window.deleteHackathonRegistration = async function(regId) {
+  if (!confirm(`Are you sure you want to remove registration ${regId}?`)) return;
+
+  window.allHackathonRegistrations = (window.allHackathonRegistrations || []).filter(r => r.registration_id !== regId);
+
+  try {
+    const localList = JSON.parse(localStorage.getItem('ewk_hackathon_registrations') || '[]');
+    const updated = localList.filter(r => r.registration_id !== regId);
+    localStorage.setItem('ewk_hackathon_registrations', JSON.stringify(updated));
+  } catch(e){}
+
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('leads').delete().eq('id', regId);
+    } catch(e){}
+  }
+
+  updateHackathonStats(window.allHackathonRegistrations);
+  renderHackathonTable(window.allHackathonRegistrations);
+};
+
+window.contactHackLeaderWhatsApp = function(phone, leaderName, teamName, regId) {
+  if (!phone) {
+    alert("No phone number recorded for this team leader.");
+    return;
+  }
+  const cleanPhone = phone.replace(/[^0-9]/g, '');
+  const msg = `Hello ${leaderName}! 👋\n\n` +
+              `This is Elite Web Kingdom Hackathon Administration regarding team *${teamName}* (Reg ID: ${regId}).\n\n` +
+              `Your registration fee of ₹1,299 has been reviewed. Here is your official registration receipt link:\n` +
+              `${window.location.origin}/hackathon.html?receipt=${encodeURIComponent(regId)}\n\n` +
+              `Let us know if you need any assistance preparing for the hackathon sprint!`;
+
+  window.open(`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+};
+
+window.exportHackathonCSV = function() {
+  const regs = window.allHackathonRegistrations || [];
+  if (regs.length === 0) {
+    alert("No registered teams to export.");
+    return;
+  }
+
+  let csv = "Registration ID,Team Name,Team Size,College,Selected Track,Leader Name,Leader Email,Leader Phone,UTR Number,Amount INR,Payment Status,Date\n";
+
+  regs.forEach(r => {
+    const leader = r.leader || {};
+    csv += `"${r.registration_id}","${r.team_name}","${r.team_size || 1}","${r.college || ''}","${r.track || ''}","${leader.name || ''}","${leader.email || ''}","${leader.phone || ''}","${r.utr_number || ''}","1299","${r.payment_status}","${r.timestamp || ''}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Elite_Hackathon_2026_Registrations_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
 
 
